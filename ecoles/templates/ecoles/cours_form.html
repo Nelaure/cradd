@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Cradd{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-9">
+        <div class="card-glass">
+            <div class="card-header">
+                <i class="fas fa-book text-gold me-2"></i> {{ title }}
+            </div>
+            <div class="card-body">
+                <form method="post" id="coursForm" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Champs principaux -->
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <hr>
+                    <h5 class="mt-3 text-gold">Configuration du cycle d'évaluation</h5>
+                    {% if cycle_form %}
+                    <div class="row g-3">
+                        {% for field in cycle_form %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Formset des évaluations -->
+                    {% if formset %}
+                    <h6 class="mt-3">Détails des évaluations</h6>
+                    {{ formset.management_form }}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="bg-gold-soft">
+                                <tr>
+                                    <th>Cycle</th>
+                                    <th>Période</th>
+                                    <th>Type</th>
+                                    <th>Points max</th>
+                                    <th>Ordre</th>
+                                    <th>Supprimer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for f in formset %}
+                                <tr>
+                                    <td>{{ f.cycle_num }}</td>
+                                    <td>{{ f.periode_num }}</td>
+                                    <td>{{ f.type }}</td>
+                                    <td>{{ f.points_max }}</td>
+                                    <td>{{ f.ordre }}</td>
+                                    <td class="text-center">{{ f.DELETE }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="6" class="bg-light">
+                                        {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+                                        {% if f.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in f.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <small class="text-muted"><i class="fas fa-info-circle"></i> Vous pouvez ajouter ou supprimer des évaluations.</small>
+                    {% endif %}
+
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a href="{% url 'ecoles:cours_list' %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const niveauSelect = document.getElementById('id_niveau');
+        const classeSelect = document.getElementById('id_classe');
+        const domaineSelect = document.getElementById('id_domaine');
+
+        function updateFields() {
+            const niveauId = niveauSelect.value;
+
+            // Mise à jour des classes
+            classeSelect.innerHTML = '';
+            const emptyClasse = document.createElement('option');
+            emptyClasse.value = '';
+            emptyClasse.textContent = '-- Sélectionnez une classe --';
+            classeSelect.appendChild(emptyClasse);
+
+            if (niveauId) {
+                fetch(`/api/classes-par-niveau/?niveau_id=${niveauId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(classe => {
+                            const option = document.createElement('option');
+                            option.value = classe.id;
+                            option.textContent = classe.nom;
+                            classeSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Erreur chargement classes:', error));
+
+                // Mise à jour des domaines
+                domaineSelect.innerHTML = '';
+                const emptyDomaine = document.createElement('option');
+                emptyDomaine.value = '';
+                emptyDomaine.textContent = '-- Sélectionnez un domaine --';
+                domaineSelect.appendChild(emptyDomaine);
+
+                fetch(`/api/domaines-par-niveau/?niveau_id=${niveauId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(domaine => {
+                            const option = document.createElement('option');
+                            option.value = domaine.id;
+                            option.textContent = domaine.nom;
+                            domaineSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Erreur chargement domaines:', error));
+            }
+        }
+
+        niveauSelect.addEventListener('change', updateFields);
+        if (niveauSelect.value) updateFields();
+    });
+</script>
+{% endblock %}

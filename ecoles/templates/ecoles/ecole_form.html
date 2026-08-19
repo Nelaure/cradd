@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Cradd{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="card-glass">
+            <div class="card-header">
+                <i class="fas fa-school text-gold me-2"></i> {{ title }}
+            </div>
+            <div class="card-body">
+                {% if form.instance.pk %}
+                {% with niveaux_existants=form.instance.niveaux.all %}
+                {% if niveaux_existants %}
+                <div class="alert alert-info bg-gold-soft border-0">
+                    <i class="fas fa-info-circle text-gold me-2"></i>
+                    <strong>Niveaux déjà attribués :</strong>
+                    {% for niveau in niveaux_existants %}
+                    <span class="badge bg-gold-soft text-gold">{{ niveau.nom }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+                {% endif %}
+
+                <!-- Message pour la province si désactivée -->
+                {% if form.province.field.disabled %}
+                <div class="alert alert-secondary border-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    La province est fixée en fonction de votre affectation.
+                </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a href="{% url 'ecoles:ecole_list' %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+﻿{% extends "base.html" %}
+
+{% block title %}{{ title }} - Cradd{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card-glass">
+            <div class="card-header">
+                <i class="fas fa-user-plus text-gold me-2"></i> {{ title }}
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a href="{% url 'eleves:eleve_list' %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts pour les cascades (écoles → niveaux → classes) -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ecoleSelect = document.getElementById('id_ecole');
+        const niveauSelect = document.getElementById('id_niveau');
+        const classeSelect = document.getElementById('id_classe');
+
+        function updateSelect(url, parentId, targetSelect, paramName) {
+            const value = parentId.value;
+            if (!value) {
+                targetSelect.innerHTML = '<option value="">---------</option>';
+                return;
+            }
+            fetch(`${url}?${paramName}=${value}`)
+                .then(response => response.json())
+                .then(data => {
+                    targetSelect.innerHTML = '<option value="">---------</option>';
+                    data.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.nom || item.nom_complet;
+                        targetSelect.appendChild(opt);
+                    });
+                })
+                .catch(error => console.error('Erreur AJAX:', error));
+        }
+
+        if (ecoleSelect) {
+            ecoleSelect.addEventListener('change', function () {
+                updateSelect('{% url "ecoles:api_get_niveaux" %}', this, niveauSelect, 'ecole_id');
+                updateSelect('{% url "ecoles:api_get_classes" %}', this, classeSelect, 'ecole_id');
+            });
+        }
+        if (niveauSelect) {
+            niveauSelect.addEventListener('change', function () {
+                updateSelect('{% url "ecoles:api_get_classes" %}', this, classeSelect, 'niveau_id');
+            });
+        }
+    });
+</script>
+{% endblock %}

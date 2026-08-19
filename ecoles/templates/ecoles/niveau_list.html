@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des niveaux - Cradd{% endblock %}
+{% block page_heading %}Liste des niveaux{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-layer-group"></i> Niveaux</h1>
+    {% if user.est_administrateur %}
+    <a href="{% url 'ecoles:niveau_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Ajouter un niveau de référence
+    </a>
+    {% endif %}
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Type</th>
+                        <th>École / Statut</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for niveau in niveaux %}
+                    <tr>
+                        <td>{{ niveau.nom }}</td>
+                        <td>
+                            {% if niveau.est_reference %}
+                            <span class="badge bg-info">Référence</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Instance</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if niveau.est_reference %}
+                            <span class="text-muted">—</span>
+                            {% else %}
+                            {{ niveau.ecole.nom|default:"(sans école)" }}
+                            {% endif %}
+                        </td>
+                        <td>{{ niveau.description|default:"-"|truncatewords:10 }}</td>
+                        <td>
+                            {% if niveau.est_reference %}
+                            {% if user.est_administrateur %}
+                            <a href="{% url 'ecoles:niveau_edit' niveau.id %}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'ecoles:niveau_delete' niveau.id %}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            {% endif %}
+                            {% if user.est_agent or user.est_enseignant %}
+                            {% if user.ecole_affectation %}
+                            <a href="{% url 'ecoles:niveau_affecter' niveau.id %}" class="btn btn-sm btn-success">
+                                <i class="fas fa-arrow-right"></i> Affecter
+                            </a>
+                            {% endif %}
+                            {% endif %}
+                            {% else %}
+                            {# Instance : l'utilisateur peut modifier/supprimer s'il appartient à l'école #}
+                            {% if user.est_administrateur or user.ecole_affectation == niveau.ecole %}
+                            <a href="{% url 'ecoles:niveau_edit' niveau.id %}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'ecoles:niveau_delete' niveau.id %}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">Aucun niveau trouvé</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination -->
+        {% if niveaux.has_other_pages %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if niveaux.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ niveaux.previous_page_number }}">Précédent</a></li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                {% endif %}
+                {% for num in niveaux.paginator.page_range %}
+                {% if niveaux.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% else %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+                {% if niveaux.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ niveaux.next_page_number }}">Suivant</a></li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

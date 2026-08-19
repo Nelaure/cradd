@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de bord - Administrateur{% endblock %}
+
+{% block page_title %}Tableau de bord{% endblock %}
+{% block page_subtitle %}Administrateur{% endblock %}
+
+{% block breadcrumb %}
+<span class="text-muted">Administration</span>
+{% endblock %}
+
+{% block content %}
+<!-- Filtre par province -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card-glass">
+            <div class="card-header"><i class="fas fa-filter me-2"></i>Filtrer par province</div>
+            <div class="card-body">
+                <form method="get" action="{% url 'ecoles:dashboard' %}">
+                    <div class="row g-2">
+                        <div class="col-md-8">
+                            <select name="province" class="form-select">
+                                <option value="">Toutes les provinces</option>
+                                {% for prov in provinces %}
+                                <option value="{{ prov.id }}" {% if province_filter and province_filter.id == prov.id %}selected{% endif %}>
+                                    {{ prov.nom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Filtrer</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card-glass">
+            <div class="card-header"><i class="fas fa-info-circle me-2"></i>Filtre actif</div>
+            <div class="card-body">
+                {% if province_filter %}
+                <span class="badge bg-success fs-6 p-2">Province : {{ province_filter.nom }}</span>
+                <a href="{% url 'ecoles:dashboard' %}" class="btn btn-sm btn-outline-secondary ms-2">Réinitialiser</a>
+                {% else %}
+                <span class="text-muted">Aucun filtre (vue globale)</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques globales -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-school"></i></div>
+            <div class="stat-number">{{ total_ecoles }}</div>
+            <div class="stat-label">Écoles</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+            <div class="stat-number">{{ total_niveaux }}</div>
+            <div class="stat-label">Niveaux</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-number">{{ total_classes }}</div>
+            <div class="stat-label">Classes</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-book"></i></div>
+            <div class="stat-number">{{ total_cours }}</div>
+            <div class="stat-label">Cours</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+            <div class="stat-number">{{ total_eleves }}</div>
+            <div class="stat-label">Élèves</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-number">{{ total_notes }}</div>
+            <div class="stat-label">Notes saisies</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-calculator"></i></div>
+            <div class="stat-number">{{ moyenne_generale_globale|floatformat:2 }}</div>
+            <div class="stat-label">Moyenne générale</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-flag-checkered"></i></div>
+            <div class="stat-number">{{ taux_reussite_global }}%</div>
+            <div class="stat-label">Taux de réussite</div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card-glass">
+            <div class="card-header"><i class="fas fa-chart-bar me-2"></i>Élèves par école</div>
+            <div class="card-body">
+                <canvas id="ecoleChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card-glass">
+            <div class="card-header"><i class="fas fa-chart-pie me-2"></i>Répartition par sexe</div>
+            <div class="card-body">
+                <canvas id="sexeChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card-glass">
+            <div class="card-header"><i class="fas fa-chart-pie me-2"></i>Élèves par niveau</div>
+            <div class="card-body">
+                <canvas id="niveauChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableau des écoles avec performance -->
+<div class="row g-4 mt-2">
+    <div class="col-lg-12">
+        <div class="card-glass">
+            <div class="card-header"><i class="fas fa-table me-2"></i>Performance par école</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover datatable">
+                        <thead>
+                            <tr>
+                                <th>École</th>
+                                <th>Total élèves</th>
+                                <th>Réussis</th>
+                                <th>Taux (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in stats_par_ecole %}
+                            <tr>
+                                <td>{{ stat.nom }}</td>
+                                <td>{{ stat.total }}</td>
+                                <td>{{ stat.reussis }}</td>
+                                <td>
+                                    <span class="badge {% if stat.taux >= 70 %}bg-success{% elif stat.taux >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ stat.taux }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-muted">Aucune école trouvée</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function() {
+        // Graphique Élèves par école
+        const ecoleCtx = document.getElementById('ecoleChart');
+        if (ecoleCtx) {
+            new Chart(ecoleCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ ecole_labels|safe }},
+                    datasets: [{
+                        label: 'Élèves',
+                        data: {{ ecole_counts|safe }},
+                        backgroundColor: 'rgba(46, 125, 80, 0.6)',
+                        borderColor: '#2e7d32',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // Répartition par sexe
+        const sexeCtx = document.getElementById('sexeChart');
+        if (sexeCtx) {
+            new Chart(sexeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ sexe_labels|safe }},
+                    datasets: [{
+                        data: {{ sexe_counts|safe }},
+                        backgroundColor: ['#2e7d32', '#66bb6a', '#a5d6a7'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // Élèves par niveau
+        const niveauCtx = document.getElementById('niveauChart');
+        if (niveauCtx) {
+            new Chart(niveauCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ niveau_labels|safe }},
+                    datasets: [{
+                        data: {{ niveau_counts|safe }},
+                        backgroundColor: ['#2e7d32', '#43a047', '#66bb6a', '#81c784', '#a5d6a7', '#c8e6c9'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    cutout: '70%'
+                }
+            });
+        }
+    })();
+</script>
+{% endblock %}

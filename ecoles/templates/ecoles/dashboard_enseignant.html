@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de bord - Enseignant{% endblock %}
+
+{% block page_title %}Tableau de bord{% endblock %}
+{% block page_subtitle %}Classe : {{ classe_nom }}{% endblock %}
+
+{% block breadcrumb %}
+<span class="text-muted">Enseignant</span>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-xl-4 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+            <div class="stat-number">{{ total_eleves }}</div>
+            <div class="stat-label">Élèves</div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-book"></i></div>
+            <div class="stat-number">{{ total_cours }}</div>
+            <div class="stat-label">Cours</div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-number">{{ total_notes }}</div>
+            <div class="stat-label">Notes saisies</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-6 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-calculator"></i></div>
+            <div class="stat-number">{{ moyenne_classe|floatformat:2 }}</div>
+            <div class="stat-label">Moyenne de la classe</div>
+        </div>
+    </div>
+    <div class="col-xl-6 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-flag-checkered"></i></div>
+            <div class="stat-number">{{ taux_reussite_classe }}%</div>
+            <div class="stat-label">Taux de réussite</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-12">
+        <div class="card-glass">
+            <div class="card-header"><i class="fas fa-users me-2"></i>Classement des élèves</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Élève</th>
+                                <th>Moyenne /20</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in eleves_moyennes %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.nom }}</td>
+                                <td><strong>{{ item.moyenne|floatformat:2 }}</strong></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-muted">Aucune note enregistrée.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

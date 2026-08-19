@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des Provinces{% endblock %}
+{% block page_title %}Gestion des Provinces{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Gestion des Provinces</h1>
+    <a href="{% url 'ecoles:province_create' %}" class="btn btn-primary mb-3">Créer une province</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Code</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for province in provinces %}
+            <tr>
+                <td>{{ province.nom }}</td>
+                <td>{{ province.code }}</td>
+                <td>{{ province.description|truncatechars:50 }}</td>
+                <td>
+                    <a href="{% url 'ecoles:province_edit' province.pk %}" class="btn btn-sm btn-warning">Modifier</a>
+                    <a href="{% url 'ecoles:province_delete' province.pk %}" class="btn btn-sm btn-danger">Supprimer</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">Aucune province.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- ===== PAGINATION INLINE ===== -->
+    <nav aria-label="Pagination des provinces">
+        <ul class="pagination justify-content-center">
+            {% if provinces.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">&laquo;&laquo;</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ provinces.previous_page_number }}">&laquo;</a>
+            </li>
+            {% endif %}
+
+            <li class="page-item active">
+                <span class="page-link">{{ provinces.number }}</span>
+            </li>
+
+            {% if provinces.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ provinces.next_page_number }}">&raquo;</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ provinces.paginator.num_pages }}">&raquo;&raquo;</a>
+            </li>
+            {% endif %}
+        </ul>
+        <div class="text-center text-muted small">
+            Page {{ provinces.number }} sur {{ provinces.paginator.num_pages }}
+        </div>
+    </nav>
+</div>
+{% endblock %}

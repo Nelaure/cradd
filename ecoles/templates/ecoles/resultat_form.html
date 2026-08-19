@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Saisie des résultats - Cradd{% endblock %}
+{% block page_heading %}Saisie des résultats{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-9">
+        <div class="card-glass">
+            <div class="card-header">
+                <i class="fas fa-pen text-gold me-2"></i> Saisie des résultats
+            </div>
+            <div class="card-body">
+                {% if not form %}
+                <!-- ===== MODE SÉLECTION ===== -->
+                <form method="get" id="selectionForm" novalidate>
+                    <div class="row g-3">
+                        {% for field in selection_form %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                            {% if field.name == 'cours' and field.errors %}
+                            <div class="invalid-feedback d-block">Veuillez sélectionner un cours.</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-arrow-right"></i> Saisir les notes
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                {% else %}
+                <!-- ===== MODE SAISIE ===== -->
+                <div class="mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="bg-gold-soft p-3 rounded">
+                                <strong><i class="fas fa-user-graduate text-gold me-1"></i> Élève :</strong>
+                                {{ eleve.get_nom_complet }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="bg-gold-soft p-3 rounded">
+                                <strong><i class="fas fa-book text-gold me-1"></i> Cours :</strong>
+                                {{ cours.nom }} <br>
+                                <small class="text-muted">Coeff. {{ cours.coefficient }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="bg-gold-soft p-3 rounded">
+                                <strong><i class="fas fa-calendar-alt text-gold me-1"></i> Année :</strong>
+                                {{ annee.annee }} <br>
+                                <small class="text-muted">Cycle : {{ cours.cycle_evaluation.get_type_cycle_display|default:"Non défini" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tableau récapitulatif des notes existantes -->
+                {% if resultats_existants %}
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 text-gold">
+                        <i class="fas fa-history me-1"></i> Notes déjà saisies
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="bg-gold-soft">
+                                <tr>
+                                    <th>Cycle</th>
+                                    <th>Évaluation</th>
+                                    <th>Note / Max</th>
+                                    <th>%</th>
+                                    <th>Date de saisie</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in resultats_existants %}
+                                <tr>
+                                    <td>{{ r.evaluation_config.cycle_num }}</td>
+                                    <td>
+                                        {% if r.evaluation_config.type == 'periode' %}
+                                        Période {{ r.evaluation_config.periode_num }}
+                                        {% else %}
+                                        Examen
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ r.points_obtenus }} / {{ r.evaluation_config.points_max }}</td>
+                                    <td>{{ r.pourcentage|floatformat:1 }}%</td>
+                                    <td>{{ r.date_saisie|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Totaux par cycle -->
+                    {% if resultats_par_cycle %}
+                    <div class="mt-2 d-flex flex-wrap gap-2">
+                        {% for cycle, liste in resultats_par_cycle.items %}
+                        {% with total_obtenu=0 total_possible=0 %}
+                        {% for r in liste %}
+                        {% with total_obtenu=total_obtenu|add:r.points_obtenus total_possible=total_possible|add:r.evaluation_config.points_max %}
+                        {% endwith %}
+                        {% endfor %}
+                        <span class="badge bg-gold-soft text-gold p-2">
+                            Cycle {{ cycle }} :
+                            {% if total_possible > 0 %}
+                            {{ total_obtenu|floatformat:1 }} / {{ total_possible }}
+                            ({{ total_obtenu|divisibleby:total_possible|floatformat:1 }}%)
+                            {% else %}
+                            0
+                            {% endif %}
+                        </span>
+                        {% endwith %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <hr>
+                {% else %}
+                <div class="alert alert-info bg-gold-soft border-0">
+                    <i class="fas fa-info-circle text-gold me-2"></i>
+                    Aucune note saisie pour ce cours.
+                </div>
+                {% endif %}
+
+                <!-- Formulaire de saisie/modification -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        {% for field in form %}
+                        {% if field.name != '__error__' %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                                {% if field.help_text %}
+                                <small class="text-muted">({{ field.help_text }})</small>
+                                {% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-warning bg-gold-soft border-0">
+                                <i class="fas fa-exclamation-triangle text-gold me-2"></i>
+                                Aucune évaluation configurée pour ce cours.
+                                Veuillez configurer le cycle d'évaluation dans la modification du cours.
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a href="{% url 'ecoles:resultat_list' %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts de mise à jour dynamique (inchangés) -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Fonction pour mettre à jour les options d'un select via AJAX
+        function updateSelect(url, parentId, targetSelect, paramName) {
+            const value = parentId.value;
+            if (!value) {
+                targetSelect.innerHTML = '<option value="">---------</option>';
+                return;
+            }
+            fetch(`${url}?${paramName}=${value}`)
+                .then(response => response.json())
+                .then(data => {
+                    targetSelect.innerHTML = '<option value="">---------</option>';
+                    data.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.nom_complet || item.nom || `${item.nom} ${item.prenom || ''}`;
+                        targetSelect.appendChild(opt);
+                    });
+                })
+                .catch(error => console.error('Erreur AJAX:', error));
+        }
+
+        // Fonction pour mettre à jour les cours en fonction du niveau et de la classe
+        function updateCours() {
+            const niveauSelect = document.getElementById('id_niveau');
+            const classeSelect = document.getElementById('id_classe');
+            const coursSelect = document.getElementById('id_cours');
+            if (!niveauSelect || !classeSelect || !coursSelect) return;
+
+            const niveauId = niveauSelect.value;
+            const classeId = classeSelect.value;
+
+            if (!niveauId && !classeId) {
+                coursSelect.innerHTML = '<option value="">---------</option>';
+                return;
+            }
+
+            let url = '{% url "ecoles:api_get_cours" %}';
+            let params = [];
+            if (niveauId) params.push(`niveau_id=${niveauId}`);
+            if (classeId) params.push(`classe_id=${classeId}`);
+            const query = params.join('&');
+
+            fetch(`${url}?${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    coursSelect.innerHTML = '<option value="">---------</option>';
+                    data.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.nom;
+                        coursSelect.appendChild(opt);
+                    });
+                })
+                .catch(error => console.error('Erreur AJAX (cours):', error));
+        }
+
+        // Récupération des éléments
+        const ecoleSelect = document.getElementById('id_ecole');
+        const niveauSelect = document.getElementById('id_niveau');
+        const classeSelect = document.getElementById('id_classe');
+        const eleveSelect = document.getElementById('id_eleve');
+        const coursSelect = document.getElementById('id_cours');
+
+        // Rendre le champ cours requis
+        if (coursSelect) {
+            coursSelect.setAttribute('required', 'required');
+        }
+
+        // Événement sur le changement d'école
+        if (ecoleSelect) {
+            ecoleSelect.addEventListener('change', function () {
+                // Réinitialiser les selects dépendants
+                if (niveauSelect) niveauSelect.innerHTML = '<option value="">---------</option>';
+                if (classeSelect) classeSelect.innerHTML = '<option value="">---------</option>';
+                if (eleveSelect) eleveSelect.innerHTML = '<option value="">---------</option>';
+                if (coursSelect) coursSelect.innerHTML = '<option value="">---------</option>';
+
+                // Mettre à jour les niveaux et classes pour cette école
+                if (niveauSelect) updateSelect('{% url "ecoles:api_get_niveaux" %}', this, niveauSelect, 'ecole_id');
+                if (classeSelect) updateSelect('{% url "ecoles:api_get_classes" %}', this, classeSelect, 'ecole_id');
+            });
+        }
+
+        // Événement sur le changement de niveau
+        if (niveauSelect) {
+            niveauSelect.addEventListener('change', function () {
+                const ecoleId = ecoleSelect ? ecoleSelect.value : '';
+                if (this.value) {
+                    let url = '{% url "ecoles:api_get_classes" %}';
+                    let params = `niveau_id=${this.value}`;
+                    if (ecoleId) {
+                        params += `&ecole_id=${ecoleId}`;
+                    }
+                    fetch(`${url}?${params}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (classeSelect) {
+                                classeSelect.innerHTML = '<option value="">---------</option>';
+                                data.forEach(item => {
+                                    const opt = document.createElement('option');
+                                    opt.value = item.id;
+                                    opt.textContent = item.nom;
+                                    classeSelect.appendChild(opt);
+                                });
+                            }
+                        });
+                } else {
+                    if (classeSelect) classeSelect.innerHTML = '<option value="">---------</option>';
+                }
+                // Réinitialiser les élèves
+                if (eleveSelect) eleveSelect.innerHTML = '<option value="">---------</option>';
+                // Mettre à jour les cours
+                updateCours();
+            });
+        }
+
+        // Événement sur le changement de classe
+        if (classeSelect) {
+            classeSelect.addEventListener('change', function () {
+                // Mettre à jour les élèves
+                const value = this.value;
+                if (!value) {
+                    if (eleveSelect) eleveSelect.innerHTML = '<option value="">---------</option>';
+                    updateCours();
+                    return;
+                }
+                fetch(`{% url "ecoles:api_get_eleves" %}?classe_id=${value}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (eleveSelect) {
+                            eleveSelect.innerHTML = '<option value="">---------</option>';
+                            data.forEach(item => {
+                                const opt = document.createElement('option');
+                                opt.value = item.id;
+                                opt.textContent = item.nom_complet || `${item.nom} ${item.prenom || ''}`;
+                                eleveSelect.appendChild(opt);
+                            });
+                        }
+                    });
+                // Mettre à jour les cours en fonction du niveau et de la classe
+                updateCours();
+            });
+        }
+
+        // Initialisation : mettre à jour les cours si des valeurs sont déjà sélectionnées
+        if (niveauSelect || classeSelect) {
+            updateCours();
+        }
+
+        // Validation avant soumission pour s'assurer que le cours est sélectionné
+        const form = document.getElementById('selectionForm');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                const coursVal = coursSelect ? coursSelect.value : '';
+                if (!coursVal) {
+                    e.preventDefault();
+                    if (coursSelect) coursSelect.classList.add('is-invalid');
+                    alert('Veuillez sélectionner un cours.');
+                } else {
+                    if (coursSelect) coursSelect.classList.remove('is-invalid');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

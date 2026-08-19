@@ -1,0 +1,357 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Mise en évidence des élèves sélectionnés hors du filtre courant */
+    .eleve-hors-filtre {
+        font-style: italic;
+        color: #6c757d;
+        background-color: #f8f9fa;
+    }
+
+        .eleve-hors-filtre::before {
+            content: "🔒 ";
+            font-size: 0.8em;
+        }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="card-glass">
+            <div class="card-header">
+                <i class="fas fa-user-cog text-gold me-2"></i> {{ title }}
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate id="userForm">
+                    {% csrf_token %}
+
+                    <!-- Champs en deux colonnes -->
+                    <div class="row g-3">
+                        {% for field in form %}
+                        {% if field.name != 'est_actif' and field.name != 'eleves_associes' %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <!-- Champ eleves_associes -->
+                    <div class="mt-3">
+                        <label for="{{ form.eleves_associes.id_for_label }}" class="form-label">{{ form.eleves_associes.label }}</label>
+                        {{ form.eleves_associes }}
+                        {% if form.eleves_associes.errors %}
+                        <div class="text-danger small">{{ form.eleves_associes.errors|striptags }}</div>
+                        {% endif %}
+                        <div class="form-text">
+                            <span class="badge bg-info" id="selectedCount">0</span> élève(s) sélectionné(s).<br>
+                            <small>
+                                Maintenez <kbd>Ctrl</kbd> (ou <kbd>Cmd</kbd>) pour sélectionner plusieurs élèves.<br>
+                                Changez les filtres pour voir d'autres élèves, vos sélections sont conservées.
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Champ est_actif -->
+                    {% if 'est_actif' in form.fields %}
+                    <div class="mt-3">
+                        <div class="form-check">
+                            {{ form.est_actif }}
+                            <label class="form-check-label" for="{{ form.est_actif.id_for_label }}">
+                                {{ form.est_actif.label }}
+                            </label>
+                            {% if form.est_actif.errors %}
+                            <div class="text-danger small">{{ form.est_actif.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Boutons -->
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Éléments du DOM
+        const roleField = document.getElementById('id_role');
+        const ecoleField = document.getElementById('id_ecole_affectation');
+        const niveauField = document.getElementById('id_niveau_affectation');
+        const classeField = document.getElementById('id_classe_affectation');
+        const elevesField = document.getElementById('id_eleves_associes');
+
+        // Cache des élèves déjà chargés (pour éviter des appels inutiles)
+        let elevesCache = {}; // id -> {id, nom_complet, ecole, niveau, classe}
+
+        // Fonction pour mettre à jour le compteur de sélection
+        function updateSelectedCount() {
+            const count = elevesField.selectedOptions.length;
+            document.getElementById('selectedCount').textContent = count;
+        }
+
+        // Récupérer les IDs sélectionnés actuels
+        function getSelectedIds() {
+            return Array.from(elevesField.selectedOptions).map(opt => opt.value);
+        }
+
+        // Réappliquer la sélection sur les options correspondant aux IDs donnés
+        function applySelection(ids) {
+            const options = elevesField.options;
+            for (let i = 0; i < options.length; i++) {
+                options[i].selected = ids.includes(options[i].value);
+            }
+            updateSelectedCount();
+        }
+
+        // Fonction principale : mettre à jour la liste des élèves
+        function updateEleves(ecoleId, niveauId, classeId, preserveSelection = true) {
+            // Récupérer les IDs sélectionnés avant toute modification
+            let selectedIds = preserveSelection ? getSelectedIds() : [];
+
+            // Construire l'URL de l'API
+            let url = '/api/eleves/?';
+            if (ecoleId) url += 'ecole_id=' + ecoleId + '&';
+            if (niveauId) url += 'niveau_id=' + niveauId + '&';
+            if (classeId) url += 'classe_id=' + classeId + '&';
+            url = url.replace(/[?&]$/, '');
+
+            // Si aucun filtre, on charge tous les élèves
+            if (!ecoleId && !niveauId && !classeId) {
+                url = '/api/eleves/';
+            }
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // Mettre à jour le cache avec les nouveaux élèves
+                    data.forEach(eleve => {
+                        elevesCache[eleve.id] = eleve;
+                    });
+
+                    // Construire la nouvelle liste d'options
+                    // On va conserver toutes les options déjà présentes (pour garder les sélections hors filtre)
+                    // mais on va ajouter/supprimer les options en fonction des données reçues.
+                    // Pour éviter de supprimer des options sélectionnées, on va faire un merge.
+
+                    // On commence par récupérer les IDs actuels des options (pour savoir lesquelles supprimer)
+                    const currentOptionIds = new Set();
+                    for (let i = 0; i < elevesField.options.length; i++) {
+                        const val = elevesField.options[i].value;
+                        if (val) currentOptionIds.add(val);
+                    }
+
+                    // On va créer un ensemble des IDs des élèves à afficher (ceux de la réponse)
+                    const newIds = new Set(data.map(e => String(e.id)));
+
+                    // Si on est en mode "preserveSelection", on garde les IDs sélectionnés même s'ils ne sont pas dans la réponse
+                    let idsToKeep = new Set(selectedIds);
+                    // On ajoute les IDs de la réponse
+                    newIds.forEach(id => idsToKeep.add(id));
+
+                    // Maintenant, idsToKeep contient tous les IDs qui doivent être présents dans le select
+                    // (ceux de la réponse + les sélectionnés, qu'ils soient ou non dans la réponse)
+
+                    // On va reconstruire la liste des options en fonction de idsToKeep
+                    const fragment = document.createDocumentFragment();
+
+                    // Option vide
+                    const emptyOpt = document.createElement('option');
+                    emptyOpt.value = '';
+                    emptyOpt.textContent = '---------';
+                    fragment.appendChild(emptyOpt);
+
+                    // Trier les IDs par nom (pour un affichage cohérent)
+                    const sortedIds = Array.from(idsToKeep).sort((a, b) => {
+                        const nameA = elevesCache[a] ? elevesCache[a].nom_complet || '' : '';
+                        const nameB = elevesCache[b] ? elevesCache[b].nom_complet || '' : '';
+                        return nameA.localeCompare(nameB);
+                    });
+
+                    sortedIds.forEach(id => {
+                        // Si l'élève est dans le cache, on crée l'option
+                        if (elevesCache[id]) {
+                            const eleve = elevesCache[id];
+                            const option = document.createElement('option');
+                            option.value = id;
+                            // Ajouter un indicateur si l'élève ne fait pas partie des filtres actuels
+                            if (newIds.has(id) === false) {
+                                option.textContent = `${eleve.nom_complet} (hors filtre actuel)`;
+                                option.className = 'eleve-hors-filtre';
+                            } else {
+                                option.textContent = eleve.nom_complet;
+                            }
+                            // Si l'ID est dans selectedIds, on le marque selected (mais on le fera après)
+                            if (selectedIds.includes(id)) {
+                                option.selected = true;
+                            }
+                            fragment.appendChild(option);
+                        } else {
+                            // Cas rare : l'ID est sélectionné mais pas dans le cache (peut arriver si on a chargé la page avec des sélections initiales)
+                            // On va faire une requête supplémentaire pour cet élève ? Pour simplifier, on ignore.
+                            console.warn(`Élève ${id} non trouvé dans le cache.`);
+                        }
+                    });
+
+                    // Remplacer le contenu du select
+                    elevesField.innerHTML = '';
+                    elevesField.appendChild(fragment);
+
+                    // Réappliquer la sélection (au cas où)
+                    applySelection(selectedIds);
+
+                    // Mettre à jour le compteur
+                    updateSelectedCount();
+                })
+                .catch(error => console.error('Erreur chargement élèves:', error));
+        }
+
+        // Fonctions pour les cascades (niveaux et classes)
+        function loadNiveaux(ecoleId, selectedNiveauId = null) {
+            if (!niveauField) return;
+            fetch(`/api/niveaux/?ecole_id=${ecoleId}`)
+                .then(response => response.json())
+                .then(data => {
+                    niveauField.innerHTML = '<option value="">---------</option>';
+                    data.forEach(function (niveau) {
+                        const option = document.createElement('option');
+                        option.value = niveau.id;
+                        option.text = niveau.nom;
+                        if (selectedNiveauId && String(selectedNiveauId) === String(niveau.id)) {
+                            option.selected = true;
+                        }
+                        niveauField.appendChild(option);
+                    });
+                    // Déclencher le chargement des classes si un niveau est sélectionné
+                    if (selectedNiveauId) {
+                        loadClasses(ecoleId, selectedNiveauId);
+                    } else {
+                        classeField.innerHTML = '<option value="">---------</option>';
+                    }
+                })
+                .catch(error => console.error('Erreur chargement niveaux:', error));
+        }
+
+        function loadClasses(ecoleId, niveauId, selectedClasseId = null) {
+            if (!classeField) return;
+            fetch(`/api/classes/?ecole_id=${ecoleId}&niveau_id=${niveauId}`)
+                .then(response => response.json())
+                .then(data => {
+                    classeField.innerHTML = '<option value="">---------</option>';
+                    data.forEach(function (classe) {
+                        const option = document.createElement('option');
+                        option.value = classe.id;
+                        option.text = classe.nom;
+                        if (selectedClasseId && String(selectedClasseId) === String(classe.id)) {
+                            option.selected = true;
+                        }
+                        classeField.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Erreur chargement classes:', error));
+        }
+
+        // --- Gestion des événements ---
+
+        // Changement d'école
+        ecoleField.addEventListener('change', function () {
+            const ecoleId = this.value;
+            if (ecoleId) {
+                loadNiveaux(ecoleId);
+                niveauField.value = '';
+                classeField.innerHTML = '<option value="">---------</option>';
+                // Mettre à jour les élèves avec le nouveau filtre école, en conservant les sélections
+                updateEleves(ecoleId, '', '', true);
+            } else {
+                niveauField.innerHTML = '<option value="">---------</option>';
+                classeField.innerHTML = '<option value="">---------</option>';
+                // Charger tous les élèves (pas de filtre)
+                updateEleves('', '', '', true);
+            }
+        });
+
+        // Changement de niveau
+        niveauField.addEventListener('change', function () {
+            const ecoleId = ecoleField.value;
+            const niveauId = this.value;
+            if (ecoleId && niveauId) {
+                loadClasses(ecoleId, niveauId);
+                updateEleves(ecoleId, niveauId, '', true);
+            } else if (ecoleId) {
+                classeField.innerHTML = '<option value="">---------</option>';
+                updateEleves(ecoleId, '', '', true);
+            } else {
+                classeField.innerHTML = '<option value="">---------</option>';
+                updateEleves('', '', '', true);
+            }
+        });
+
+        // Changement de classe
+        classeField.addEventListener('change', function () {
+            const ecoleId = ecoleField.value;
+            const niveauId = niveauField.value;
+            const classeId = this.value;
+            if (ecoleId) {
+                updateEleves(ecoleId, niveauId, classeId, true);
+            } else {
+                updateEleves('', '', '', true);
+            }
+        });
+
+        // Initialisation
+        const initialEcoleId = ecoleField.value;
+        const initialNiveauId = niveauField.value;
+        const initialClasseId = classeField.value;
+
+        // Charger initialement les données
+        if (initialEcoleId) {
+            loadNiveaux(initialEcoleId, initialNiveauId);
+            if (initialNiveauId) {
+                loadClasses(initialEcoleId, initialNiveauId, initialClasseId);
+            }
+            // Remplir le cache avec les élèves sélectionnés initialement (pour qu'ils soient affichés)
+            // On va d'abord charger tous les élèves pour avoir le cache, puis on filtre
+            // Mais updateEleves gère le cache automatiquement via l'API.
+            updateEleves(initialEcoleId, initialNiveauId, initialClasseId, true);
+        } else {
+            // Aucune école : charger tous les élèves
+            updateEleves('', '', '', true);
+        }
+
+        // Mettre à jour le compteur au chargement
+        updateSelectedCount();
+
+        // Option : masquer/afficher les champs selon le rôle (pour plus de clarté)
+        function toggleFieldsByRole() {
+            const role = roleField.value;
+            // On peut ajouter des indications, mais pas nécessaire
+        }
+        if (roleField) {
+            roleField.addEventListener('change', toggleFieldsByRole);
+            toggleFieldsByRole();
+        }
+    });
+</script>
+{% endblock %}

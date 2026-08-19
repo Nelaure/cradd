@@ -1,0 +1,144 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Liste des résultats - CRADD{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-chart-bar"></i> Résultats</h1>
+    <div>
+        <a href="{% url 'academics:resultat_create' %}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Saisir des résultats
+        </a>
+    </div>
+</div>
+
+<!-- Filtres -->
+<form method="GET" class="card p-3 mb-4">
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label for="ecole" class="form-label">École</label>
+            <select name="ecole" id="ecole" class="form-select">
+                <option value="">Toutes</option>
+                {% for ecole in ecoles %}
+                    <option value="{{ ecole.id }}" {% if selected_ecole == ecole.id|stringformat:"s" %}selected{% endif %}>{{ ecole.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="classe" class="form-label">Classe</label>
+            <select name="classe" id="classe" class="form-select">
+                <option value="">Toutes</option>
+                {% for classe in classes %}
+                    <option value="{{ classe.id }}" {% if selected_classe == classe.id|stringformat:"s" %}selected{% endif %}>{{ classe.nom_complet }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="cours" class="form-label">Cours</label>
+            <select name="cours" id="cours" class="form-select">
+                <option value="">Tous</option>
+                {% for cours in cours %}
+                    <option value="{{ cours.id }}" {% if selected_cours == cours.id|stringformat:"s" %}selected{% endif %}>{{ cours.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="annee" class="form-label">Année</label>
+            <select name="annee" id="annee" class="form-select">
+                <option value="">Toutes</option>
+                {% for annee in annees %}
+                    <option value="{{ annee.id }}" {% if selected_annee == annee.id|stringformat:"s" %}selected{% endif %}>{{ annee.annee }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="statut" class="form-label">Statut</label>
+            <select name="statut" id="statut" class="form-select">
+                <option value="">Tous</option>
+                <option value="reussite" {% if selected_statut == 'reussite' %}selected{% endif %}>Réussite (≥50%)</option>
+                <option value="echec" {% if selected_statut == 'echec' %}selected{% endif %}>Échec (<50%)</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="fas fa-filter"></i> Filtrer
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Tableau des résultats -->
+{% if resultats %}
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Élève</th>
+            <th>Cours</th>
+            <th>Évaluation</th>
+            <th>Points</th>
+            <th>%</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for res in resultats %}
+        <tr>
+            <td>{{ res.eleve.get_nom_complet }}</td>
+            <td>{{ res.cours.nom }}</td>
+            <td>{{ res.evaluation_config }}</td>
+            <td>{{ res.points_obtenus }}/{{ res.points_max }}</td>
+            <td>
+                <span class="badge {% if res.pourcentage >= 70 %}bg-success{% elif res.pourcentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                    {{ res.pourcentage }}%
+                </span>
+            </td>
+            <td>
+                <a href="{% url 'academics:resultat_edit' res.pk %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-edit"></i>
+                </a>
+                <a href="{% url 'academics:resultat_delete' res.pk %}" class="btn btn-sm btn-danger">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% include "includes/pagination.html" with page_obj=resultats %}
+{% elif mode_sans_note %}
+<!-- Mode élèves sans note -->
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> Liste des élèves sans note pour ce cours/année
+</div>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Élève</th>
+            <th>Classe</th>
+            <th>École</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for eleve in eleves_sans_note %}
+        <tr>
+            <td>{{ eleve.get_nom_complet }}</td>
+            <td>{{ eleve.classe.nom_complet }}</td>
+            <td>{{ eleve.ecole.nom }}</td>
+            <td>
+                <a href="{% url 'academics:resultat_create' %}?eleve={{ eleve.id }}&cours={{ selected_cours }}&annee={{ selected_annee }}" class="btn btn-sm btn-success">
+                    <i class="fas fa-pen"></i> Saisir
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">Aucun élève sans note pour ces critères.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info">Aucun résultat trouvé.</div>
+{% endif %}
+{% endblock %}

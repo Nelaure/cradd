@@ -1,0 +1,211 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\user\\source\\repos\\cradd\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\cradd\\settings.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:cradd\\settings.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\accounts\\views.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:accounts\\views.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\password_reset_verify.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:accounts\\templates\\accounts\\password_reset_verify.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\password_reset_request.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:accounts\\templates\\accounts\\password_reset_request.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\login.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:accounts\\templates\\accounts\\login.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\templates\\base.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:templates\\base.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\change_password.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:accounts\\templates\\accounts\\change_password.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\accounts\\middleware.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:accounts\\middleware.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\accounts\\urls.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:accounts\\urls.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\accounts\\forms.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:accounts\\forms.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\accounts\\models.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:accounts\\models.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{e8b06f52-6d01-11d2-aa7d-00c04f990343}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "login.html",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\login.html",
+              "RelativeDocumentMoniker": "accounts\\templates\\accounts\\login.html",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\login.html",
+              "RelativeToolTip": "accounts\\templates\\accounts\\login.html",
+              "ViewState": "AgIAACgBAAAAAAAAAAAqwDgBAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-08-02T09:54:14.893Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "settings.py",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\cradd\\settings.py",
+              "RelativeDocumentMoniker": "cradd\\settings.py",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\cradd\\settings.py",
+              "RelativeToolTip": "cradd\\settings.py",
+              "ViewState": "AgIAAGcAAAAAAAAAAAAIwHEAAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-08-02T09:37:17.971Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "password_reset_request.html",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\password_reset_request.html",
+              "RelativeDocumentMoniker": "accounts\\templates\\accounts\\password_reset_request.html",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\password_reset_request.html",
+              "RelativeToolTip": "accounts\\templates\\accounts\\password_reset_request.html",
+              "ViewState": "AgIAABkAAAAAAAAAAAAqwCkAAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-08-02T09:32:53.459Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "password_reset_verify.html",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\password_reset_verify.html",
+              "RelativeDocumentMoniker": "accounts\\templates\\accounts\\password_reset_verify.html",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\password_reset_verify.html",
+              "RelativeToolTip": "accounts\\templates\\accounts\\password_reset_verify.html",
+              "ViewState": "AgIAAC8AAAAAAAAAAAAqwD8AAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-08-02T09:33:35.339Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "views.py",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\views.py",
+              "RelativeDocumentMoniker": "accounts\\views.py",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\views.py",
+              "RelativeToolTip": "accounts\\views.py",
+              "ViewState": "AgIAAOABAAAAAAAAAAAIwO0BAAA+AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-08-02T09:29:42.372Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "base.html",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\templates\\base.html",
+              "RelativeDocumentMoniker": "templates\\base.html",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\templates\\base.html",
+              "RelativeToolTip": "templates\\base.html",
+              "ViewState": "AgIAACsFAAAAAAAAAAAqwDsFAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-08-02T09:39:21.551Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "change_password.html",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\change_password.html",
+              "RelativeDocumentMoniker": "accounts\\templates\\accounts\\change_password.html",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\templates\\accounts\\change_password.html",
+              "RelativeToolTip": "accounts\\templates\\accounts\\change_password.html",
+              "ViewState": "AgIAAB0AAAAAAAAAAAAqwC0AAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-08-02T09:34:10.207Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "middleware.py",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\middleware.py",
+              "RelativeDocumentMoniker": "accounts\\middleware.py",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\middleware.py",
+              "RelativeToolTip": "accounts\\middleware.py",
+              "ViewState": "AgIAAE4AAAAAAAAAAAAIwFwAAAAXAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-08-02T09:31:02.266Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "urls.py",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\urls.py",
+              "RelativeDocumentMoniker": "accounts\\urls.py",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\urls.py",
+              "RelativeToolTip": "accounts\\urls.py",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAIwBgAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-08-02T09:30:23.034Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "forms.py",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\forms.py",
+              "RelativeDocumentMoniker": "accounts\\forms.py",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\forms.py",
+              "RelativeToolTip": "accounts\\forms.py",
+              "ViewState": "AgIAACUBAAAAAAAAAAAIwDIBAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-08-02T09:29:08.745Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "models.py",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\models.py",
+              "RelativeDocumentMoniker": "accounts\\models.py",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\accounts\\models.py",
+              "RelativeToolTip": "accounts\\models.py",
+              "ViewState": "AgIAAIsAAAAAAAAAAAAIwJgAAABwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-08-02T09:28:26.864Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

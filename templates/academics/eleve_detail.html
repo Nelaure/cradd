@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Détail de l'élève</h2>
+<div class="card">
+    <div class="card-body">
+        <p><strong>Matricule :</strong> {{ eleve.matricule }}</p>
+        <p><strong>Nom :</strong> {{ eleve.get_nom_complet }}</p>
+        <p><strong>Classe :</strong> {{ eleve.classe }}</p>
+        <p><strong>École :</strong> {{ eleve.ecole.nom }}</p>
+        <p><strong>Sexe :</strong> {{ eleve.get_sexe_display }}</p>
+        <p><strong>Date de naissance :</strong> {{ eleve.date_naissance|default:"-" }}</p>
+    </div>
+</div>
+<a href="{% url 'academics:eleve_list' %}" class="btn btn-secondary">Retour</a>
+{% endblock %}

@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+{% load static %}
+{% load eleve_extras %}
+
+{% block title %}Détail de l'élève - {{ eleve.get_nom_complet }}{% endblock %}
+{% block page_title %}{{ eleve.get_nom_complet }}{% endblock %}
+{% block page_subtitle %}Détail du parcours scolaire{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Colonne gauche : photo et infos personnelles -->
+    <div class="col-md-4">
+        <div class="card-glass text-center p-4">
+            {% if eleve.photo %}
+            <img src="{{ eleve.photo.url }}" alt="Photo" class="img-fluid rounded-circle mb-3" style="max-width: 150px; border: 4px solid var(--green-pale);">
+            {% else %}
+            <i class="fas fa-user-circle fa-5x text-gold mb-3"></i>
+            {% endif %}
+            <h4 class="fw-700">{{ eleve.get_nom_complet }}</h4>
+            <p><span class="badge bg-gold-soft text-gold">{{ eleve.get_sexe_display }}</span></p>
+            <p><i class="fas fa-id-card text-gold me-1"></i> {{ eleve.matricule }}</p>
+            <p><i class="fas fa-calendar-alt text-gold me-1"></i> {{ eleve.date_naissance|date:"d/m/Y"|default:"Non renseignée" }}</p>
+            <p><i class="fas fa-map-marker-alt text-gold me-1"></i> {{ eleve.lieu_naissance|default:"-" }}</p>
+            <hr>
+            <a href="{% url 'eleves:eleve_edit' eleve.id %}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+        </div>
+    </div>
+
+    <!-- Colonne droite -->
+    <div class="col-md-8">
+        <!-- Informations actuelles -->
+        <div class="card-glass mb-4">
+            <div class="card-header">
+                <i class="fas fa-info-circle text-gold me-2"></i> Situation actuelle
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6"><strong>École</strong></div>
+                    <div class="col-6">{{ eleve.ecole.nom }}</div>
+                    <div class="col-6"><strong>Niveau</strong></div>
+                    <div class="col-6">{{ eleve.niveau.nom }}</div>
+                    <div class="col-6"><strong>Classe</strong></div>
+                    <div class="col-6">{{ eleve.classe.nom }}</div>
+                    <div class="col-6"><strong>Année scolaire</strong></div>
+                    <div class="col-6">{{ eleve.annee_scolaire.annee }}</div>
+                    <div class="col-6"><strong>Date d'inscription</strong></div>
+                    <div class="col-6">{{ eleve.date_inscription|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parcours et résultats -->
+        <div class="card-glass">
+            <div class="card-header">
+                <i class="fas fa-history text-gold me-2"></i> Parcours scolaire
+            </div>
+            <div class="card-body">
+                {% if resultats_par_annee %}
+                <div class="accordion" id="accordionParcours">
+                    {% for annee_id, data in resultats_par_annee.items %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading{{ annee_id }}">
+                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ annee_id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ annee_id }}">
+                                <strong>{{ data.annee.annee }}</strong>
+                                {% if data.parcours %}
+                                <span class="badge bg-gold-soft text-gold ms-2">{{ data.parcours.ecole.nom }}</span>
+                                <span class="badge bg-secondary ms-2">{{ data.parcours.classe.nom }}</span>
+                                {% endif %}
+                                {% if data.annuel_data.pourcentage_general is not None %}
+                                <span class="badge {% if data.annuel_data.pourcentage_general >= 70 %}bg-success{% elif data.annuel_data.pourcentage_general >= 50 %}bg-warning{% else %}bg-danger{% endif %} ms-2">
+                                    {{ data.annuel_data.pourcentage_general|floatformat:1 }}%
+                                </span>
+                                {% endif %}
+                            </button>
+                        </h2>
+                        <div id="collapse{{ annee_id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" data-bs-parent="#accordionParcours">
+                            <div class="accordion-body">
+                                {% if data.resultats_par_cours %}
+                                {% for cycle_info in data.cycles_info %}
+                                <h6 class="text-gold">
+                                    <i class="fas fa-sync-alt me-1"></i> Cycle {{ cycle_info.cycle_num }}
+                                    {% if cycle_info.masque_parent %}
+                                    <span class="badge bg-secondary ms-2">Masqué</span>
+                                    {% endif %}
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm">
+                                        <thead class="bg-gold-soft">
+                                            <tr>
+                                                <th>Matière</th>
+                                                {% for periode in cycle_info.periodes %}
+                                                <th class="text-center">
+                                                    Période {{ periode }}
+                                                    {% if user_can_edit_visibility %}
+                                                    {% with key=cycle_info.cycle_num|add:"_periode_"|add:periode %}
+                                                    {% with masque=data.masques_colonnes_globaux|default:False %}
+                                                    <button class="btn btn-sm btn-outline-secondary toggle-colonne"
+                                                            data-eleve="{{ eleve.id }}"
+                                                            data-annee="{{ annee_id }}"
+                                                            data-cours="all"
+                                                            data-cycle="{{ cycle_info.cycle_num }}"
+                                                            data-type="periode"
+                                                            data-periode="{{ periode }}"
+                                                            title="Masquer/Rendre visible cette colonne">
+                                                        <i class="fas {% if masque %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
+                                                    </button>
+                                                    {% endwith %}
+                                                    {% endwith %}
+                                                    {% endif %}
+                                                </th>
+                                                {% endfor %}
+                                                <th class="text-center">
+                                                    Examen
+                                                    {% if user_can_edit_visibility %}
+                                                    {% with key=cycle_info.cycle_num|add:"_examen_None" %}
+                                                    {% with masque=data.masques_colonnes_globaux|default:False %}
+                                                    <button class="btn btn-sm btn-outline-secondary toggle-colonne"
+                                                            data-eleve="{{ eleve.id }}"
+                                                            data-annee="{{ annee_id }}"
+                                                            data-cours="all"
+                                                            data-cycle="{{ cycle_info.cycle_num }}"
+                                                            data-type="examen"
+                                                            data-periode="None"
+                                                            title="Masquer/Rendre visible cette colonne">
+                                                        <i class="fas {% if masque %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
+                                                    </button>
+                                                    {% endwith %}
+                                                    {% endwith %}
+                                                    {% endif %}
+                                                </th>
+                                                <th class="text-center">Total (pts)</th>
+                                                <th class="text-center">%</th>
+                                                {% if user_can_edit_visibility %}
+                                                <th class="text-center">Visibilité</th>
+                                                {% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for cours_id, cours_data in data.resultats_par_cours.items %}
+                                            <tr>
+                                                <td><strong>{{ cours_data.cours_nom }}</strong></td>
+                                                {% for periode in cycle_info.periodes %}
+                                                <td class="text-center">
+                                                    {% for eval in cours_data.evaluations %}
+                                                    {% if eval.cycle == cycle_info.cycle_num and eval.type == 'periode' and eval.periode == periode %}
+                                                    {% if eval.colonne_masque %}
+                                                    <span class="text-muted">Masqué</span>
+                                                    {% elif eval.est_masque_pour_parent %}
+                                                    <span class="text-muted">Masqué</span>
+                                                    {% elif eval.points_obtenus is not None %}
+                                                    {{ eval.points_obtenus }}/{{ eval.points_max }}
+                                                    {% if eval.masque %}
+                                                    <i class="fas fa-eye-slash text-danger ms-1" title="Masqué"></i>
+                                                    {% endif %}
+                                                    {% else %}
+                                                    -
+                                                    {% endif %}
+                                                    {% endif %}
+                                                    {% empty %}
+                                                    -
+                                                    {% endfor %}
+                                                </td>
+                                                {% endfor %}
+                                                <td class="text-center">
+                                                    {% for eval in cours_data.evaluations %}
+                                                    {% if eval.cycle == cycle_info.cycle_num and eval.type == 'examen' %}
+                                                    {% if eval.colonne_masque %}
+                                                    <span class="text-muted">Masqué</span>
+                                                    {% elif eval.est_masque_pour_parent %}
+                                                    <span class="text-muted">Masqué</span>
+                                                    {% elif eval.points_obtenus is not None %}
+                                                    {{ eval.points_obtenus }}/{{ eval.points_max }}
+                                                    {% if eval.masque %}
+                                                    <i class="fas fa-eye-slash text-danger ms-1" title="Masqué"></i>
+                                                    {% endif %}
+                                                    {% else %}
+                                                    -
+                                                    {% endif %}
+                                                    {% endif %}
+                                                    {% empty %}
+                                                    -
+                                                    {% endfor %}
+                                                </td>
+                                                <!-- Totaux pré-calculés -->
+                                                <td class="text-center">
+                                                    {% with totaux=cours_data.totaux_cycle %}
+                                                    {% if totaux.masque %}
+                                                    <span class="text-muted">Masqué</span>
+                                                    {% elif totaux.total_possible > 0 %}
+                                                    {{ totaux.total_obtenu }}/{{ totaux.total_possible }}
+                                                    {% else %}
+                                                    -
+                                                    {% endif %}
+                                                    {% endwith %}
+                                                </td>
+                                                <td class="text-center">
+                                                    {% with totaux=cours_data.totaux_cycle %}
+                                                    {% if totaux.masque %}
+                                                    <span class="text-muted">Masqué</span>
+                                                    {% elif totaux.total_possible > 0 %}
+                                                    {{ totaux.pourcentage|floatformat:1 }}%
+                                                    {% else %}
+                                                    -
+                                                    {% endif %}
+                                                    {% endwith %}
+                                                </td>
+                                                {% if user_can_edit_visibility %}
+                                                <td class="text-center">
+                                                    <button class="btn btn-sm btn-outline-secondary toggle-visibility"
+                                                            data-eleve="{{ eleve.id }}"
+                                                            data-annee="{{ annee_id }}"
+                                                            data-cours="{{ cours_id }}"
+                                                            data-cycle="{{ cycle_info.cycle_num }}"
+                                                            title="Basculer la visibilité de toutes les évaluations du cycle">
+                                                        {% with masque=cours_data.masques_par_cycle|default:False %}
+                                                        {% if masque %}
+                                                        <i class="fas fa-eye-slash"></i>
+                                                        {% else %}
+                                                        <i class="fas fa-eye"></i>
+                                                        {% endif %}
+                                                        {% endwith %}
+                                                    </button>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+
+                                            <!-- Lignes TOTAL globales -->
+                                            <tr class="table-info">
+                                                <td><strong>Total (pts)</strong></td>
+                                                {% for total in cycle_info.totals %}
+                                                <td class="text-center">
+                                                    {% if total.masque %}
+                                                    <span class="text-muted">Masqué</span>
+                                                    {% elif total.total_possible > 0 %}
+                                                    {{ total.total_obtenu }}/{{ total.total_possible }}
+                                                    {% else %}
+                                                    -
+                                                    {% endif %}
+                                                </td>
+                                                {% endfor %}
+                                                <td></td>
+                                                <td></td>
+                                                {% if user_can_edit_visibility %}
+                                                <td></td>{% endif %}
+                                            </tr>
+                                            <tr class="table-secondary">
+                                                <td><strong>Total (%)</strong></td>
+                                                {% for total in cycle_info.totals %}
+                                                <td class="text-center">
+                                                    {% if total.masque %}
+                                                    <span class="text-muted">Masqué</span>
+                                                    {% elif total.total_possible > 0 %}
+                                                    {{ total.pourcentage|floatformat:1 }}%
+                                                    {% else %}
+                                                    -
+                                                    {% endif %}
+                                                </td>
+                                                {% endfor %}
+                                                <td></td>
+                                                <td></td>
+                                                {% if user_can_edit_visibility %}
+                                                <td></td>{% endif %}
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% endfor %}
+
+                                <!-- Résultat annuel -->
+                                {% if data.annuel_data.pourcentage_general is not None %}
+                                <div class="bg-gold-soft p-2 mt-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span><i class="fas fa-calculator text-gold me-2"></i> Pourcentage général</span>
+                                        <span class="fw-bold fs-4 {% if data.annuel_data.pourcentage_general >= 70 %}text-success{% elif data.annuel_data.pourcentage_general >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                                            {{ data.annuel_data.pourcentage_general|floatformat:1 }}%
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% else %}
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-info-circle me-2"></i> Aucun résultat enregistré pour cette année.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-info-circle me-2"></i> Aucun parcours enregistré.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Bulletins -->
+        <div class="card-glass mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-file-alt text-gold me-2"></i> Bulletins</span>
+                <a href="{% url 'eleves:bulletin_create' %}?eleve={{ eleve.id }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-upload"></i> Ajouter
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="bg-gold-soft">
+                            <tr>
+                                <th>Année</th>
+                                <th>Fichier</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in bulletins %}
+                            <tr>
+                                <td>{{ b.annee_scolaire.annee }}</td>
+                                <td><a href="{{ b.fichier.url }}" target="_blank" class="text-gold"><i class="fas fa-file-pdf"></i> Voir</a></td>
+                                <td>{{ b.date_upload|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <form method="post" action="{% url 'eleves:bulletin_delete' b.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger btn-delete"><i class="fas fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted">Aucun bulletin</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    (function () {
+        // Bascule de visibilité d'un cycle entier (toutes les évaluations)
+        document.querySelectorAll('.toggle-visibility').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const eleveId = this.dataset.eleve;
+                const anneeId = this.dataset.annee;
+                const coursId = this.dataset.cours;
+                const cycleNum = this.dataset.cycle;
+                const icon = this.querySelector('i');
+
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+                const url = `{% url 'eleves:toggle_masquage' %}?eleve_id=${eleveId}&annee_id=${anneeId}&cours_id=${coursId}&cycle_num=${cycleNum}`;
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    },
+                    credentials: 'same-origin'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.masque) {
+                                icon.className = 'fas fa-eye-slash';
+                                this.title = 'Masqué';
+                            } else {
+                                icon.className = 'fas fa-eye';
+                                this.title = 'Visible';
+                            }
+                            setTimeout(() => location.reload(), 500);
+                        } else {
+                            alert('Erreur : ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur réseau:', error);
+                        alert('Une erreur réseau est survenue.');
+                    });
+            });
+        });
+
+        // Bascule de visibilité d'une colonne (période ou examen) pour tous les cours
+        document.querySelectorAll('.toggle-colonne').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const eleveId = this.dataset.eleve;
+                const anneeId = this.dataset.annee;
+                const coursId = this.dataset.cours;  // 'all'
+                const cycleNum = this.dataset.cycle;
+                const typeCol = this.dataset.type;
+                const periodeNum = this.dataset.periode;
+                const icon = this.querySelector('i');
+
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+                const url = `{% url 'eleves:toggle_colonne_masquage' %}?eleve_id=${eleveId}&annee_id=${anneeId}&cycle_num=${cycleNum}&type=${typeCol}&periode_num=${periodeNum}`;
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    },
+                    credentials: 'same-origin'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.masque) {
+                                icon.className = 'fas fa-eye-slash';
+                                this.title = 'Colonne masquée';
+                            } else {
+                                icon.className = 'fas fa-eye';
+                                this.title = 'Colonne visible';
+                            }
+                            setTimeout(() => location.reload(), 500);
+                        } else {
+                            alert('Erreur : ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur réseau:', error);
+                        alert('Une erreur réseau est survenue.');
+                    });
+            });
+        });
+    })();
+</script>
+{% endblock %}
+{% endblock %}

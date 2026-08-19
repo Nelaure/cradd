@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Bulletins - Cradd{% endblock %}
+{% block page_heading %}Bulletins scolaires{% endblock %}
+
+{% block content %}
+<!-- Résumé statistique -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total bulletins</h5>
+                <p class="card-text display-6">{{ bulletins|length }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Moyenne générale</h5>
+                <p class="card-text display-6">{{ moyenne_generale|floatformat:2 }}/20</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">Taux de réussite</h5>
+                <p class="card-text display-6">{{ taux_reussite|floatformat:1 }}%</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Élèves distincts</h5>
+                <p class="card-text display-6">{{ eleves_distincts }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                <select name="ecole" class="form-select">
+                    <option value="">École</option>
+                    {% for e in ecoles %}
+                        <option value="{{ e.id }}" {% if e.id|stringformat:"s" == selected_ecole %}selected{% endif %}>{{ e.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="niveau" class="form-select">
+                    <option value="">Niveau</option>
+                    {% for n in niveaux %}
+                        <option value="{{ n.id }}" {% if n.id|stringformat:"s" == selected_niveau %}selected{% endif %}>{{ n.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="classe" class="form-select">
+                    <option value="">Classe</option>
+                    {% for c in classes %}
+                        <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_classe %}selected{% endif %}>{{ c.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="annee" class="form-select">
+                    <option value="">Année</option>
+                    {% for a in annees %}
+                        <option value="{{ a.id }}" {% if a.id|stringformat:"s" == selected_annee %}selected{% endif %}>{{ a.annee }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="q" class="form-control" placeholder="Rechercher un élève..." value="{{ search_query }}">
+            </div>
+            <div class="col-md-1 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i></button>
+                <a href="{% url 'ecoles:bulletin_list' %}" class="btn btn-secondary w-100"><i class="fas fa-undo"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tableau -->
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle" id="bulletinTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Élève</th>
+                        <th>Classe</th>
+                        <th>Moyenne /20</th>
+                        <th>Pourcentage</th>
+                        <th>Appréciation</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bulletins %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'eleves:eleve_detail' b.eleve.id %}" class="text-decoration-none">
+                                {{ b.eleve.get_nom_complet }}
+                            </a>
+                        </td>
+                        <td>{{ b.eleve.classe.nom }}</td>
+                        <td><strong>{{ b.moyenne|floatformat:2 }}</strong></td>
+                        <td>{{ b.pourcentage|floatformat:1 }}%</td>
+                        <td>
+                            {% if b.pourcentage >= 80 %}
+                                <span class="badge bg-success">Excellent</span>
+                            {% elif b.pourcentage >= 60 %}
+                                <span class="badge bg-primary">Bien</span>
+                            {% elif b.pourcentage >= 50 %}
+                                <span class="badge bg-info">Passable</span>
+                            {% else %}
+                                <span class="badge bg-danger">Insuffisant</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if b.pourcentage >= 50 %}
+                                <span class="badge bg-success"><i class="fas fa-check-circle"></i> Réussi</span>
+                            {% else %}
+                                <span class="badge bg-danger"><i class="fas fa-times-circle"></i> Échec</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'eleves:eleve_detail' b.eleve.id %}" class="btn btn-sm btn-info" title="Voir l'élève">
+                                    <i class="fas fa-user"></i>
+                                </a>
+                                {% if b.resultat_annuel %}
+                                <a href="#" class="btn btn-sm btn-primary" title="Imprimer le bulletin">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                {% endif %}
+                                <a href="#" class="btn btn-sm btn-secondary" title="Détails du bulletin">
+                                    <i class="fas fa-file-alt"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted d-block mb-2"></i>
+                            <p class="text-muted mb-0">Aucun bulletin ne correspond à vos critères.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination (exemple, à adapter selon la vue) -->
+        {% if is_paginated %}
+        <nav aria-label="Pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page=1">&laquo; début</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">précédent</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">suivant</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">fin &raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        <!-- Actions supplémentaires -->
+        <div class="mt-3 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-muted">{{ bulletins|length }} bulletin(s) affiché(s)</span>
+            </div>
+            <div>
+                <a href="#" class="btn btn-outline-success btn-sm"><i class="fas fa-file-excel"></i> Exporter Excel</a>
+                <a href="#" class="btn btn-outline-danger btn-sm"><i class="fas fa-file-pdf"></i> Exporter PDF</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

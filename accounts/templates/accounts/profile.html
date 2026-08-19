@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Mon profil - Cradd{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Carte d'identité -->
+    <div class="col-md-4">
+        <div class="card-glass h-100 text-center p-4">
+            <i class="fas fa-user-circle fa-5x text-gold mb-3"></i>
+            <h4 class="fw-700">{{ user.get_full_name }}</h4>
+            <p class="text-muted">@{{ user.username }}</p>
+            <p><span class="badge bg-gold-soft text-gold">{{ user.get_role_display }}</span></p>
+            {% if user.ecole_affectation %}
+            <p><i class="fas fa-school text-gold me-1"></i> {{ user.ecole_affectation.nom }}</p>
+            {% endif %}
+            <hr>
+            <a href="{% url 'accounts:user_edit' user.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-edit"></i> Modifier mon profil
+            </a>
+        </div>
+    </div>
+
+    <!-- Détails -->
+    <div class="col-md-8">
+        <div class="card-glass">
+            <div class="card-header">
+                <i class="fas fa-info-circle text-gold me-2"></i> Informations personnelles
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <th style="width: 30%;">Nom</th>
+                            <td>{{ user.nom }}</td>
+                        </tr>
+                        <tr>
+                            <th>Postnom</th>
+                            <td>{{ user.postnom|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Prénom</th>
+                            <td>{{ user.prenom }}</td>
+                        </tr>
+                        <tr>
+                            <th>Email</th>
+                            <td>{{ user.email|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Rôle</th>
+                            <td><span class="badge bg-gold-soft text-gold">{{ user.get_role_display }}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Date d'inscription</th>
+                            <td>{{ user.date_creation|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Dernière connexion</th>
+                            <td>{{ user.last_login|date:"d/m/Y H:i"|default:"Jamais" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

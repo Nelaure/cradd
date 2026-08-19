@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Élèves sans notes{% endblock %}
+{% block page_title %}Élèves sans notes{% endblock %}
+{% block page_subtitle %}Liste des élèves n'ayant pas encore de notes pour une évaluation donnée{% endblock %}
+
+{% block content %}
+<div class="card-glass">
+    <div class="card-header">
+        <i class="fas fa-user-slash text-gold me-2"></i> Élèves sans notes
+    </div>
+    <div class="card-body">
+        <!-- Formulaire de filtres -->
+        <form method="get" class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label for="cours" class="form-label">Cours</label>
+                <select name="cours" id="cours" class="form-select select2" required>
+                    <option value="">--- Sélectionner ---</option>
+                    {% for c in cours_list %}
+                    <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_cours %}selected{% endif %}>{{ c.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="annee" class="form-label">Année scolaire</label>
+                <select name="annee" id="annee" class="form-select select2" required>
+                    <option value="">--- Sélectionner ---</option>
+                    {% for a in annees %}
+                    <option value="{{ a.id }}" {% if a.id|stringformat:"s" == selected_annee %}selected{% endif %}>{{ a.annee }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="classe" class="form-label">Classe (optionnel)</label>
+                <select name="classe" id="classe" class="form-select select2">
+                    <option value="">--- Toutes ---</option>
+                    {% for cl in classes %}
+                    <option value="{{ cl.id }}" {% if cl.id|stringformat:"s" == classe_selected %}selected{% endif %}>{{ cl.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="evaluation" class="form-label">Évaluation (cycle/période/examen)</label>
+                <select name="evaluation" id="evaluation" class="form-select select2">
+                    <option value="">--- Toutes les évaluations du cours ---</option>
+                    {% for eval in eval_configs %}
+                        {% if selected_evaluation == eval.id|stringformat:"s" %}
+                            <option value="{{ eval.id }}" selected>
+                        {% else %}
+                            <option value="{{ eval.id }}">
+                        {% endif %}
+                        Cycle {{ eval.cycle_num }}
+                        {% if eval.type == 'periode' %}
+                            - Période {{ eval.periode_num }}
+                        {% else %}
+                            - Examen
+                        {% endif %}
+                        ({{ eval.points_max }} pts)
+                    </option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">Sélectionnez un cours d'abord pour voir les évaluations disponibles.</small>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filtrer</button>
+                <a href="{% url 'ecoles:eleves_sans_notes' %}" class="btn btn-secondary"><i class="fas fa-undo"></i> Réinitialiser</a>
+            </div>
+        </form>
+
+        {% if has_filter %}
+            {% if eleves %}
+            <div class="table-responsive">
+                <table class="table table-hover datatable">
+                    <thead>
+                        <tr>
+                            <th>Matricule</th>
+                            <th>Nom complet</th>
+                            <th>Classe</th>
+                            <th>École</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eleve in eleves %}
+                        <tr>
+                            <td>{{ eleve.matricule }}</td>
+                            <td>{{ eleve.get_nom_complet }}</td>
+                            <td>{{ eleve.classe.nom }}</td>
+                            <td>{{ eleve.ecole.nom }}</td>
+                            <td>
+                                <a href="{% url 'eleves:eleve_detail' eleve.id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                <a href="{% url 'ecoles:resultat_create' %}?eleve={{ eleve.id }}&cours={{ selected_cours }}&annee_scolaire={{ selected_annee }}" class="btn btn-sm btn-primary"><i class="fas fa-pen"></i> Saisir</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination -->
+            {% if eleves.has_other_pages %}
+            <nav aria-label="Pagination">
+                <ul class="pagination justify-content-center">
+                    {% if eleves.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?cours={{ selected_cours }}&annee={{ selected_annee }}&classe={{ classe_selected }}&evaluation={{ selected_evaluation }}&page={{ eleves.previous_page_number }}">&laquo;</a></li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                    {% endif %}
+                    {% for i in eleves.paginator.page_range %}
+                        {% if eleves.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                        {% else %}
+                        <li class="page-item"><a class="page-link" href="?cours={{ selected_cours }}&annee={{ selected_annee }}&classe={{ classe_selected }}&evaluation={{ selected_evaluation }}&page={{ i }}">{{ i }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if eleves.has_next %}
+                    <li class="page-item"><a class="page-link" href="?cours={{ selected_cours }}&annee={{ selected_annee }}&classe={{ classe_selected }}&evaluation={{ selected_evaluation }}&page={{ eleves.next_page_number }}">&raquo;</a></li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center text-muted">
+                <i class="fas fa-check-circle text-success me-2"></i> Tous les élèves ont des notes pour cette évaluation.
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> Veuillez sélectionner un cours et une année pour voir les élèves sans notes.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        });
+
+        // Quand le cours change, on recharge la page avec le nouveau cours pour rafraîchir les évaluations
+        $('#cours').on('change', function() {
+            var coursId = $(this).val();
+            var anneeId = $('#annee').val();
+            var classeId = $('#classe').val();
+            if (coursId) {
+                // Recharger la page avec les paramètres actuels + le nouveau cours
+                var url = "{% url 'ecoles:eleves_sans_notes' %}?cours=" + coursId;
+                if (anneeId) url += "&annee=" + anneeId;
+                if (classeId) url += "&classe=" + classeId;
+                window.location.href = url;
+            }
+        });
+    });
+</script>
+{% endblock %}

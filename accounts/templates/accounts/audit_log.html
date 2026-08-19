@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Journal d'activité - Cradd{% endblock %}
+{% block page_heading %}Journal d'activité{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card-glass">
+            <div class="card-header">
+                <i class="fas fa-history text-gold me-2"></i> Journal d'activité
+                <span class="badge bg-secondary ms-2">{{ logs|length }}</span>
+            </div>
+            <div class="card-body">
+                <!-- Filtres -->
+                <form method="get" class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label">Action</label>
+                        <select name="action" class="form-select">
+                            <option value="">Toutes</option>
+                            {% for value, label in actions %}
+                            <option value="{{ value }}" {% if selected_action == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Utilisateur</label>
+                        <select name="user" class="form-select">
+                            <option value="">Tous</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if selected_user == user.id|stringformat:"s" %}selected{% endif %}>
+                                {{ user.get_full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Modèle</label>
+                        <select name="model" class="form-select">
+                            <option value="">Tous</option>
+                            {% for value, label in models %}
+                            <option value="{{ value }}" {% if selected_model == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter"></i> Filtrer
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Tableau des logs -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date/Heure</th>
+                                <th>Utilisateur</th>
+                                <th>Action</th>
+                                <th>Modèle</th>
+                                <th>Objet</th>
+                                <th>IP</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.timestamp|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    {% if log.utilisateur %}
+                                    {{ log.utilisateur.get_full_name }}
+                                    {% else %}
+                                    <span class="text-muted">Utilisateur supprimé</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge {% if log.action == 'LOGIN' %}bg-success{% elif log.action == 'LOGOUT' %}bg-secondary{% elif log.action == 'CREATE' %}bg-primary{% elif log.action == 'UPDATE' %}bg-warning{% elif log.action == 'DELETE' %}bg-danger{% elif log.action == 'LOGIN_FAILED' %}bg-danger{% else %}bg-info{% endif %}">
+                                        {{ log.get_action_display }}
+                                    </span>
+                                </td>
+                                <td>{{ log.get_model_name_display|default:"-" }}</td>
+                                <td>{{ log.object_repr|default:"-"|truncatechars:30 }}</td>
+                                <td>{{ log.ip_address|default:"-" }}</td>
+                                <td>
+                                    {% if log.success %}
+                                    <span class="badge bg-success"><i class="fas fa-check"></i> OK</span>
+                                    {% else %}
+                                    <span class="badge bg-danger"><i class="fas fa-times"></i> Échec</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">Aucun log pour le moment.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ===== PAGINATION INLINE (sans include) ===== -->
+                <nav aria-label="Pagination des logs">
+                    <ul class="pagination justify-content-center">
+                        {% if logs.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">&laquo;&laquo;</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.previous_page_number }}">&laquo;</a>
+                        </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">{{ logs.number }}</span>
+                        </li>
+
+                        {% if logs.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.next_page_number }}">&raquo;</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.paginator.num_pages }}">&raquo;&raquo;</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    <div class="text-center text-muted small">
+                        Page {{ logs.number }} sur {{ logs.paginator.num_pages }}
+                    </div>
+                </nav>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

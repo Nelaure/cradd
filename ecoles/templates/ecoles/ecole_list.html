@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des écoles - Cradd{% endblock %}
+{% block page_heading %}Liste des écoles{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-school"></i> Écoles</h1>
+    <a href="{% url 'ecoles:ecole_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Ajouter une école
+    </a>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Code</th>
+                        <th>Province</th>
+                        <th>Responsable</th>
+                        <th>Contact</th>
+                        <th>Niveaux</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ecole in ecoles %}
+                    <tr>
+                        <td>{{ ecole.nom }}</td>
+                        <td>{{ ecole.code }}</td>
+                        <td>{{ ecole.province|default:"-" }}</td>
+                        <td>{{ ecole.responsable|default:"-" }}</td>
+                        <td>{{ ecole.contact|default:"-" }}</td>
+                        <td>
+                            {% for niveau in ecole.niveaux.all %}
+                            <span class="badge bg-info me-1">{{ niveau.nom }}</span>
+                            {% empty %}
+                            <span class="text-muted">-</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if ecole.est_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'ecoles:ecole_edit' ecole.id %}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'ecoles:ecole_delete' ecole.id %}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center">Aucune école enregistrée</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination -->
+        {% if ecoles.has_other_pages %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if ecoles.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ ecoles.previous_page_number }}">Précédent</a></li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                {% endif %}
+                {% for num in ecoles.paginator.page_range %}
+                {% if ecoles.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% else %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+                {% if ecoles.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ ecoles.next_page_number }}">Suivant</a></li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\user\\source\\repos\\cradd\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\ecoles\\views.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:ecoles\\views.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|C:\\Users\\user\\source\\repos\\cradd\\templates\\base.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{7838DD3C-7BCB-4AEE-A409-8A767E5F4A5E}|cradd.pyproj|solutionrelative:templates\\base.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{e8b06f52-6d01-11d2-aa7d-00c04f990343}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "views.py",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\ecoles\\views.py",
+              "RelativeDocumentMoniker": "ecoles\\views.py",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\ecoles\\views.py",
+              "RelativeToolTip": "ecoles\\views.py",
+              "ViewState": "AgIAAH4GAAAAAAAAAAAIwIsGAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-07-31T20:42:46.047Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "base.html",
+              "DocumentMoniker": "C:\\Users\\user\\source\\repos\\cradd\\templates\\base.html",
+              "RelativeDocumentMoniker": "templates\\base.html",
+              "ToolTip": "C:\\Users\\user\\source\\repos\\cradd\\templates\\base.html",
+              "RelativeToolTip": "templates\\base.html",
+              "ViewState": "AgIAACAFAAAAAAAAAAAqwC0FAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-07-31T17:59:19.504Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
