@@ -27,7 +27,7 @@ staticfiles/
 .idea/
 *.swp
 *.swo
-
+.vs/
 # OS
 Thumbs.db
 .DS_Store
