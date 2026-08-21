@@ -1,1817 +1,274 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CRADD · Éducation & Développement Durable</title>
-    <!-- Bootstrap 5 + Font Awesome 6 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <!-- Google Fonts : Outfit + Cormorant Garamond -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
-    <style>
-        /* ============================================================
-        VARIABLES – Palette verte / développement durable
-        ============================================================ */
-        :root {
-            --green-dark: #1e4a2b;
-            --green-mid: #2e7d32;
-            --green-light: #66bb6a;
-            --green-pale: #a5d6a7;
-            --green-bg: #e8f5e9;
-            --green-very-pale: #f3faf3;
-            --white: #ffffff;
-            --charcoal: #1f2a1f;
-            --text-dark: #1f2a1f;
-            --text-muted: #4b5e4b;
-            --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.04);
-            --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.08);
-            --shadow-lg: 0 16px 56px rgba(0, 0, 0, 0.12);
-            --radius: 28px;
-            --radius-sm: 16px;
-            --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
 
-        /* ============================================================
-        RESET & BASE
-        ============================================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: var(--white);
-            color: var(--text-dark);
-            line-height: 1.7;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-
-        .section-padding {
-            padding: 100px 0;
-        }
-
-        .section-title {
-            text-align: center;
-            max-width: 700px;
-            margin: 0 auto 56px;
-        }
-
-            .section-title h2 {
-                font-family: 'Cormorant Garamond', serif;
-                font-size: 48px;
-                font-weight: 700;
-                color: var(--charcoal);
-                letter-spacing: -0.3px;
-            }
-
-                .section-title h2 span {
-                    color: var(--green-mid);
-                }
-
-            .section-title p {
-                color: var(--text-muted);
-                font-size: 18px;
-                margin-top: 8px;
-                font-weight: 300;
-            }
-
-            .section-title .line {
-                width: 70px;
-                height: 4px;
-                background: linear-gradient(90deg, var(--green-mid), var(--green-light));
-                margin: 18px auto 0;
-                border-radius: 4px;
-            }
-
-        .bg-cream {
-            background: var(--green-very-pale);
-        }
-
-        .bg-beige {
-            background: var(--green-bg);
-        }
-
-        .bg-white {
-            background: var(--white);
-        }
-
-        /* ============================================================
-        NAVBAR (identique)
-        ============================================================ */
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            height: 74px;
-            padding: 0 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: transparent;
-            transition: all 0.4s ease;
-            border-bottom: 1px solid transparent;
-        }
-
-        .navbar-scrolled {
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(14px);
-            box-shadow: var(--shadow-sm);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-        }
-
-        .brand-logo {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--white);
-            text-decoration: none;
-            letter-spacing: -0.5px;
-        }
-
-        .navbar-scrolled .brand-logo {
-            color: var(--charcoal);
-        }
-
-        .brand-logo span {
-            color: var(--green-pale);
-        }
-
-        .navbar-scrolled .brand-logo span {
-            color: var(--green-mid);
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 4px;
-            list-style: none;
-            align-items: center;
-        }
-
-            .nav-links a {
-                text-decoration: none;
-                color: rgba(255, 255, 255, 0.85);
-                padding: 8px 18px;
-                border-radius: 10px;
-                font-weight: 500;
-                font-size: 14px;
-                transition: 0.3s;
-            }
-
-        .navbar-scrolled .nav-links a {
-            color: var(--text-muted);
-        }
-
-        .nav-links a:hover {
-            color: var(--white);
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .navbar-scrolled .nav-links a:hover {
-            color: var(--charcoal);
-            background: var(--green-bg);
-        }
-
-        .nav-links .btn-login {
-            background: var(--green-mid);
-            color: #fff !important;
-            padding: 10px 28px;
-            border-radius: 50px;
-            font-weight: 600;
-            box-shadow: 0 4px 20px rgba(46, 125, 50, 0.3);
-            transition: 0.3s;
-        }
-
-            .nav-links .btn-login:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 30px rgba(46, 125, 50, 0.4);
-                background: var(--green-dark);
-                color: #fff !important;
-            }
-
-        .menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: var(--white);
-            cursor: pointer;
-            padding: 6px;
-            border-radius: 8px;
-            transition: 0.3s;
-        }
-
-        .navbar-scrolled .menu-toggle {
-            color: var(--charcoal);
-        }
-
-        .menu-toggle:hover {
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        /* ============================================================
-        HERO – Nouvelle mise en page : split + overlay
-        ============================================================ */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-            padding-top: 74px;
-            background: var(--charcoal);
-            color: var(--white);
-        }
-
-        .hero-background {
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-        }
-
-            .hero-background img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-                opacity: 0.3;
-                filter: saturate(0.6) brightness(0.7);
-            }
-
-        .hero-overlay {
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 70% 30%, rgba(30, 74, 43, 0.6), rgba(0, 0, 0, 0.7));
-            z-index: 1;
-        }
-
-        .hero-canvas {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 3;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            align-items: center;
-            width: 100%;
-            padding: 60px 0;
-        }
-
-        .hero-text .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(4px);
-            padding: 8px 24px;
-            border-radius: 50px;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--green-pale);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            margin-bottom: 24px;
-            letter-spacing: 0.5px;
-        }
-
-        .hero-text h1 {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 64px;
-            font-weight: 700;
-            line-height: 1.05;
-            margin-bottom: 16px;
-        }
-
-            .hero-text h1 span {
-                color: var(--green-pale);
-            }
-
-        .hero-text p {
-            font-size: 18px;
-            color: rgba(255, 255, 255, 0.8);
-            max-width: 500px;
-            font-weight: 300;
-            margin-bottom: 32px;
-        }
-
-        .hero-cta-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .hero-cta {
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 36px;
-            background: var(--green-mid);
-            color: #fff;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 16px;
-            text-decoration: none;
-            box-shadow: 0 8px 30px rgba(46, 125, 50, 0.4);
-            transition: var(--transition);
-            border: none;
-            cursor: pointer;
-            font-family: 'Outfit', sans-serif;
-        }
-
-            .hero-cta:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 12px 40px rgba(46, 125, 50, 0.5);
-                background: var(--green-dark);
-                color: #fff;
-            }
-
-            .hero-cta i {
-                transition: 0.3s;
-            }
-
-            .hero-cta:hover i {
-                transform: translateX(6px);
-            }
-
-        .hero-cta-outline {
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: none;
-            color: var(--white);
-        }
-
-            .hero-cta-outline:hover {
-                background: rgba(255, 255, 255, 0.05);
-                border-color: var(--green-pale);
-                color: var(--white);
-                box-shadow: none;
-            }
-
-        .hero-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: var(--radius);
-            padding: 32px 28px;
-        }
-
-        .hero-stat-item {
-            text-align: center;
-        }
-
-            .hero-stat-item .number {
-                font-size: 36px;
-                font-weight: 800;
-                color: var(--green-pale);
-                display: block;
-                line-height: 1.2;
-            }
-
-            .hero-stat-item .label {
-                font-size: 14px;
-                color: rgba(255, 255, 255, 0.6);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-
-        /* ============================================================
-        SECTION IMPACT (nouvelle section)
-        ============================================================ */
-        .impact-section {
-            background: var(--white);
-        }
-
-        .impact-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 24px;
-        }
-
-        .impact-card {
-            background: var(--green-very-pale);
-            border-radius: var(--radius);
-            padding: 32px 24px;
-            text-align: center;
-            border: 1px solid var(--green-bg);
-            transition: var(--transition);
-            box-shadow: var(--shadow-sm);
-        }
-
-            .impact-card:hover {
-                transform: translateY(-8px);
-                border-color: var(--green-mid);
-                box-shadow: var(--shadow-md);
-            }
-
-            .impact-card .icon {
-                font-size: 36px;
-                color: var(--green-mid);
-                margin-bottom: 16px;
-            }
-
-            .impact-card h3 {
-                font-family: 'Cormorant Garamond', serif;
-                font-size: 28px;
-                font-weight: 700;
-                color: var(--charcoal);
-            }
-
-            .impact-card p {
-                font-size: 14px;
-                color: var(--text-muted);
-                margin-bottom: 0;
-            }
-
-        /* ============================================================
-        SECTION MISSION (disposition asymétrique)
-        ============================================================ */
-        .mission-section {
-            background: var(--green-bg);
-        }
-
-        .mission-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 60px;
-            align-items: center;
-        }
-
-        .mission-text h2 {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 44px;
-            font-weight: 700;
-            color: var(--charcoal);
-            letter-spacing: -0.3px;
-        }
-
-            .mission-text h2 span {
-                color: var(--green-mid);
-            }
-
-        .mission-text p {
-            color: var(--text-muted);
-            font-size: 16px;
-            line-height: 1.9;
-            margin: 12px 0 24px;
-        }
-
-        .mission-list {
-            list-style: none;
-            padding: 0;
-        }
-
-            .mission-list li {
-                display: flex;
-                align-items: center;
-                gap: 14px;
-                margin-bottom: 14px;
-                font-size: 15px;
-                color: var(--text-dark);
-            }
-
-                .mission-list li i {
-                    width: 28px;
-                    height: 28px;
-                    background: var(--green-mid);
-                    color: var(--white);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 13px;
-                    flex-shrink: 0;
-                }
-
-        .mission-image {
-            border-radius: var(--radius);
-            overflow: hidden;
-            box-shadow: var(--shadow-lg);
-            position: relative;
-        }
-
-            .mission-image img {
-                width: 100%;
-                height: 420px;
-                object-fit: cover;
-                display: block;
-                transition: transform 0.6s ease;
-            }
-
-            .mission-image:hover img {
-                transform: scale(1.03);
-            }
-
-            .mission-image .floating-badge {
-                position: absolute;
-                bottom: 24px;
-                left: 24px;
-                background: rgba(0, 0, 0, 0.6);
-                backdrop-filter: blur(8px);
-                color: var(--white);
-                padding: 12px 20px;
-                border-radius: var(--radius-sm);
-                font-size: 14px;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                border: 1px solid rgba(255, 255, 255, 0.06);
-            }
-
-                .mission-image .floating-badge i {
-                    color: var(--green-pale);
-                    font-size: 20px;
-                }
-
-        /* ============================================================
-        SERVICES (grille dynamique 2-1)
-        ============================================================ */
-        .services-section {
-            background: var(--white);
-        }
-
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-        }
-
-        .service-card {
-            background: var(--green-very-pale);
-            border-radius: var(--radius);
-            padding: 40px 30px;
-            border: 1px solid var(--green-bg);
-            transition: var(--transition);
-            box-shadow: var(--shadow-sm);
-            position: relative;
-            overflow: hidden;
-        }
-
-            .service-card::after {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 4px;
-                background: linear-gradient(90deg, var(--green-mid), var(--green-light));
-                transform: scaleX(0);
-                transform-origin: left;
-                transition: transform 0.4s ease;
-            }
-
-            .service-card:hover::after {
-                transform: scaleX(1);
-            }
-
-            .service-card:hover {
-                transform: translateY(-8px);
-                border-color: var(--green-mid);
-                box-shadow: var(--shadow-md);
-            }
-
-            .service-card .icon {
-                width: 72px;
-                height: 72px;
-                background: rgba(46, 125, 50, 0.08);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-bottom: 20px;
-                font-size: 30px;
-                color: var(--green-mid);
-                transition: var(--transition);
-            }
-
-            .service-card:hover .icon {
-                background: var(--green-mid);
-                color: var(--white);
-                transform: rotateY(180deg);
-            }
-
-            .service-card h4 {
-                font-family: 'Cormorant Garamond', serif;
-                font-size: 24px;
-                font-weight: 700;
-                color: var(--charcoal);
-                margin-bottom: 10px;
-            }
-
-            .service-card p {
-                font-size: 15px;
-                color: var(--text-muted);
-                line-height: 1.7;
-                margin-bottom: 0;
-            }
-
-            .service-card .learn-more {
-                display: inline-block;
-                margin-top: 16px;
-                color: var(--green-mid);
-                font-weight: 600;
-                text-decoration: none;
-                font-size: 14px;
-                transition: 0.3s;
-            }
-
-                .service-card .learn-more i {
-                    transition: 0.3s;
-                }
-
-                .service-card .learn-more:hover {
-                    color: var(--green-dark);
-                }
-
-                    .service-card .learn-more:hover i {
-                        transform: translateX(6px);
-                    }
-
-        /* ============================================================
-        TÉMOIGNAGES (carrousel manuel en grid)
-        ============================================================ */
-        .testimonials-section {
-            background: var(--green-very-pale);
-        }
-
-        .testimonials-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-        }
-
-        .testimonial-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 34px 28px;
-            border: 1px solid var(--green-bg);
-            transition: var(--transition);
-            box-shadow: var(--shadow-sm);
-            position: relative;
-        }
-
-            .testimonial-card:hover {
-                border-color: var(--green-light);
-                transform: translateY(-6px);
-                box-shadow: var(--shadow-md);
-            }
-
-            .testimonial-card .quote-icon {
-                color: var(--green-pale);
-                font-size: 32px;
-                opacity: 0.4;
-                margin-bottom: 8px;
-            }
-
-            .testimonial-card p {
-                color: var(--text-dark);
-                font-size: 15px;
-                line-height: 1.8;
-                font-style: italic;
-                margin-bottom: 18px;
-            }
-
-            .testimonial-card .author {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-            }
-
-                .testimonial-card .author .avatar {
-                    width: 50px;
-                    height: 50px;
-                    border-radius: 50%;
-                    background: linear-gradient(135deg, var(--green-mid), var(--green-light));
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: var(--white);
-                    font-weight: 700;
-                    font-size: 18px;
-                    flex-shrink: 0;
-                }
-
-                .testimonial-card .author .info .name {
-                    font-weight: 700;
-                    color: var(--charcoal);
-                }
-
-                .testimonial-card .author .info .role {
-                    font-size: 13px;
-                    color: var(--text-muted);
-                }
-
-        /* ============================================================
-        BLOG (cartes avec image en haut)
-        ============================================================ */
-        .blog-section {
-            background: var(--white);
-        }
-
-        .blog-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-        }
-
-        .blog-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            overflow: hidden;
-            border: 1px solid var(--green-bg);
-            transition: var(--transition);
-            box-shadow: var(--shadow-sm);
-        }
-
-            .blog-card:hover {
-                transform: translateY(-8px);
-                border-color: var(--green-mid);
-                box-shadow: var(--shadow-md);
-            }
-
-            .blog-card .img {
-                height: 200px;
-                background: var(--green-bg);
-                position: relative;
-                overflow: hidden;
-            }
-
-                .blog-card .img img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    transition: transform 0.6s ease;
-                }
-
-            .blog-card:hover .img img {
-                transform: scale(1.05);
-            }
-
-            .blog-card .img .date {
-                position: absolute;
-                bottom: 16px;
-                right: 16px;
-                background: rgba(0, 0, 0, 0.65);
-                backdrop-filter: blur(4px);
-                color: #fff;
-                padding: 4px 16px;
-                border-radius: 30px;
-                font-size: 12px;
-                font-weight: 500;
-            }
-
-            .blog-card .content {
-                padding: 24px 28px 28px;
-            }
-
-                .blog-card .content .tag {
-                    display: inline-block;
-                    background: rgba(46, 125, 50, 0.1);
-                    color: var(--green-dark);
-                    font-size: 10px;
-                    font-weight: 700;
-                    padding: 2px 16px;
-                    border-radius: 30px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                    margin-bottom: 8px;
-                }
-
-                .blog-card .content h4 {
-                    font-family: 'Cormorant Garamond', serif;
-                    font-size: 20px;
-                    font-weight: 700;
-                    color: var(--charcoal);
-                    margin-bottom: 8px;
-                }
-
-                .blog-card .content p {
-                    font-size: 14px;
-                    color: var(--text-muted);
-                    line-height: 1.7;
-                    margin-bottom: 16px;
-                }
-
-                .blog-card .content .link {
-                    color: var(--green-mid);
-                    text-decoration: none;
-                    font-weight: 600;
-                    font-size: 14px;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    transition: 0.3s;
-                }
-
-                    .blog-card .content .link:hover {
-                        color: var(--green-dark);
-                    }
-
-                        .blog-card .content .link:hover i {
-                            transform: translateX(6px);
-                        }
-
-        /* ============================================================
-        PARTENAIRES (logo style)
-        ============================================================ */
-        .partners-section {
-            background: var(--green-bg);
-            border-top: 1px solid var(--green-pale);
-            border-bottom: 1px solid var(--green-pale);
-            padding: 60px 0;
-        }
-
-        .partners-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 24px;
-            align-items: center;
-            justify-items: center;
-        }
-
-        .partner-item {
-            background: var(--white);
-            border-radius: var(--radius-sm);
-            padding: 18px 24px;
-            border: 1px solid var(--green-bg);
-            font-weight: 600;
-            color: var(--text-muted);
-            font-size: 14px;
-            text-align: center;
-            transition: var(--transition);
-            width: 100%;
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-            .partner-item:hover {
-                border-color: var(--green-mid);
-                color: var(--charcoal);
-                box-shadow: var(--shadow-md);
-                transform: translateY(-4px);
-            }
-
-            .partner-item i {
-                color: var(--green-mid);
-                font-size: 20px;
-                transition: 0.3s;
-            }
-
-            .partner-item:hover i {
-                transform: scale(1.2) rotate(-6deg);
-            }
-
-        /* ============================================================
-        NEWSLETTER (avec fond image)
-        ============================================================ */
-        .newsletter-section {
-            background: linear-gradient(135deg, var(--green-dark), var(--green-mid));
-            padding: 80px 0;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-            .newsletter-section::before {
-                content: '';
-                position: absolute;
-                inset: 0;
-                background: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600&q=80') center/cover no-repeat;
-                opacity: 0.08;
-                mix-blend-mode: overlay;
-            }
-
-            .newsletter-section .container {
-                position: relative;
-                z-index: 2;
-            }
-
-            .newsletter-section h2 {
-                font-family: 'Cormorant Garamond', serif;
-                font-size: 40px;
-                font-weight: 700;
-                color: var(--white);
-            }
-
-            .newsletter-section p {
-                color: rgba(255, 255, 255, 0.8);
-                font-size: 18px;
-                margin-bottom: 32px;
-            }
-
-        .newsletter-form {
-            display: flex;
-            max-width: 520px;
-            margin: 0 auto;
-            gap: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            padding: 6px;
-            border-radius: var(--radius-sm);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-            .newsletter-form input {
-                flex: 1;
-                padding: 14px 20px;
-                border: none;
-                border-radius: var(--radius-sm);
-                font-size: 15px;
-                font-family: 'Outfit', sans-serif;
-                color: var(--charcoal);
-                background: rgba(255, 255, 255, 0.95);
-                transition: 0.3s;
-            }
-
-                .newsletter-form input:focus {
-                    outline: none;
-                    background: #fff;
-                    box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.15);
-                }
-
-                .newsletter-form input::placeholder {
-                    color: var(--text-muted);
-                }
-
-            .newsletter-form button {
-                padding: 14px 32px;
-                background: var(--green-dark);
-                color: #fff;
-                border: none;
-                border-radius: var(--radius-sm);
-                font-weight: 700;
-                font-size: 15px;
-                cursor: pointer;
-                transition: var(--transition);
-                font-family: 'Outfit', sans-serif;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                white-space: nowrap;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            }
-
-                .newsletter-form button:hover {
-                    background: var(--green-light);
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-                }
-
-        /* ============================================================
-        FOOTER (identique)
-        ============================================================ */
-        .footer {
-            background: var(--charcoal);
-            color: rgba(255, 255, 255, 0.5);
-            padding: 48px 0 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.04);
-        }
-
-        .footer-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
-            gap: 40px;
-            margin-bottom: 32px;
-        }
-
-        .footer-brand .brand-logo {
-            color: var(--white);
-            font-size: 24px;
-            font-family: 'Cormorant Garamond', serif;
-        }
-
-            .footer-brand .brand-logo span {
-                color: var(--green-pale);
-            }
-
-        .footer-brand p {
-            font-size: 14px;
-            max-width: 300px;
-            margin-top: 8px;
-            line-height: 1.8;
-        }
-
-        .footer-column h4 {
-            color: var(--white);
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            letter-spacing: 0.5px;
-        }
-
-        .footer-column ul {
-            list-style: none;
-        }
-
-            .footer-column ul li {
-                margin-bottom: 6px;
-            }
-
-                .footer-column ul li a {
-                    color: rgba(255, 255, 255, 0.5);
-                    text-decoration: none;
-                    transition: 0.3s;
-                    font-size: 14px;
-                }
-
-                    .footer-column ul li a:hover {
-                        color: var(--green-pale);
-                        padding-left: 4px;
-                    }
-
-        .footer-social {
-            display: flex;
-            gap: 12px;
-            margin-top: 14px;
-        }
-
-            .footer-social a {
-                color: rgba(255, 255, 255, 0.4);
-                font-size: 18px;
-                transition: var(--transition);
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 1px solid rgba(255, 255, 255, 0.06);
-            }
-
-                .footer-social a:hover {
-                    color: var(--green-pale);
-                    border-color: var(--green-pale);
-                    transform: translateY(-3px);
-                }
-
-        .footer-bottom {
-            border-top: 1px solid rgba(255, 255, 255, 0.04);
-            padding-top: 20px;
-            text-align: center;
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.35);
-        }
-
-            .footer-bottom .cradd {
-                color: var(--green-pale);
-                font-weight: 600;
-            }
-
-        /* ============================================================
-        RESPONSIVE
-        ============================================================ */
-        @media (max-width: 992px) {
-            .hero-content {
-                grid-template-columns: 1fr;
-                gap: 40px;
-                text-align: center;
-            }
-
-            .hero-text p {
-                max-width: 100%;
-                margin-left: auto;
-                margin-right: auto;
-            }
-
-            .hero-cta-group {
-                justify-content: center;
-            }
-
-            .hero-stats {
-                max-width: 500px;
-                margin: 0 auto;
-            }
-
-            .mission-grid {
-                grid-template-columns: 1fr;
-                gap: 40px;
-            }
-
-            .mission-image img {
-                height: 300px;
-            }
-
-            .services-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .testimonials-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .blog-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .partners-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
-            .impact-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .footer-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 30px;
-            }
-
-            .hero-text h1 {
-                font-size: 48px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 0 16px;
-                height: 64px;
-            }
-
-            .nav-links {
-                display: none;
-                flex-direction: column;
-                position: absolute;
-                top: 100%;
-                left: 16px;
-                right: 16px;
-                background: var(--white);
-                backdrop-filter: blur(20px);
-                padding: 16px;
-                border-radius: var(--radius-sm);
-                border: 1px solid var(--green-bg);
-                gap: 4px;
-                box-shadow: var(--shadow-md);
-            }
-
-                .nav-links.active {
-                    display: flex;
-                }
-
-                .nav-links a {
-                    color: var(--charcoal) !important;
-                    width: 100%;
-                    justify-content: center;
-                    padding: 10px;
-                }
-
-                .nav-links .btn-login {
-                    background: var(--green-mid);
-                    color: #fff !important;
-                }
-
-            .menu-toggle {
-                display: block;
-                color: var(--white);
-            }
-
-            .navbar-scrolled .menu-toggle {
-                color: var(--charcoal);
-            }
-
-            .hero {
-                min-height: 80vh;
-                padding-top: 64px;
-            }
-
-            .hero-text h1 {
-                font-size: 34px;
-            }
-
-            .hero-stats {
-                grid-template-columns: 1fr 1fr;
-                padding: 24px;
-            }
-
-            .hero-stat-item .number {
-                font-size: 28px;
-            }
-
-            .services-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .testimonials-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .blog-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .partners-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .impact-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .footer-grid {
-                grid-template-columns: 1fr;
-                text-align: center;
-            }
-
-            .footer-brand p {
-                max-width: 100%;
-            }
-
-            .footer-social {
-                justify-content: center;
-            }
-
-            .newsletter-form {
-                flex-direction: column;
-                background: transparent;
-                padding: 0;
-                border: none;
-                backdrop-filter: none;
-            }
-
-                .newsletter-form input {
-                    background: rgba(255, 255, 255, 0.95);
-                }
-
-                .newsletter-form button {
-                    width: 100%;
-                    justify-content: center;
-                }
-
-            .section-title h2 {
-                font-size: 32px;
-            }
-
-            .mission-image .floating-badge {
-                bottom: 16px;
-                left: 16px;
-                padding: 8px 16px;
-                font-size: 12px;
-            }
-
-            .hero-cta {
-                padding: 14px 28px;
-                font-size: 15px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .hero-text h1 {
-                font-size: 28px;
-            }
-
-            .partners-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-stats {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-cta-group {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .hero-cta {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-    </style>
-</head>
-<body>
-
-    <!-- ============================
-    NAVBAR (inchangée)
-    ============================ -->
-    <nav class="navbar" id="navbar">
-        <a href="/" class="brand-logo">CRADD<span>.org</span></a>
-        <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
-        <ul class="nav-links" id="navLinks">
-            <li><a href="#home">Accueil</a></li>
-            <li><a href="#impact">Impact</a></li>
-            <li><a href="#mission">Mission</a></li>
-            <li><a href="#services">Actions</a></li>
-            <li><a href="#testimonials">Témoignages</a></li>
-            <li><a href="#blog">Actualités</a></li>
-            <li><a href="{% url 'accounts:login' %}" class="btn-login"><i class="fas fa-sign-in-alt"></i> Connexion</a></li>
-        </ul>
-    </nav>
-
-    <!-- ============================
-    HERO – Nouvelle mise en page split
-    ============================ -->
-    <section class="hero" id="home">
-        <div class="hero-background">
-            <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600&q=80" alt="Nature et éducation" />
+{% block title %}CRADD · Éducation & Développement Durable{% endblock %}
+
+{% block content %}
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="home">
+    <div class="hero-background">
+        <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600&q=80" alt="Nature et éducation" />
+    </div>
+    <div class="hero-overlay"></div>
+    <canvas class="hero-canvas" id="heroCanvas"></canvas>
+
+    <div class="container">
+        <div class="hero-content">
+            <div class="hero-text">
+                <span class="badge"><i class="fas fa-leaf"></i> Développement durable</span>
+                <h1>Construisons l'avenir de <span>l'Afrique</span></h1>
+                <p>Chaque enfant congolais mérite une éducation de qualité et un environnement préservé. Ensemble, faisons de l'éducation le moteur du développement durable.</p>
+                <div class="hero-cta-group">
+                    <a href="#mission" class="hero-cta">
+                        Découvrir nos actions <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="#impact" class="hero-cta hero-cta-outline">
+                        <i class="fas fa-chart-line"></i> Notre impact
+                    </a>
+                </div>
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stat-item">
+                    <span class="number" data-count="15000">0</span>
+                    <span class="label">Élèves soutenus</span>
+                </div>
+                <div class="hero-stat-item">
+                    <span class="number" data-count="120">0</span>
+                    <span class="label">Écoles partenaires</span>
+                </div>
+                <div class="hero-stat-item">
+                    <span class="number" data-count="8">0</span>
+                    <span class="label">Provinces couvertes</span>
+                </div>
+                <div class="hero-stat-item">
+                    <span class="number" data-count="92">0</span>
+                    <span class="label">% de réussite</span>
+                </div>
+            </div>
         </div>
-        <div class="hero-overlay"></div>
-        <canvas class="hero-canvas" id="heroCanvas"></canvas>
+    </div>
+</section>
 
-        <div class="container">
-            <div class="hero-content">
-                <div class="hero-text">
-                    <span class="badge"><i class="fas fa-leaf"></i> Développement durable</span>
-                    <h1>Construisons l'avenir de <span>l'Afrique</span></h1>
-                    <p>Chaque enfant congolais mérite une éducation de qualité et un environnement préservé. Ensemble, faisons de l'éducation le moteur du développement durable.</p>
-                    <div class="hero-cta-group">
-                        <a href="#mission" class="hero-cta">
-                            Découvrir nos actions <i class="fas fa-arrow-right"></i>
-                        </a>
-                        <a href="#impact" class="hero-cta hero-cta-outline">
-                            <i class="fas fa-chart-line"></i> Notre impact
-                        </a>
+<!-- ===== IMPACT ===== -->
+<section class="impact-section section-padding bg-white" id="impact">
+    <div class="container">
+        <div class="section-title">
+            <h2>Notre <span>impact</span> en chiffres</h2>
+            <p>Des résultats concrets grâce à votre soutien</p>
+            <div class="line"></div>
+        </div>
+        <div class="impact-grid">
+            <div class="impact-card">
+                <div class="icon"><i class="fas fa-users"></i></div>
+                <h3>15 000+</h3>
+                <p>Élèves bénéficiaires de nos programmes éducatifs</p>
+            </div>
+            <div class="impact-card">
+                <div class="icon"><i class="fas fa-school"></i></div>
+                <h3>120</h3>
+                <p>Écoles partenaires dans 8 provinces</p>
+            </div>
+            <div class="impact-card">
+                <div class="icon"><i class="fas fa-tree"></i></div>
+                <h3>25 000</h3>
+                <p>Arbres plantés lors de nos campagnes de reboisement</p>
+            </div>
+            <div class="impact-card">
+                <div class="icon"><i class="fas fa-chart-line"></i></div>
+                <h3>92%</h3>
+                <p>Taux de réussite aux examens nationaux</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== MISSION ===== -->
+<section class="mission-section section-padding bg-beige" id="mission">
+    <div class="container">
+        <div class="mission-grid">
+            <div class="mission-text">
+                <h2>Notre <span>mission</span></h2>
+                <p>
+                    Le <strong>CRADD</strong> (Centre de Recherche et d'Action pour le Développement Durable)
+                    est une organisation non gouvernementale créée en 2015 pour promouvoir l'éducation inclusive,
+                    la protection de l'environnement et le développement durable en République Démocratique du Congo.
+                </p>
+                <ul class="mission-list">
+                    <li><i class="fas fa-check"></i> Éducation accessible à tous, sans discrimination</li>
+                    <li><i class="fas fa-check"></i> Protection de l'environnement et éducation à l'écologie</li>
+                    <li><i class="fas fa-check"></i> Soutien psychosocial et autonomisation des communautés</li>
+                </ul>
+                <p style="margin-top: 16px;">
+                    Nous croyons que l'éducation et la préservation de notre planète sont les leviers fondamentaux
+                    pour transformer les sociétés et offrir à chaque enfant, quel que soit son origine, les clés de son avenir.
+                </p>
+            </div>
+            <div class="mission-image">
+                <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?w=800&q=80" alt="Éducation et développement durable" />
+                <div class="floating-badge">
+                    <i class="fas fa-hand-holding-heart"></i>
+                    <span>+92% de réussite</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== SERVICES ===== -->
+<section class="services-section section-padding bg-white" id="services">
+    <div class="container">
+        <div class="section-title">
+            <h2>Nos <span>actions</span></h2>
+            <p>Trois piliers pour un développement humain et environnemental durable</p>
+            <div class="line"></div>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="icon"><i class="fas fa-graduation-cap"></i></div>
+                <h4>Éducation pour tous</h4>
+                <p>Rendre l'éducation accessible aux enfants et jeunes des communautés rurales et périurbaines à travers la construction d'écoles écologiques et la formation des enseignants.</p>
+                <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="service-card">
+                <div class="icon"><i class="fas fa-seedling"></i></div>
+                <h4>Protection de l'environnement</h4>
+                <p>Mener des campagnes de reboisement, de gestion des déchets et d'éducation à l'écologie dans les écoles et les communautés pour un avenir plus vert.</p>
+                <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="service-card">
+                <div class="icon"><i class="fas fa-hand-holding-heart"></i></div>
+                <h4>Soutien psychosocial</h4>
+                <p>Accompagner les élèves et leurs familles avec des programmes de soutien psychologique et social pour favoriser un environnement d'apprentissage serein et résilient.</p>
+                <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== TÉMOIGNAGES ===== -->
+<section class="testimonials-section section-padding bg-cream" id="testimonials">
+    <div class="container">
+        <div class="section-title">
+            <h2>Ils <span>témoignent</span></h2>
+            <p>Les voix de ceux qui ont bénéficié de nos actions</p>
+            <div class="line"></div>
+        </div>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
+                <p>"Grâce au CRADD, mon fils a pu reprendre l'école après deux ans d'interruption. Aujourd'hui, il est parmi les meilleurs de sa classe et il participe aux clubs d'écologie."</p>
+                <div class="author">
+                    <div class="avatar">MM</div>
+                    <div class="info">
+                        <div class="name">Marie Mbuyi</div>
+                        <div class="role">Mère d'élève, Kinshasa</div>
                     </div>
                 </div>
-                <div class="hero-stats">
-                    <div class="hero-stat-item">
-                        <span class="number" data-count="15000">0</span>
-                        <span class="label">Élèves soutenus</span>
+            </div>
+            <div class="testimonial-card">
+                <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
+                <p>"Les formations que nous avons reçues sur l'éducation environnementale ont complètement transformé notre approche pédagogique. Les élèves sont plus engagés et conscients des enjeux."</p>
+                <div class="author">
+                    <div class="avatar">PK</div>
+                    <div class="info">
+                        <div class="name">Paul Kabasele</div>
+                        <div class="role">Enseignant, Lubumbashi</div>
                     </div>
-                    <div class="hero-stat-item">
-                        <span class="number" data-count="120">0</span>
-                        <span class="label">Écoles partenaires</span>
-                    </div>
-                    <div class="hero-stat-item">
-                        <span class="number" data-count="8">0</span>
-                        <span class="label">Provinces couvertes</span>
-                    </div>
-                    <div class="hero-stat-item">
-                        <span class="number" data-count="92">0</span>
-                        <span class="label">% de réussite</span>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
+                <p>"Le soutien psychosocial et les activités de reboisement proposés par le CRADD ont permis à de nombreux enfants de surmonter les traumatismes et de retrouver l'espoir."</p>
+                <div class="author">
+                    <div class="avatar">JM</div>
+                    <div class="info">
+                        <div class="name">Jean Mukendi</div>
+                        <div class="role">Directeur d'école, Goma</div>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ============================
-    SECTION IMPACT (nouvelle)
-    ============================ -->
-    <section class="impact-section section-padding" id="impact">
-        <div class="container">
-            <div class="section-title">
-                <h2>Notre <span>impact</span> en chiffres</h2>
-                <p>Des résultats concrets grâce à votre soutien</p>
-                <div class="line"></div>
+<!-- ===== BLOG ===== -->
+<section class="blog-section section-padding bg-white" id="blog">
+    <div class="container">
+        <div class="section-title">
+            <h2>Nos <span>actualités</span></h2>
+            <p>Restez informés de nos actions et projets</p>
+            <div class="line"></div>
+        </div>
+        <div class="blog-grid">
+            <div class="blog-card">
+                <div class="img">
+                    <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?w=800&q=80" alt="École écologique" />
+                    <span class="date">15 Jan 2025</span>
+                </div>
+                <div class="content">
+                    <span class="tag">Éducation</span>
+                    <h4>Nouvelle école écologique à Kisangani</h4>
+                    <p>Grâce à vos dons, une nouvelle école construite avec des matériaux durables et équipée de panneaux solaires a été inaugurée.</p>
+                    <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
-            <div class="impact-grid">
-                <div class="impact-card">
-                    <div class="icon"><i class="fas fa-users"></i></div>
-                    <h3>15 000+</h3>
-                    <p>Élèves bénéficiaires de nos programmes éducatifs</p>
+            <div class="blog-card">
+                <div class="img">
+                    <img src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80" alt="Reforestation" />
+                    <span class="date">8 Jan 2025</span>
                 </div>
-                <div class="impact-card">
-                    <div class="icon"><i class="fas fa-school"></i></div>
-                    <h3>120</h3>
-                    <p>Écoles partenaires dans 8 provinces</p>
+                <div class="content">
+                    <span class="tag">Environnement</span>
+                    <h4>Campagne de reboisement à Lubumbashi</h4>
+                    <p>Plus de 2 000 arbres plantés avec les élèves et les communautés locales pour lutter contre la déforestation et sensibiliser à la biodiversité.</p>
+                    <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
                 </div>
-                <div class="impact-card">
-                    <div class="icon"><i class="fas fa-tree"></i></div>
-                    <h3>25 000</h3>
-                    <p>Arbres plantés lors de nos campagnes de reboisement</p>
+            </div>
+            <div class="blog-card">
+                <div class="img">
+                    <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80" alt="Distribution de kits" />
+                    <span class="date">2 Jan 2025</span>
                 </div>
-                <div class="impact-card">
-                    <div class="icon"><i class="fas fa-chart-line"></i></div>
-                    <h3>92%</h3>
-                    <p>Taux de réussite aux examens nationaux</p>
+                <div class="content">
+                    <span class="tag">Solidarité</span>
+                    <h4>Distribution de fournitures scolaires à Bunia</h4>
+                    <p>Plus de 1 000 kits scolaires éco-responsables ont été distribués aux enfants vulnérables de la région, leur permettant de débuter l'année sereinement.</p>
+                    <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ============================
-    MISSION – disposition asymétrique
-    ============================ -->
-    <section class="mission-section section-padding" id="mission">
-        <div class="container">
-            <div class="mission-grid">
-                <div class="mission-text">
-                    <h2>Notre <span>mission</span></h2>
-                    <p>
-                        Le <strong>CRADD</strong> (Centre de Recherche et d'Action pour le Développement Durable)
-                        est une organisation non gouvernementale créée en 2015 pour promouvoir l'éducation inclusive,
-                        la protection de l'environnement et le développement durable en République Démocratique du Congo.
-                    </p>
-                    <ul class="mission-list">
-                        <li><i class="fas fa-check"></i> Éducation accessible à tous, sans discrimination</li>
-                        <li><i class="fas fa-check"></i> Protection de l'environnement et éducation à l'écologie</li>
-                        <li><i class="fas fa-check"></i> Soutien psychosocial et autonomisation des communautés</li>
-                    </ul>
-                    <p style="margin-top: 16px;">
-                        Nous croyons que l'éducation et la préservation de notre planète sont les leviers fondamentaux
-                        pour transformer les sociétés et offrir à chaque enfant, quel que soit son origine, les clés de son avenir.
-                    </p>
-                </div>
-                <div class="mission-image">
-                    <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?w=800&q=80" alt="Éducation et développement durable" />
-                    <div class="floating-badge">
-                        <i class="fas fa-hand-holding-heart"></i>
-                        <span>+92% de réussite</span>
-                    </div>
-                </div>
-            </div>
+<!-- ===== PARTENAIRES ===== -->
+<section class="partners-section">
+    <div class="container">
+        <div class="section-title">
+            <h2>Nos <span>partenaires</span></h2>
+            <p>Des organisations engagées à nos côtés</p>
+            <div class="line"></div>
         </div>
-    </section>
-
-    <!-- ============================
-    SERVICES
-    ============================ -->
-    <section class="services-section section-padding" id="services">
-        <div class="container">
-            <div class="section-title">
-                <h2>Nos <span>actions</span></h2>
-                <p>Trois piliers pour un développement humain et environnemental durable</p>
-                <div class="line"></div>
-            </div>
-            <div class="services-grid">
-                <div class="service-card">
-                    <div class="icon"><i class="fas fa-graduation-cap"></i></div>
-                    <h4>Éducation pour tous</h4>
-                    <p>Rendre l'éducation accessible aux enfants et jeunes des communautés rurales et périurbaines à travers la construction d'écoles écologiques et la formation des enseignants.</p>
-                    <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="service-card">
-                    <div class="icon"><i class="fas fa-seedling"></i></div>
-                    <h4>Protection de l'environnement</h4>
-                    <p>Mener des campagnes de reboisement, de gestion des déchets et d'éducation à l'écologie dans les écoles et les communautés pour un avenir plus vert.</p>
-                    <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="service-card">
-                    <div class="icon"><i class="fas fa-hand-holding-heart"></i></div>
-                    <h4>Soutien psychosocial</h4>
-                    <p>Accompagner les élèves et leurs familles avec des programmes de soutien psychologique et social pour favoriser un environnement d'apprentissage serein et résilient.</p>
-                    <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
-                </div>
-            </div>
+        <div class="partners-grid">
+            <div class="partner-item"><i class="fas fa-university"></i> Ministère de l'Éducation</div>
+            <div class="partner-item"><i class="fas fa-globe-africa"></i> UNESCO</div>
+            <div class="partner-item"><i class="fas fa-hand-holding-usd"></i> UNICEF</div>
+            <div class="partner-item"><i class="fas fa-tree"></i> WWF</div>
+            <div class="partner-item"><i class="fas fa-heart"></i> Croix-Rouge</div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ============================
-    TÉMOIGNAGES
-    ============================ -->
-    <section class="testimonials-section section-padding" id="testimonials">
-        <div class="container">
-            <div class="section-title">
-                <h2>Ils <span>témoignent</span></h2>
-                <p>Les voix de ceux qui ont bénéficié de nos actions</p>
-                <div class="line"></div>
-            </div>
-            <div class="testimonials-grid">
-                <div class="testimonial-card">
-                    <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
-                    <p>"Grâce au CRADD, mon fils a pu reprendre l'école après deux ans d'interruption. Aujourd'hui, il est parmi les meilleurs de sa classe et il participe aux clubs d'écologie."</p>
-                    <div class="author">
-                        <div class="avatar">MM</div>
-                        <div class="info">
-                            <div class="name">Marie Mbuyi</div>
-                            <div class="role">Mère d'élève, Kinshasa</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
-                    <p>"Les formations que nous avons reçues sur l'éducation environnementale ont complètement transformé notre approche pédagogique. Les élèves sont plus engagés et conscients des enjeux."</p>
-                    <div class="author">
-                        <div class="avatar">PK</div>
-                        <div class="info">
-                            <div class="name">Paul Kabasele</div>
-                            <div class="role">Enseignant, Lubumbashi</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
-                    <p>"Le soutien psychosocial et les activités de reboisement proposés par le CRADD ont permis à de nombreux enfants de surmonter les traumatismes et de retrouver l'espoir."</p>
-                    <div class="author">
-                        <div class="avatar">JM</div>
-                        <div class="info">
-                            <div class="name">Jean Mukendi</div>
-                            <div class="role">Directeur d'école, Goma</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<!-- ===== NEWSLETTER ===== -->
+<section class="newsletter-section" id="newsletter">
+    <div class="container">
+        <h2>Restez informé</h2>
+        <p>Recevez nos actualités et les rapports de nos actions éducatives et environnementales</p>
+        <form class="newsletter-form" id="newsletterForm" onsubmit="return false;">
+            <input type="email" placeholder="Votre adresse email" required />
+            <button type="button"><i class="fas fa-paper-plane"></i> S'inscrire</button>
+        </form>
+    </div>
+</section>
 
-    <!-- ============================
-    BLOG
-    ============================ -->
-    <section class="blog-section section-padding" id="blog">
-        <div class="container">
-            <div class="section-title">
-                <h2>Nos <span>actualités</span></h2>
-                <p>Restez informés de nos actions et projets</p>
-                <div class="line"></div>
-            </div>
-            <div class="blog-grid">
-                <div class="blog-card">
-                    <div class="img">
-                        <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?w=800&q=80" alt="École écologique" />
-                        <span class="date">15 Jan 2025</span>
-                    </div>
-                    <div class="content">
-                        <span class="tag">Éducation</span>
-                        <h4>Nouvelle école écologique à Kisangani</h4>
-                        <p>Grâce à vos dons, une nouvelle école construite avec des matériaux durables et équipée de panneaux solaires a été inaugurée.</p>
-                        <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
-                    </div>
-                </div>
-                <div class="blog-card">
-                    <div class="img">
-                        <img src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80" alt="Reforestation" />
-                        <span class="date">8 Jan 2025</span>
-                    </div>
-                    <div class="content">
-                        <span class="tag">Environnement</span>
-                        <h4>Campagne de reboisement à Lubumbashi</h4>
-                        <p>Plus de 2 000 arbres plantés avec les élèves et les communautés locales pour lutter contre la déforestation et sensibiliser à la biodiversité.</p>
-                        <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
-                    </div>
-                </div>
-                <div class="blog-card">
-                    <div class="img">
-                        <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80" alt="Distribution de kits" />
-                        <span class="date">2 Jan 2025</span>
-                    </div>
-                    <div class="content">
-                        <span class="tag">Solidarité</span>
-                        <h4>Distribution de fournitures scolaires à Bunia</h4>
-                        <p>Plus de 1 000 kits scolaires éco-responsables ont été distribués aux enfants vulnérables de la région, leur permettant de débuter l'année sereinement.</p>
-                        <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============================
-    PARTENAIRES
-    ============================ -->
-    <section class="partners-section">
-        <div class="container">
-            <div class="section-title">
-                <h2>Nos <span>partenaires</span></h2>
-                <p>Des organisations engagées à nos côtés</p>
-                <div class="line"></div>
-            </div>
-            <div class="partners-grid">
-                <div class="partner-item"><i class="fas fa-university"></i> Ministère de l'Éducation</div>
-                <div class="partner-item"><i class="fas fa-globe-africa"></i> UNESCO</div>
-                <div class="partner-item"><i class="fas fa-hand-holding-usd"></i> UNICEF</div>
-                <div class="partner-item"><i class="fas fa-tree"></i> WWF</div>
-                <div class="partner-item"><i class="fas fa-heart"></i> Croix-Rouge</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============================
-    NEWSLETTER (avec fond image)
-    ============================ -->
-    <section class="newsletter-section" id="newsletter">
-        <div class="container">
-            <h2>Restez informé</h2>
-            <p>Recevez nos actualités et les rapports de nos actions éducatives et environnementales</p>
-            <form class="newsletter-form" id="newsletterForm" onsubmit="return false;">
-                <input type="email" placeholder="Votre adresse email" required />
-                <button type="button"><i class="fas fa-paper-plane"></i> S'inscrire</button>
-            </form>
-        </div>
-    </section>
-
-    <!-- ============================
-    FOOTER
-    ============================ -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-grid">
-                <div class="footer-brand">
-                    <span class="brand-logo">CRADD<span>.org</span></span>
-                    <p>Organisation non gouvernementale dédiée à l'éducation, à l'environnement et au développement durable en République Démocratique du Congo.</p>
-                    <div class="footer-social">
-                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
-                        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
-                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                    </div>
-                </div>
-                <div class="footer-column">
-                    <h4>CRADD</h4>
-                    <ul>
-                        <li><a href="#home">Accueil</a></li>
-                        <li><a href="#mission">Mission</a></li>
-                        <li><a href="#services">Nos actions</a></li>
-                        <li><a href="#blog">Actualités</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h4>Accès rapide</h4>
-                    <ul>
-                        <li><a href="#impact">Impact</a></li>
-                        <li><a href="#testimonials">Témoignages</a></li>
-                        <li><a href="{% url 'accounts:login' %}">Espace enseignant</a></li>
-                        <li><a href="#">Devenir bénévole</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h4>Contact</h4>
-                    <ul>
-                        <li><a href="mailto:contact@cradd.org"><i class="fas fa-envelope" style="margin-right:8px;"></i>contact@cradd.org</a></li>
-                        <li><a href="tel:+243123456789"><i class="fas fa-phone" style="margin-right:8px;"></i>+243 12 345 6789</a></li>
-                        <li><a href="#"><i class="fas fa-map-marker-alt" style="margin-right:8px;"></i>Kinshasa, RDC</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 <span class="cradd">CRADD</span> · ONG pour l'Éducation et l'Environnement · Tous droits réservés</p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- ============================
-    SCRIPTS
-    ============================ -->
-    <script>
-        // ============================================================
-        // CANVAS PARTICLES
-        // ============================================================
-        (function () {
-            const canvas = document.getElementById('heroCanvas');
-            const ctx = canvas.getContext('2d');
-            let width, height;
-            let particles = [];
-            const count = 80;
-
-            function resize() {
-                width = canvas.width = window.innerWidth;
-                height = canvas.height = window.innerHeight;
-            }
-            window.addEventListener('resize', resize);
-            resize();
-
-            class Particle {
-                constructor() {
-                    this.reset();
-                }
-                reset() {
-                    this.x = Math.random() * width;
-                    this.y = Math.random() * height;
-                    this.size = Math.random() * 2 + 1;
-                    this.speedX = (Math.random() - 0.5) * 0.4;
-                    this.speedY = (Math.random() - 0.5) * 0.4;
-                    this.opacity = Math.random() * 0.3 + 0.1;
-                }
-                update() {
-                    this.x += this.speedX;
-                    this.y += this.speedY;
-                    if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
-                        this.reset();
-                    }
-                }
-                draw() {
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(165, 214, 167, ${this.opacity})`;
-                    ctx.fill();
-                }
-            }
-
-            for (let i = 0; i < count; i++) {
-                particles.push(new Particle());
-            }
-
-            function drawLines() {
-                for (let i = 0; i < particles.length; i++) {
-                    for (let j = i + 1; j < particles.length; j++) {
-                        const dx = particles[i].x - particles[j].x;
-                        const dy = particles[i].y - particles[j].y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < 150) {
-                            ctx.beginPath();
-                            ctx.moveTo(particles[i].x, particles[i].y);
-                            ctx.lineTo(particles[j].x, particles[j].y);
-                            ctx.strokeStyle = `rgba(165, 214, 167, ${0.04 * (1 - dist / 150)})`;
-                            ctx.lineWidth = 0.6;
-                            ctx.stroke();
-                        }
-                    }
-                }
-            }
-
-            function animate() {
-                ctx.clearRect(0, 0, width, height);
-                particles.forEach(p => {
-                    p.update();
-                    p.draw();
-                });
-                drawLines();
-                requestAnimationFrame(animate);
-            }
-            animate();
-        })();
-
-        // ============================================================
-        // MENU MOBILE
-        // ============================================================
-        document.getElementById('menuToggle').addEventListener('click', function () {
-            document.getElementById('navLinks').classList.toggle('active');
-        });
-
-        // ============================================================
-        // NEWSLETTER
-        // ============================================================
-        document.querySelector('.newsletter-form button').addEventListener('click', function () {
-            const email = document.querySelector('.newsletter-form input').value.trim();
-            if (email) {
-                alert('Merci pour votre inscription ! Vous recevrez nos prochaines actualités.');
-                document.querySelector('.newsletter-form input').value = '';
-            } else {
-                alert('Veuillez saisir une adresse email valide.');
-            }
-        });
-
-        // ============================================================
-        // SCROLL ANIMATIONS & COUNTERS
-        // ============================================================
-        document.addEventListener('DOMContentLoaded', function () {
-            // Navbar scroll
-            window.addEventListener('scroll', function () {
-                const navbar = document.getElementById('navbar');
-                if (window.scrollY > 20) {
-                    navbar.classList.add('navbar-scrolled');
-                } else {
-                    navbar.classList.remove('navbar-scrolled');
-                }
-            });
-
-            // Compteurs (héros et impact)
-            const counters = document.querySelectorAll('.number');
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const el = entry.target;
-                        const target = parseInt(el.getAttribute('data-count'));
-                        const duration = 2000;
-                        const step = Math.max(1, Math.floor(target / 60));
-                        let current = 0;
-                        const timer = setInterval(() => {
-                            current += step;
-                            if (current >= target) {
-                                el.textContent = target + (target === 92 ? '%' : '+');
-                                clearInterval(timer);
-                            } else {
-                                el.textContent = current + (target === 92 ? '%' : '+');
-                            }
-                        }, 30);
-                        observer.unobserve(el);
-                    }
-                });
-            }, { threshold: 0.5 });
-
-            counters.forEach(c => observer.observe(c));
-
-            // Fade-in des éléments
-            const fadeElems = document.querySelectorAll('.impact-card, .service-card, .testimonial-card, .blog-card, .partner-item');
-            const fadeObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }
-                });
-            }, { threshold: 0.1 });
-
-            fadeElems.forEach(el => {
-                el.style.opacity = '0';
-                el.style.transform = 'translateY(30px)';
-                el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-                fadeObserver.observe(el);
-            });
-        });
-    </script>
-</body>
-</html>
+{% endblock %}
