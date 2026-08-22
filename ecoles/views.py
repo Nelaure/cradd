@@ -1,3 +1,5 @@
+import requests
+from collections import Counter
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -17,6 +19,7 @@ from .forms import (
 )
 from eleves.models import Eleve
 from .utils import recalculer_resultats_eleve
+from accounts.models import AuditLog  # <-- AJOUT pour les logs de connexion
 
 # ===================== FONCTIONS UTILITAIRES =====================
 
@@ -157,6 +160,29 @@ def dashboard_view(request):
 
         provinces = Province.objects.all().order_by('nom')
 
+        # ============================================================
+        # NOUVEAU : Statistiques par pays (visiteurs uniques)
+        # ============================================================
+        connexions = AuditLog.objects.filter(action=AuditLog.ActionType.LOGIN, success=True)
+        ips_uniques = connexions.values_list('ip_address', flat=True).distinct()[:100]  # limite à 100 IPs
+
+        country_counts = {}
+        for ip in ips_uniques:
+            if ip:
+                try:
+                    response = requests.get(f'http://ip-api.com/json/{ip}?fields=country', timeout=2)
+                    if response.status_code == 200:
+                        data = response.json()
+                        country = data.get('country', 'Inconnu')
+                        country_counts[country] = country_counts.get(country, 0) + 1
+                except:
+                    pass  # Ignorer les erreurs (timeout, etc.)
+
+        sorted_countries = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)
+        country_labels = [c[0] for c in sorted_countries[:10]]  # Top 10
+        country_data = [c[1] for c in sorted_countries[:10]]
+        total_pays = len(country_counts)
+
         context.update({
             'role': 'admin',
             'total_ecoles': total_ecoles,
@@ -176,6 +202,10 @@ def dashboard_view(request):
             'stats_par_ecole': stats_par_ecole,
             'provinces': provinces,
             'province_filter': province_filter,
+            # Nouvelles variables
+            'country_labels': country_labels,
+            'country_data': country_data,
+            'total_pays': total_pays,
         })
         template = 'ecoles/dashboard_admin.html'
 
