@@ -179,10 +179,10 @@ def dashboard_view(request):
                     pass  # Ignorer les erreurs (timeout, etc.)
 
         sorted_countries = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)
-        country_labels = [c[0] for c in sorted_countries[:10]]  # Top 10
-        country_data = [c[1] for c in sorted_countries[:10]]
+        country_items = sorted_countries[:10]                  # liste de tuples (pays, count)
+        country_labels = [c[0] for c in country_items]
+        country_data = [c[1] for c in country_items]
         total_pays = len(country_counts)
-
         context.update({
             'role': 'admin',
             'total_ecoles': total_ecoles,

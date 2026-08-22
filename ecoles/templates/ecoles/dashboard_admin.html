@@ -203,10 +203,10 @@
                             <tr><th>Pays</th><th>Visiteurs</th></tr>
                         </thead>
                         <tbody>
-                            {% for label, value in country_data|slice:":10" %}
+                            {% for country, count in country_items %}
                             <tr>
-                                <td>{{ label }}</td>
-                                <td>{{ value }}</td>
+                                <td>{{ country }}</td>
+                                <td>{{ count }}</td>
                             </tr>
                             {% empty %}
                             <tr><td colspan="2" class="text-muted">Aucune donnée de géolocalisation</td></tr>
