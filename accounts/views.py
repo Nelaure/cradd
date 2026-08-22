@@ -419,6 +419,11 @@ def user_delete_view(request, pk):
     
     user = get_object_or_404(Utilisateur, pk=pk)
     
+    # --- INTERDIRE LA SUPPRESSION DE L'ADMINISTRATEUR PRINCIPAL ---
+    if user.is_superuser:
+        messages.error(request, "Cet utilisateur est un administrateur principal et ne peut pas être supprimé.")
+        return redirect('accounts:user_list')
+    
     if user == request.user:
         messages.error(request, "Vous ne pouvez pas supprimer votre propre compte.")
         return redirect('accounts:user_list')

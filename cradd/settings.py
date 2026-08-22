@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ============================
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
-    # En développement, on peut utiliser une clé par défaut, mais attention à ne pas le faire en production
+    # En développement, on peut utiliser une clé par défaut
     if os.getenv('DEBUG', 'False') == 'True':
         SECRET_KEY = 'django-insecure-8#v^1*(0(3+5&k$9z^#7c&f+h3r2!a'
         print("⚠️  SECRET_KEY non définie dans .env, utilisation d'une clé par défaut (développement uniquement)")
@@ -47,9 +47,12 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # --- NOUVEAU : middleware de contrôle des sessions actives ---
+    'accounts.middleware.ActiveUserMiddleware',
+    # --- middleware de journalisation des actions ---
+    'accounts.middleware.AuditLogMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'accounts.middleware.AuditLogMiddleware',
 ]
 
 ROOT_URLCONF = 'cradd.urls'
@@ -76,12 +79,19 @@ WSGI_APPLICATION = 'cradd.wsgi.application'
 # ============================
 # 3. Base de données
 # ============================
-DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
-        conn_max_age=600
-    )
-}
+if DEBUG:
+    # En développement, on utilise SQLite (pas besoin de DATABASE_URL)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    # En production, on utilise la variable d'environnement DATABASE_URL (PostgreSQL)
+    DATABASES = {
+        'default': dj_database_url.config(conn_max_age=600)
+    }
 
 # ============================
 # 4. Validation des mots de passe
