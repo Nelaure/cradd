@@ -162,26 +162,36 @@ def dashboard_view(request):
         provinces = Province.objects.all().order_by('nom')
 
         # ============================================================
-        # NOUVEAU : Statistiques de géolocalisation (pays + ville)
+        # STATISTIQUES DE GÉOLOCALISATION (PAYS + VILLE) - VERSION CORRIGÉE
         # ============================================================
-        # Utiliser un cache en session (durée 10 minutes) pour éviter trop d'appels API
         cache_key = 'geo_stats'
         cache_time_key = 'geo_stats_time'
         geo_data = None
 
+        # Initialiser les variables avec des valeurs par défaut
+        country_items = []
+        city_items = []
+        total_pays = 0
+        total_villes = 0
+
+        # Vérifier le cache en session (timestamp stocké en string ISO)
         if cache_key in request.session and cache_time_key in request.session:
-            cache_time = request.session[cache_time_key]
-            if datetime.now() - cache_time < timedelta(minutes=10):
-                geo_data = request.session[cache_key]
+            try:
+                cache_time_str = request.session[cache_time_key]
+                cache_time = datetime.fromisoformat(cache_time_str)
+                if datetime.now() - cache_time < timedelta(minutes=10):
+                    geo_data = request.session[cache_key]
+            except (ValueError, TypeError):
+                # Si le timestamp est corrompu, on ignore le cache
+                pass
 
         if geo_data is None:
-            # Récupérer les 50 dernières connexions réussies uniques par IP
+            # Récupérer les 50 dernières IPs uniques
             connexions = AuditLog.objects.filter(
                 action=AuditLog.ActionType.LOGIN,
                 success=True
             ).order_by('-timestamp')
 
-            # Extraire les IPs uniques avec leur dernière date de connexion
             ip_last_seen = {}
             for log in connexions:
                 if log.ip_address and log.ip_address not in ip_last_seen:
@@ -191,7 +201,7 @@ def dashboard_view(request):
 
             country_counts = {}
             city_counts = {}
-            city_detail = {}  # Pour stocker (pays, ville) -> count
+            city_detail = {}
 
             for ip, last_seen in ip_last_seen.items():
                 try:
@@ -203,20 +213,17 @@ def dashboard_view(request):
                         data = response.json()
                         country = data.get('country', 'Inconnu')
                         city = data.get('city', 'Inconnu')
-                        # Compter par pays
                         country_counts[country] = country_counts.get(country, 0) + 1
-                        # Compter par ville (avec pays pour éviter les homonymes)
                         key = f"{country} - {city}"
                         city_counts[key] = city_counts.get(key, 0) + 1
                         city_detail[key] = {'country': country, 'city': city}
                 except:
                     pass
 
-            # Trier
             sorted_countries = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)
             sorted_cities = sorted(city_counts.items(), key=lambda x: x[1], reverse=True)
 
-            # Préparer les données pour le template
+            # Préparer les données
             country_items = sorted_countries[:10]
             city_items = []
             for key, count in sorted_cities[:10]:
@@ -225,19 +232,20 @@ def dashboard_view(request):
                     'city': city_detail[key]['city'],
                     'count': count
                 })
+            total_pays = len(country_counts)
+            total_villes = len(city_counts)
 
+            # Mettre en cache (timestamp en string ISO)
             geo_data = {
                 'country_items': country_items,
                 'city_items': city_items,
-                'total_pays': len(country_counts),
-                'total_villes': len(city_counts),
+                'total_pays': total_pays,
+                'total_villes': total_villes,
             }
-
-            # Mettre en cache en session
             request.session[cache_key] = geo_data
-            request.session[cache_time_key] = datetime.now()
+            request.session[cache_time_key] = datetime.now().isoformat()
         else:
-            # Récupérer les données du cache
+            # Récupérer depuis le cache
             country_items = geo_data['country_items']
             city_items = geo_data['city_items']
             total_pays = geo_data['total_pays']
@@ -414,6 +422,7 @@ def dashboard_view(request):
         return redirect('ecoles:index')
 
     return render(request, template, context)
+
 
 # ===================== RECHERCHE PARENT AVEC PÉRIODE ET ANIMATION =====================
 
