@@ -7,3 +7,4 @@ gunicorn==21.2.0
 Pillow==10.2.0
 django-crispy-forms==2.3
 crispy-bootstrap5==2025.6
+requests~=2.34.0
