@@ -1,5 +1,6 @@
 import requests
 from collections import Counter
+from datetime import datetime, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -19,7 +20,7 @@ from .forms import (
 )
 from eleves.models import Eleve
 from .utils import recalculer_resultats_eleve
-from accounts.models import AuditLog  # <-- AJOUT pour les logs de connexion
+from accounts.models import AuditLog
 
 # ===================== FONCTIONS UTILITAIRES =====================
 
@@ -161,28 +162,91 @@ def dashboard_view(request):
         provinces = Province.objects.all().order_by('nom')
 
         # ============================================================
-        # NOUVEAU : Statistiques par pays (visiteurs uniques)
+        # NOUVEAU : Statistiques de géolocalisation (pays + ville)
         # ============================================================
-        connexions = AuditLog.objects.filter(action=AuditLog.ActionType.LOGIN, success=True)
-        ips_uniques = connexions.values_list('ip_address', flat=True).distinct()[:100]  # limite à 100 IPs
+        # Utiliser un cache en session (durée 10 minutes) pour éviter trop d'appels API
+        cache_key = 'geo_stats'
+        cache_time_key = 'geo_stats_time'
+        geo_data = None
 
-        country_counts = {}
-        for ip in ips_uniques:
-            if ip:
+        if cache_key in request.session and cache_time_key in request.session:
+            cache_time = request.session[cache_time_key]
+            if datetime.now() - cache_time < timedelta(minutes=10):
+                geo_data = request.session[cache_key]
+
+        if geo_data is None:
+            # Récupérer les 50 dernières connexions réussies uniques par IP
+            connexions = AuditLog.objects.filter(
+                action=AuditLog.ActionType.LOGIN,
+                success=True
+            ).order_by('-timestamp')
+
+            # Extraire les IPs uniques avec leur dernière date de connexion
+            ip_last_seen = {}
+            for log in connexions:
+                if log.ip_address and log.ip_address not in ip_last_seen:
+                    ip_last_seen[log.ip_address] = log.timestamp
+                    if len(ip_last_seen) >= 50:
+                        break
+
+            country_counts = {}
+            city_counts = {}
+            city_detail = {}  # Pour stocker (pays, ville) -> count
+
+            for ip, last_seen in ip_last_seen.items():
                 try:
-                    response = requests.get(f'http://ip-api.com/json/{ip}?fields=country', timeout=2)
+                    response = requests.get(
+                        f'http://ip-api.com/json/{ip}?fields=country,city',
+                        timeout=3
+                    )
                     if response.status_code == 200:
                         data = response.json()
                         country = data.get('country', 'Inconnu')
+                        city = data.get('city', 'Inconnu')
+                        # Compter par pays
                         country_counts[country] = country_counts.get(country, 0) + 1
+                        # Compter par ville (avec pays pour éviter les homonymes)
+                        key = f"{country} - {city}"
+                        city_counts[key] = city_counts.get(key, 0) + 1
+                        city_detail[key] = {'country': country, 'city': city}
                 except:
-                    pass  # Ignorer les erreurs (timeout, etc.)
+                    pass
 
-        sorted_countries = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)
-        country_items = sorted_countries[:10]                  # liste de tuples (pays, count)
-        country_labels = [c[0] for c in country_items]
-        country_data = [c[1] for c in country_items]
-        total_pays = len(country_counts)
+            # Trier
+            sorted_countries = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)
+            sorted_cities = sorted(city_counts.items(), key=lambda x: x[1], reverse=True)
+
+            # Préparer les données pour le template
+            country_items = sorted_countries[:10]
+            city_items = []
+            for key, count in sorted_cities[:10]:
+                city_items.append({
+                    'country': city_detail[key]['country'],
+                    'city': city_detail[key]['city'],
+                    'count': count
+                })
+
+            geo_data = {
+                'country_items': country_items,
+                'city_items': city_items,
+                'total_pays': len(country_counts),
+                'total_villes': len(city_counts),
+            }
+
+            # Mettre en cache en session
+            request.session[cache_key] = geo_data
+            request.session[cache_time_key] = datetime.now()
+        else:
+            # Récupérer les données du cache
+            country_items = geo_data['country_items']
+            city_items = geo_data['city_items']
+            total_pays = geo_data['total_pays']
+            total_villes = geo_data['total_villes']
+
+        # Préparer les labels et données pour les graphiques
+        country_labels = [item[0] for item in country_items]
+        country_data = [item[1] for item in country_items]
+
         context.update({
             'role': 'admin',
             'total_ecoles': total_ecoles,
@@ -202,10 +266,13 @@ def dashboard_view(request):
             'stats_par_ecole': stats_par_ecole,
             'provinces': provinces,
             'province_filter': province_filter,
-            # Nouvelles variables
+            # Nouvelles données de géolocalisation
+            'country_items': country_items,
             'country_labels': country_labels,
             'country_data': country_data,
             'total_pays': total_pays,
+            'city_items': city_items,
+            'total_villes': total_villes,
         })
         template = 'ecoles/dashboard_admin.html'
 
@@ -435,7 +502,7 @@ def parent_recherche(request):
                     resultats_par_cours[cours.id] = {
                         'cours_nom': cours.nom,
                         'evaluations': evaluations,
-                        'cycles_totals': cycles_totals,  # dictionnaire {cycle_num: {total_obtenu, total_possible, pourcentage}}
+                        'cycles_totals': cycles_totals,
                     }
 
                 # Filtrer les cycles si période choisie
