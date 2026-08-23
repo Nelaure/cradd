@@ -1,10 +1,9 @@
-# accounts/middleware.py
+import re
 from django.utils.deprecation import MiddlewareMixin
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.urls import reverse
-import re
 
 from .models import AuditLog
 from .views import log_audit, get_client_ip
@@ -25,6 +24,8 @@ class ActiveUserMiddleware(MiddlewareMixin):
 class AuditLogMiddleware(MiddlewareMixin):
     """
     Middleware pour journaliser automatiquement les actions des utilisateurs.
+    - Journalise les actions POST (création, modification, suppression) pour les utilisateurs authentifiés.
+    - Journalise les visites (GET) pour tous les visiteurs (anonymes ou connectés) sur les pages importantes.
     """
 
     # URLs à ignorer (pour éviter la pollution du journal)
@@ -39,29 +40,12 @@ class AuditLogMiddleware(MiddlewareMixin):
     ]
 
     def process_request(self, request):
-        # Ne journaliser que les requêtes GET pour les pages importantes
-        if request.method == 'GET' and request.user and request.user.is_authenticated:
-            path = request.path
-            for pattern in self.IGNORE_PATHS:
-                if re.match(pattern, path):
-                    return None
-
-            # Journaliser les consultations de pages importantes
-            important_pages = [
-                '/dashboard/', '/ecoles/', '/niveaux/', '/classes/',
-                '/cours/', '/eleves/', '/resultats/', '/bulletins/',
-                '/provinces/', '/domaines/', '/users/', '/audit-log/'
-            ]
-
-            if any(path.startswith(page) for page in important_pages):
-                # Limiter la journalisation pour éviter trop de logs
-                # On ne journalise que si l'utilisateur n'a pas déjà consulté cette page
-                # depuis 5 minutes (exemple : on pourrait stocker en session)
-                pass
+        # Cette méthode peut être utilisée pour d'autres traitements, mais nous laissons vide pour l'instant
+        pass
 
     def process_response(self, request, response):
-        # Journaliser les actions POST (création, modification, suppression)
-        if request.method == 'POST' and request.user and request.user.is_authenticated:
+        # --- 1. Journaliser les actions POST (authentifiés) ---
+        if request.method == 'POST' and request.user.is_authenticated:
             path = request.path
 
             # Déterminer le type d'action
@@ -108,5 +92,31 @@ class AuditLogMiddleware(MiddlewareMixin):
                     success=response.status_code < 400,
                     message=f"{action} sur {model_name}"
                 )
+
+        # --- 2. Journaliser les visites (GET) pour tous ---
+        if request.method == 'GET' and response.status_code < 400:
+            path = request.path
+            # Ignorer les chemins statiques et ceux définis
+            for pattern in self.IGNORE_PATHS:
+                if re.match(pattern, path):
+                    return response
+
+            # On enregistre pour toutes les pages, sauf les ressources statiques, pour avoir une vue complète des visiteurs.
+            # Option : limiter aux pages importantes pour réduire le volume.
+            # Ici on enregistre tout GET (hors IGNORE_PATHS).
+            user = request.user if request.user.is_authenticated else None
+            ip = get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+            # On peut ajouter un message contenant le chemin
+            log_audit(
+                user=user,
+                action=AuditLog.ActionType.VIEW,
+                model_name=None,
+                ip_address=ip,
+                user_agent=user_agent,
+                success=True,
+                message=f"Visite de {path}"
+            )
 
         return response
