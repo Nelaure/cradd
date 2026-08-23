@@ -62,7 +62,6 @@
             --navbar-bg: rgba(255, 255, 255, 0.80);
             --sidebar-bg: rgba(255, 255, 255, 0.60);
             --sidebar-width: 230px;
-            --watermark-color: rgba(30, 74, 43, 0.04); /* filigrane très léger */
         }
 
         [data-bs-theme="dark"] {
@@ -81,34 +80,90 @@
             --navbar-bg: rgba(12, 26, 18, 0.85);
             --sidebar-bg: rgba(12, 26, 18, 0.70);
             --c-gradient-light: linear-gradient(145deg, #1a3326, #0e1f16);
-            --watermark-color: rgba(165, 214, 167, 0.04); /* plus clair en mode sombre */
         }
 
         /* ============================================================
-           FILIGRANE EN ARRIÈRE-PLAN SUR TOUTE LA PAGE
+           SPLASH SCREEN – animation "CRADDasbl.org" au chargement
            ============================================================ */
-        body::before {
-            content: "CRADDasbl.org";
+        #splash {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-20deg);
-            font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(4rem, 20vw, 20rem);
-            font-weight: 700;
-            color: var(--watermark-color);
-            white-space: nowrap;
-            pointer-events: none;
-            z-index: 0;
-            letter-spacing: 0.05em;
-            text-shadow: 0 0 30px rgba(0,0,0,0.02);
-            user-select: none;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--c-gradient);
+            background: linear-gradient(145deg, #0f2b1a, #1e4a2b, #2e7d32);
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+            opacity: 1;
+            visibility: visible;
+            pointer-events: none; /* pour ne pas bloquer les clics pendant l'affichage */
         }
 
-        /* Pour que le contenu principal soit au-dessus du filigrane */
-        .main-wrapper {
-            position: relative;
-            z-index: 1;
+            #splash.hidden {
+                opacity: 0;
+                visibility: hidden;
+            }
+
+        .splash-content {
+            text-align: center;
+            color: #fff;
+            font-family: 'Cormorant Garamond', serif;
+            animation: pulse-focus 2.2s ease-in-out infinite alternate;
+        }
+
+            .splash-content h1 {
+                font-size: clamp(4rem, 15vw, 8rem);
+                font-weight: 700;
+                letter-spacing: 0.02em;
+                text-shadow: 0 0 40px rgba(255, 255, 255, 0.15), 0 10px 30px rgba(0, 0, 0, 0.3);
+                margin: 0;
+                line-height: 1.1;
+            }
+
+            .splash-content .sub {
+                font-family: 'Outfit', sans-serif;
+                font-weight: 300;
+                font-size: clamp(1rem, 3vw, 1.6rem);
+                letter-spacing: 0.3em;
+                text-transform: uppercase;
+                opacity: 0.8;
+                margin-top: 0.5rem;
+                border-top: 1px solid rgba(255,255,255,0.15);
+                padding-top: 1rem;
+                display: inline-block;
+            }
+
+            .splash-content .icon {
+                font-size: clamp(3rem, 8vw, 5rem);
+                margin-bottom: 0.5rem;
+                opacity: 0.7;
+                display: block;
+                animation: rotate-icon 6s linear infinite;
+            }
+
+        @keyframes pulse-focus {
+            0% {
+                transform: scale(0.92);
+                opacity: 0.7;
+                filter: blur(2px);
+            }
+
+            100% {
+                transform: scale(1.08);
+                opacity: 1;
+                filter: blur(0);
+            }
+        }
+
+        @keyframes rotate-icon {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* ============================================================
@@ -1964,6 +2019,17 @@
 <body>
 
     <!-- ============================================================
+    SPLASH SCREEN – animation "CRADDasbl.org" au chargement
+    ============================================================ -->
+    <div id="splash" class="">
+        <div class="splash-content">
+            <span class="icon"><i class="fas fa-globe-africa"></i></span>
+            <h1>CRADDasbl<small style="font-weight:300;font-size:0.6em;">.org</small></h1>
+            <div class="sub">Éducation &amp; Développement Durable</div>
+        </div>
+    </div>
+
+    <!-- ============================================================
     SIDEBAR (uniquement si connecté)
     ============================================================ -->
     {% if user.is_authenticated %}
@@ -2187,6 +2253,20 @@
     <script>
         (function () {
             'use strict';
+
+            // ============================================================
+            // SPLASH SCREEN – disparition automatique après 4 secondes
+            // ============================================================
+            const splash = document.getElementById('splash');
+            if (splash) {
+                setTimeout(() => {
+                    splash.classList.add('hidden');
+                    // Retirer complètement du DOM après la transition pour libérer la mémoire
+                    setTimeout(() => {
+                        splash.style.display = 'none';
+                    }, 800);
+                }, 3800); // 3,8 secondes d'affichage (la transition dure 0,8s)
+            }
 
             // ============================================================
             // THÈME (clair/sombre)
