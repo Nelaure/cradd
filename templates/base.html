@@ -62,6 +62,7 @@
             --navbar-bg: rgba(255, 255, 255, 0.80);
             --sidebar-bg: rgba(255, 255, 255, 0.60);
             --sidebar-width: 230px;
+            --watermark-color: rgba(30, 74, 43, 0.04); /* filigrane très léger */
         }
 
         [data-bs-theme="dark"] {
@@ -80,6 +81,34 @@
             --navbar-bg: rgba(12, 26, 18, 0.85);
             --sidebar-bg: rgba(12, 26, 18, 0.70);
             --c-gradient-light: linear-gradient(145deg, #1a3326, #0e1f16);
+            --watermark-color: rgba(165, 214, 167, 0.04); /* plus clair en mode sombre */
+        }
+
+        /* ============================================================
+           FILIGRANE EN ARRIÈRE-PLAN SUR TOUTE LA PAGE
+           ============================================================ */
+        body::before {
+            content: "CRADDasbl.org";
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-20deg);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(4rem, 20vw, 20rem);
+            font-weight: 700;
+            color: var(--watermark-color);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            letter-spacing: 0.05em;
+            text-shadow: 0 0 30px rgba(0,0,0,0.02);
+            user-select: none;
+        }
+
+        /* Pour que le contenu principal soit au-dessus du filigrane */
+        .main-wrapper {
+            position: relative;
+            z-index: 1;
         }
 
         /* ============================================================
