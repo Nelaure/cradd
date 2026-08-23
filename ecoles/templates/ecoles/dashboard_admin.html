@@ -182,36 +182,29 @@
 </div>
 
 <!-- ============================================================
-     NOUVEAU : STATISTIQUES DE GÉOLOCALISATION (PAYS + VILLES)
+     STATISTIQUES VISITEURS ANONYMES (7 derniers jours)
      ============================================================ -->
-
-<!-- Section Pays -->
 <div class="row g-4 mt-4">
     <div class="col-lg-6">
         <div class="card-glass">
-            <div class="card-header"><i class="fas fa-globe me-2"></i>Visiteurs par pays</div>
+            <div class="card-header"><i class="fas fa-user-secret me-2"></i>Visiteurs anonymes (pays)</div>
             <div class="card-body">
-                <canvas id="countryChart" height="250"></canvas>
+                <canvas id="visitorCountryChart" height="200"></canvas>
             </div>
         </div>
     </div>
     <div class="col-lg-6">
         <div class="card-glass">
-            <div class="card-header"><i class="fas fa-list me-2"></i>Top pays ({{ total_pays }} pays distincts)</div>
+            <div class="card-header"><i class="fas fa-city me-2"></i>Visiteurs par ville ({{ total_visitor_villes }} villes)</div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover">
-                        <thead>
-                            <tr><th>Pays</th><th>Visiteurs</th></tr>
-                        </thead>
+                        <thead><tr><th>Pays</th><th>Ville</th><th>Visiteurs</th></tr></thead>
                         <tbody>
-                            {% for country, count in country_items %}
-                            <tr>
-                                <td>{{ country }}</td>
-                                <td>{{ count }}</td>
-                            </tr>
+                            {% for item in visitor_city_items %}
+                            <tr><td>{{ item.country }}</td><td>{{ item.city }}</td><td>{{ item.count }}</td></tr>
                             {% empty %}
-                            <tr><td colspan="2" class="text-muted">Aucune donnée de géolocalisation</td></tr>
+                            <tr><td colspan="3" class="text-muted">Aucune donnée</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -221,26 +214,30 @@
     </div>
 </div>
 
-<!-- Section Villes -->
+<!-- ============================================================
+     STATISTIQUES UTILISATEURS CONNECTÉS
+     ============================================================ -->
 <div class="row g-4 mt-2">
-    <div class="col-lg-12">
+    <div class="col-lg-6">
         <div class="card-glass">
-            <div class="card-header"><i class="fas fa-city me-2"></i>Visiteurs par ville ({{ total_villes }} villes distinctes)</div>
+            <div class="card-header"><i class="fas fa-user-check me-2"></i>Utilisateurs connectés (pays)</div>
+            <div class="card-body">
+                <canvas id="userCountryChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card-glass">
+            <div class="card-header"><i class="fas fa-user me-2"></i>Utilisateurs par ville ({{ total_user_villes }} villes)</div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover">
-                        <thead>
-                            <tr><th>Pays</th><th>Ville</th><th>Visiteurs</th></tr>
-                        </thead>
+                        <thead><tr><th>Pays</th><th>Ville</th><th>Utilisateurs</th></tr></thead>
                         <tbody>
-                            {% for item in city_items %}
-                            <tr>
-                                <td>{{ item.country }}</td>
-                                <td>{{ item.city }}</td>
-                                <td>{{ item.count }}</td>
-                            </tr>
+                            {% for item in user_city_items %}
+                            <tr><td>{{ item.country }}</td><td>{{ item.city }}</td><td>{{ item.count }}</td></tr>
                             {% empty %}
-                            <tr><td colspan="3" class="text-muted">Aucune donnée de géolocalisation</td></tr>
+                            <tr><td colspan="3" class="text-muted">Aucune donnée</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -413,7 +410,6 @@
 {% block extra_js %}
 <script>
     (function() {
-        // Utilisation des variables CSS pour les couleurs
         const style = getComputedStyle(document.documentElement);
         const greenMid = style.getPropertyValue('--green-mid').trim() || '#2e7d32';
         const greenLight = style.getPropertyValue('--green-light').trim() || '#66bb6a';
@@ -486,16 +482,40 @@
             });
         }
 
-        // ---- NOUVEAU : Graphique des pays ----
-        const countryCtx = document.getElementById('countryChart');
-        if (countryCtx) {
-            new Chart(countryCtx, {
+        // ---- Visiteurs anonymes par pays ----
+        const visitorCountryCtx = document.getElementById('visitorCountryChart');
+        if (visitorCountryCtx) {
+            new Chart(visitorCountryCtx, {
                 type: 'bar',
                 data: {
-                    labels: {{ country_labels|safe }},
+                    labels: {{ visitor_country_labels|safe }},
                     datasets: [{
                         label: 'Visiteurs',
-                        data: {{ country_data|safe }},
+                        data: {{ visitor_country_data|safe }},
+                        backgroundColor: 'rgba(40, 167, 69, 0.6)',
+                        borderColor: '#28a745',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { color: textPrimary } } }
+                }
+            });
+        }
+
+        // ---- Utilisateurs connectés par pays ----
+        const userCountryCtx = document.getElementById('userCountryChart');
+        if (userCountryCtx) {
+            new Chart(userCountryCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ user_country_labels|safe }},
+                    datasets: [{
+                        label: 'Utilisateurs',
+                        data: {{ user_country_data|safe }},
                         backgroundColor: 'rgba(13, 110, 253, 0.6)',
                         borderColor: '#0d6efd',
                         borderWidth: 2,
