@@ -11,10 +11,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-    <!-- Google Fonts : Inter (moderne) -->
+    <!-- Google Fonts : Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
 
-    <!-- DataTables & Select2 (pour les pages internes) -->
+    <!-- DataTables & Select2 (internes) -->
     {% if user.is_authenticated %}
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -23,8 +23,8 @@
 
     <style>
         /* ============================================================
-               VARIABLES – nouveau design épuré + améliorations
-            ============================================================ */
+           VARIABLES – design épuré
+        ============================================================ */
         :root {
             --c-primary: #1a5e2a;
             --c-primary-light: #2e7d4a;
@@ -44,6 +44,7 @@
             --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --sidebar-width: 240px;
             --navbar-height: 70px;
+            --container-padding: 1.5rem; /* padding horizontal des conteneurs */
         }
 
         [data-bs-theme="dark"] {
@@ -83,7 +84,7 @@
             }
 
         /* ============================================================
-           SIDEBAR (connecté) – inchangée
+           SIDEBAR (connecté)
         ============================================================ */
         {
             % if user.is_authenticated %
@@ -204,14 +205,14 @@
         }
 
         /* ============================================================
-           MAIN WRAPPER
+           MAIN WRAPPER – suppression des marges inutiles
         ============================================================ */
         .main-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            padding: 16px 24px;
+            padding: 0; /* suppression de tout padding inutile sur le wrapper */
             transition: margin var(--transition);
         }
 
@@ -221,7 +222,7 @@
 
         .main-wrapper.has-sidebar {
             margin-left: calc(var(--sidebar-width) + 32px);
-            padding: 16px 24px 16px 8px;
+            padding: 16px 20px 20px 20px; /* padding léger sur desktop */
         }
 
         {
@@ -230,7 +231,7 @@
 
         .main-wrapper.no-sidebar {
             margin-left: 0;
-            padding: 0;
+            padding: 0; /* zéro padding pour le mode public (car navbar fixe) */
         }
 
         {
@@ -238,7 +239,7 @@
         }
 
         /* ============================================================
-           NAVBAR PUBLIQUE (inchangée)
+           NAVBAR PUBLIQUE
         ============================================================ */
         {
             % if not user.is_authenticated %
@@ -250,7 +251,7 @@
             left: 0;
             right: 0;
             z-index: 1040;
-            padding: 0 32px;
+            padding: 0 1.5rem; /* padding latéral modéré */
             height: var(--navbar-height);
             display: flex;
             align-items: center;
@@ -361,7 +362,7 @@
         }
 
         /* ============================================================
-           HEADER INTERNE (connecté) – inchangé
+           HEADER INTERNE (connecté)
         ============================================================ */
         {
             % if user.is_authenticated %
@@ -377,7 +378,7 @@
             justify-content: space-between;
             border: 1px solid var(--c-border);
             box-shadow: var(--c-shadow);
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             transition: background var(--transition);
         }
 
@@ -530,7 +531,7 @@
         }
 
         /* ============================================================
-           BREADCRUMB (connecté) – inchangé
+           BREADCRUMB (connecté)
         ============================================================ */
         {
             % if user.is_authenticated %
@@ -547,7 +548,7 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 8px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
             .breadcrumb-bar .page-title {
@@ -581,10 +582,8 @@
         }
 
         /* ============================================================
-           STYLES GÉNÉRAUX : BOUTONS & CARTES AMÉLIORÉS
+           STYLES GÉNÉRAUX : BOUTONS & CARTES
         ============================================================ */
-
-        /* --- BOUTONS --- */
         .btn {
             font-family: 'Inter', sans-serif;
             font-weight: 600;
@@ -605,7 +604,6 @@
                 transform: scale(0.96);
             }
 
-        /* Primaire (dégradé vert) */
         .btn-primary-custom {
             background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-primary-light) 100%);
             color: #fff;
@@ -623,7 +621,6 @@
                 transform: translateY(0) scale(0.96);
             }
 
-        /* Secondaire (doré) */
         .btn-accent-custom {
             background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-light) 100%);
             color: #fff;
@@ -641,7 +638,6 @@
                 transform: translateY(0) scale(0.96);
             }
 
-        /* Outline */
         .btn-outline-custom {
             background: transparent;
             color: var(--c-primary);
@@ -659,7 +655,6 @@
                 transform: scale(0.96);
             }
 
-        /* Ghost (transparent avec effet de fond au survol) */
         .btn-ghost-custom {
             background: transparent;
             color: var(--c-text);
@@ -676,7 +671,6 @@
                 transform: scale(0.96);
             }
 
-        /* Bouton avec icône uniquement (cercle) */
         .btn-icon-circle {
             width: 48px;
             height: 48px;
@@ -700,7 +694,7 @@
                 box-shadow: 0 6px 16px rgba(26, 94, 42, 0.15);
             }
 
-        /* --- CARTES AMÉLIORÉES --- */
+        /* Cartes */
         .card-glass {
             background: var(--c-surface);
             border-radius: var(--radius);
@@ -754,7 +748,6 @@
                 background: transparent;
             }
 
-        /* Carte avec icône en tête */
         .card-icon-top {
             text-align: center;
             padding: 32px 24px;
@@ -792,7 +785,6 @@
                 line-height: 1.7;
             }
 
-        /* Carte avec bordure colorée à gauche */
         .card-border-left {
             border-left: 4px solid var(--c-primary);
             padding-left: 20px;
@@ -803,7 +795,7 @@
             }
 
         /* ============================================================
-           CONTENU PRINCIPAL – sections publiques (inchangé)
+           CONTENU PRINCIPAL
         ============================================================ */
         .content-body {
             flex: 1;
@@ -812,7 +804,8 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 0 var(--container-padding); /* padding horizontal contrôlé */
+            width: 100%;
         }
 
         .section-padding {
@@ -849,7 +842,6 @@
                 border-radius: 4px;
             }
 
-        /* Formulaires */
         .form-control-custom {
             background: var(--c-bg);
             border: 1px solid var(--c-border);
@@ -867,7 +859,7 @@
             }
 
         /* ============================================================
-           STYLES SPÉCIFIQUES À L'INDEX (public) – avec boutons améliorés
+           STYLES SPÉCIFIQUES À L'INDEX (public)
         ============================================================ */
         {
             % if not user.is_authenticated %
@@ -964,7 +956,7 @@
             flex-wrap: wrap;
             gap: 16px;
         }
-        /* Utilisation des nouvelles classes de bouton dans le héros */
+
         .hero-cta {
             background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-light) 100%);
             color: #fff;
@@ -1036,7 +1028,7 @@
                 letter-spacing: 0.5px;
             }
 
-        /* Impact – cartes améliorées */
+        /* Impact */
         .impact-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -1101,7 +1093,7 @@
                 margin-bottom: 0;
             }
 
-        /* Mission (inchangée) */
+        /* Mission */
         .mission-grid {
             display: grid;
             grid-template-columns: 1fr 1.2fr;
@@ -1193,7 +1185,7 @@
                     font-size: 1.2rem;
                 }
 
-        /* Services – cartes améliorées */
+        /* Services */
         .services-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -1291,7 +1283,7 @@
                         transform: translateX(6px);
                     }
 
-        /* Témoignages – cartes améliorées */
+        /* Témoignages */
         .testimonials-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -1358,7 +1350,7 @@
                     color: var(--c-text-muted);
                 }
 
-        /* Blog – cartes améliorées */
+        /* Blog */
         .blog-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -1463,7 +1455,7 @@
                             transform: translateX(6px);
                         }
 
-        /* Partenaires – cartes améliorées */
+        /* Partenaires */
         .partners-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -1500,7 +1492,7 @@
                 font-size: 1.2rem;
             }
 
-        /* Newsletter – bouton amélioré */
+        /* Newsletter */
         .newsletter-section {
             background: var(--c-primary);
             padding: 80px 0;
@@ -1593,7 +1585,7 @@
                     transform: scale(0.96);
                 }
 
-        /* FOOTER (inchangé) */
+        /* FOOTER */
         .footer {
             background: var(--c-surface);
             border-top: 1px solid var(--c-border);
@@ -1736,9 +1728,14 @@
             }
 
         /* ============================================================
-           RESPONSIVE (inchangé)
+           RESPONSIVE – MARGES ET PADDING ADAPTATIFS
         ============================================================ */
+
+        /* Tablettes et petits écrans */
         @media (max-width: 992px) {
+            :root {
+                --container-padding: 1rem; /* moins de padding sur tablette */
+            }
 
         {
             % if user.is_authenticated %
@@ -1758,7 +1755,7 @@
 
         .main-wrapper.has-sidebar {
             margin-left: 0 !important;
-            padding: 12px;
+            padding: 12px 12px 20px 12px; /* padding réduit sur tablette */
         }
 
         .header-internal .hamburger {
@@ -1807,7 +1804,7 @@
         }
 
         .navbar-public {
-            padding: 0 16px;
+            padding: 0 1rem;
             height: 60px;
         }
 
@@ -1876,9 +1873,14 @@
 
         }
 
+        /* Mobiles */
         @media (max-width: 768px) {
+            :root {
+                --container-padding: 0.75rem; /* padding minimal sur mobile */
+            }
+
             .main-wrapper {
-                padding: 12px !important;
+                padding: 8px !important; /* padding très léger sur mobile */
             }
 
         {
@@ -1991,12 +1993,17 @@
             min-width: 200px;
         }
 
+        .main-wrapper.has-sidebar {
+            padding: 8px 8px 16px 8px; /* padding réduit sur mobile */
+        }
+
         {
             % endif %
         }
 
         }
 
+        /* Très petits écrans */
         @media (max-width: 480px) {
 
         {
