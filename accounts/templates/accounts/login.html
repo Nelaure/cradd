@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Connexion · CRADD{% endblock %}
+{% block title %}Connexion · CRADDasbl{% endblock %}
 
 {% block page_title %}Connexion{% endblock %}
 {% block page_subtitle %}Accédez à votre espace personnel{% endblock %}
@@ -11,23 +11,23 @@
 {% block content %}
 <div class="row justify-content-center align-items-start" style="min-height: calc(100vh - 120px); padding-top: 80px; padding-bottom: 40px;">
     <div class="col-md-6 col-lg-5 col-xl-4">
-        <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="background: var(--bg-surface); backdrop-filter: blur(12px); border: 1px solid var(--glass-border);">
-            <!-- En-tête avec logo globe -->
-            <div class="card-header bg-transparent border-0 text-center pt-4 pb-0">
+        <!-- Carte améliorée -->
+        <div class="card-glass" style="padding: 0; overflow: hidden;">
+            <!-- En-tête -->
+            <div class="card-header text-center pt-4 pb-0" style="border-bottom: none;">
                 <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
-                    <div class="rounded-circle bg-success bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
-                        <i class="fas fa-globe-africa fa-2x" style="color: var(--green-mid);"></i>
+                    <div class="rounded-circle" style="background: rgba(26, 94, 42, 0.08); width: 72px; height: 72px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-globe-africa fa-2x" style="color: var(--c-primary);"></i>
                     </div>
                 </div>
-                <h4 class="fw-bold mb-0" style="color: var(--text-primary);">Bienvenue</h4>
+                <h4 class="fw-bold mb-0" style="color: var(--c-text);">Bienvenue</h4>
                 <p class="text-muted small">Connectez-vous pour continuer</p>
             </div>
 
-            <!-- Corps du formulaire -->
+            <!-- Corps -->
             <div class="card-body p-4 p-md-5 pt-3">
-                <!-- Affichage des erreurs globales -->
                 {% if form.non_field_errors or error %}
-                <div class="alert alert-danger alert-dismissible fade show rounded-3 d-flex align-items-center gap-2" role="alert" style="font-size: 0.9rem; border: none; background: #fce4e4; color: #b33c3c;">
+                <div class="alert alert-danger alert-dismissible fade show rounded-3 d-flex align-items-center gap-2" role="alert" style="font-size: 0.9rem; border: none; background: #fce4e4; color: #b33c3c; border-left: 4px solid #b91c1c;">
                     <i class="fas fa-exclamation-circle"></i>
                     <span>
                         {% if form.non_field_errors %}
@@ -44,54 +44,51 @@
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
 
-                    <!-- Champ nom d'utilisateur -->
+                    <!-- Nom d'utilisateur -->
                     <div class="mb-4">
                         <div class="form-floating">
-                            <input type="text" class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                            <input type="text" class="form-control form-control-custom {% if form.username.errors %}is-invalid{% endif %}"
                                    id="username" name="username" value="{{ username|default:'' }}"
-                                   placeholder="Nom d'utilisateur" required autofocus
-                                   style="border-radius: 12px; background: var(--bg-glass); border: 1px solid var(--glass-border);">
+                                   placeholder="Nom d'utilisateur" required autofocus>
                             <label for="username" class="text-muted"><i class="fas fa-user me-2"></i>Nom d'utilisateur</label>
                             {% if form.username.errors %}
-                            <div class="invalid-feedback">{{ form.username.errors|first }}</div>
+                            <div class="invalid-feedback">{{ form.username.errors|striptags }}</div>
                             {% endif %}
                         </div>
                     </div>
 
-                    <!-- Champ mot de passe -->
+                    <!-- Mot de passe -->
                     <div class="mb-3">
                         <div class="form-floating position-relative">
-                            <input type="password" class="form-control {% if form.password.errors %}is-invalid{% endif %}"
-                                   id="password" name="password" placeholder="Mot de passe" required
-                                   style="border-radius: 12px; background: var(--bg-glass); border: 1px solid var(--glass-border);">
+                            <input type="password" class="form-control form-control-custom {% if form.password.errors %}is-invalid{% endif %}"
+                                   id="password" name="password" placeholder="Mot de passe" required>
                             <label for="password" class="text-muted"><i class="fas fa-lock me-2"></i>Mot de passe</label>
                             <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
                                     id="togglePassword" tabindex="-1" aria-label="Afficher le mot de passe">
                                 <i class="fas fa-eye-slash text-muted" id="eyeIcon"></i>
                             </button>
                             {% if form.password.errors %}
-                            <div class="invalid-feedback">{{ form.password.errors|first }}</div>
+                            <div class="invalid-feedback">{{ form.password.errors|striptags }}</div>
                             {% endif %}
                         </div>
                     </div>
 
                     <!-- Lien mot de passe oublié -->
                     <div class="d-flex justify-content-end mb-4">
-                        <a href="{% url 'accounts:password_reset_request' %}" class="text-decoration-none small fw-medium" style="color: var(--green-mid);">
+                        <a href="{% url 'accounts:password_reset_request' %}" class="text-decoration-none small fw-medium" style="color: var(--c-primary);">
                             <i class="fas fa-key me-1"></i>Mot de passe oublié ?
                         </a>
                     </div>
 
-                    <!-- Bouton de connexion -->
-                    <button type="submit" class="btn btn-success w-100 py-3 rounded-3 fw-semibold shadow-sm"
-                            style="background: var(--c-gradient); border: none; font-size: 1rem; letter-spacing: 0.5px;">
+                    <!-- Bouton connexion -->
+                    <button type="submit" class="btn btn-primary-custom w-100 py-3" style="font-size: 1rem; letter-spacing: 0.5px; border-radius: 50px;">
                         <i class="fas fa-sign-in-alt me-2"></i>Se connecter
                     </button>
 
-                    <!-- Lien retour à l'accueil -->
+                    <!-- Retour accueil -->
                     <div class="text-center mt-4">
                         <span class="text-muted small">Vous n'avez pas de compte ?</span>
-                        <a href="{% url 'ecoles:index' %}" class="text-decoration-none small fw-semibold ms-1" style="color: var(--green-mid);">
+                        <a href="{% url 'ecoles:index' %}" class="text-decoration-none small fw-semibold ms-1" style="color: var(--c-primary);">
                             Retour à l'accueil
                         </a>
                     </div>
@@ -102,24 +99,24 @@
 </div>
 
 <style>
-    .form-floating > .form-control:focus ~ label,
-    .form-floating > .form-control:not(:placeholder-shown) ~ label {
-        color: var(--green-mid) !important;
+    .form-floating > .form-control-custom:focus ~ label,
+    .form-floating > .form-control-custom:not(:placeholder-shown) ~ label {
+        color: var(--c-primary) !important;
         opacity: 0.8;
     }
 
-    .form-floating > .form-control:focus {
-        border-color: var(--green-mid);
-        box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.10);
+    .form-floating > .form-control-custom:focus {
+        border-color: var(--c-primary);
+        box-shadow: 0 0 0 4px rgba(26, 94, 42, 0.10);
     }
 
-    .btn-success {
+    .btn-primary-custom {
         transition: all 0.3s ease;
     }
 
-        .btn-success:hover {
+        .btn-primary-custom:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(46, 125, 50, 0.30);
+            box-shadow: 0 8px 25px rgba(26, 94, 42, 0.30);
         }
 
     .alert-danger {
@@ -148,5 +145,6 @@
         }
     });
 </script>
-{% endblock %}
-{% endblock %}
+{% endblock extra_js %}
+
+{% endblock content %}
