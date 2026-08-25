@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Dupliquer une classe - Cradd{% endblock %}
+{% block page_heading %}Dupliquer une classe{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{{ title }} - {{ source_classe.nom }}</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Vous allez dupliquer la classe <strong>{{ source_classe.nom }}</strong>
+                        (Niveau: {{ source_classe.niveau.nom }}, École: {{ source_classe.ecole.nom }}).
+                        Tous les cours de cette classe seront automatiquement copiés dans la nouvelle classe.
+                    </p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <!-- Affichage manuel du champ du formulaire -->
+                        <div class="mb-3">
+                            <label for="id_nouveau_nom" class="form-label">Nom de la nouvelle classe</label>
+                            <input type="text" name="nouveau_nom" id="id_nouveau_nom"
+                                   class="form-control{% if form.nouveau_nom.errors %} is-invalid{% endif %}"
+                                   value="{{ form.nouveau_nom.value|default:'' }}"
+                                   maxlength="50" required>
+                            {% if form.nouveau_nom.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.nouveau_nom.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-copy"></i> Dupliquer
+                            </button>
+                            <a href="{% url 'ecoles:classe_list' %}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

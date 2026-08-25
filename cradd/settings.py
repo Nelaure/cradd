@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     # Cloudinary
     'cloudinary_storage',
     'cloudinary',
+    # Crispy Forms
+    'crispy_forms',
     # Apps du projet
     'accounts',
     'ecoles',
@@ -120,18 +122,14 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # ---------- CLOUDINARY ----------
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
-}
+# Configuration simplifiée via CLOUDINARY_URL
+# Si la variable d'environnement est définie, cloudinary.config() la lit automatiquement
+cloudinary.config()
 
-# Configuration de Cloudinary pour les fichiers media
-cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.getenv('CLOUDINARY_API_KEY'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
-)
+# Vérification optionnelle (pour le debug)
+if not DEBUG and not os.getenv('CLOUDINARY_URL'):
+    import logging
+    logging.warning("⚠️  CLOUDINARY_URL non définie en production ! Les uploads d'images échoueront.")
 
 # En production, utiliser Cloudinary ; en développement, le système de fichiers local
 if not DEBUG:
@@ -146,6 +144,9 @@ AUTH_USER_MODEL = 'accounts.Utilisateur'
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'ecoles:dashboard'
 LOGOUT_REDIRECT_URL = 'ecoles:index'
+
+# ---------- CRISPY FORMS ----------
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 # ---------- EMAIL ----------
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')

@@ -31,10 +31,15 @@ class EcoleForm(forms.ModelForm):
         label="Province",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    type_gestion = forms.ChoiceField(
+        choices=Ecole.TYPE_GESTION_CHOICES,
+        label="Type de gestion",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
 
     class Meta:
         model = Ecole
-        fields = ['nom', 'code', 'province', 'responsable', 'contact', 'adresse', 'telephone', 'email', 'est_active']
+        fields = ['nom', 'code', 'province', 'type_gestion', 'responsable', 'contact', 'adresse', 'telephone', 'email', 'est_active']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control'}),
             'code': forms.TextInput(attrs={'class': 'form-control'}),
@@ -58,7 +63,6 @@ class EcoleForm(forms.ModelForm):
                 elif self.user.est_agent() and self.user.ecole_affectation:
                     self.fields['province'].initial = self.user.ecole_affectation.province.id
                     self.fields['province'].queryset = Province.objects.filter(id=self.user.ecole_affectation.province.id)
-            # Pour les admins, tout est permis
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -105,7 +109,6 @@ class NiveauForm(forms.ModelForm):
                         self.fields['ecole'].disabled = True
                     else:
                         self.fields['ecole'].queryset = Ecole.objects.none()
-                # Pour PROVED, on ne lui permet pas de créer/modifier des niveaux (seulement voir)
                 elif self.user.est_proved():
                     self.fields['ecole'].queryset = Ecole.objects.filter(province=self.user.province_affectation) if self.user.province_affectation else Ecole.objects.none()
                     if self.instance.pk and self.instance.ecole:
@@ -129,7 +132,6 @@ class NiveauForm(forms.ModelForm):
                     raise forms.ValidationError("Vous devez être affecté à une école.")
             elif self.user and self.user.est_proved():
                 if self.user.province_affectation:
-                    # On force l'école à rester dans la province
                     ecole = cleaned_data.get('ecole')
                     if ecole and ecole.province != self.user.province_affectation:
                         raise forms.ValidationError("L'école choisie n'appartient pas à votre province.")
@@ -523,7 +525,7 @@ class ResultatSelectionForm(forms.Form):
                 if self.user.province_affectation:
                     ecoles = Ecole.objects.filter(province=self.user.province_affectation)
                     self.fields['ecole'].queryset = ecoles
-                    self.fields['ecole'].initial = None  # on laisse le choix
+                    self.fields['ecole'].initial = None
                     self.fields['niveau'].queryset = Niveau.objects.filter(ecole__in=ecoles, est_reference=False)
                     self.fields['classe'].queryset = Classe.objects.filter(ecole__in=ecoles, est_reference=False)
                     self.fields['cours'].queryset = Cours.objects.filter(ecole__in=ecoles, est_reference=False)
@@ -545,9 +547,6 @@ class ResultatSelectionForm(forms.Form):
 
 
 class EvaluationResultatForm(forms.Form):
-    """
-    Formulaire dynamique pour saisir les notes d'un élève pour un cours sur une année.
-    """
     def __init__(self, eleve, cours, annee_scolaire, user=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.eleve = eleve
@@ -610,3 +609,30 @@ class EvaluationResultatForm(forms.Form):
                         evaluation_config_id=config_id
                     ).delete()
         return saved_count
+
+
+# Nouveau formulaire pour la duplication de classe
+class ClasseDuplicateForm(forms.Form):
+    nouveau_nom = forms.CharField(
+        max_length=50,
+        label="Nom de la nouvelle classe",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.source_classe = kwargs.pop('source_classe', None)
+        self.ecole = kwargs.pop('ecole', None)
+        self.niveau = kwargs.pop('niveau', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_nouveau_nom(self):
+        nom = self.cleaned_data['nouveau_nom']
+        if self.ecole and self.niveau:
+            if Classe.objects.filter(
+                nom=nom,
+                niveau=self.niveau,
+                ecole=self.ecole,
+                est_reference=False
+            ).exists():
+                raise forms.ValidationError("Une classe avec ce nom existe déjà pour ce niveau et cette école.")
+        return nom

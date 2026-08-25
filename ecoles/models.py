@@ -43,9 +43,16 @@ class Province(SoftDeleteMixin):
 
 # ===================== MODÈLES =====================
 class Ecole(SoftDeleteMixin):
+    TYPE_GESTION_CHOICES = (
+        ('public', 'Publique'),
+        ('prive', 'Privée'),
+        ('conventionne', 'Conventionné'),
+    )
+
     nom = models.CharField(max_length=200, unique=True)
     code = models.CharField(max_length=20, unique=True)
     province = models.ForeignKey(Province, on_delete=models.PROTECT, related_name='ecoles')
+    type_gestion = models.CharField(max_length=20, choices=TYPE_GESTION_CHOICES, default='public')
     responsable = models.CharField(max_length=200, blank=True)
     contact = models.CharField(max_length=20, blank=True)
     adresse = models.TextField(blank=True)

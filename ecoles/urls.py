@@ -39,6 +39,7 @@ urlpatterns = [
     path('classes/creer/', views.classe_create, name='classe_create'),
     path('classes/modifier/<int:pk>/', views.classe_edit, name='classe_edit'),
     path('classes/supprimer/<int:pk>/', views.classe_delete, name='classe_delete'),
+    path('classes/dupliquer/<int:pk>/', views.classe_duplicate, name='classe_duplicate'),  # <-- NOUVEAU
 
     # Domaines
     path('domaines/', views.domaine_list, name='domaine_list'),

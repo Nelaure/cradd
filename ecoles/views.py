@@ -17,7 +17,8 @@ from .models import (
 from .forms import (
     EcoleForm, NiveauForm, ClasseForm, DomaineForm, CoursForm,
     AnneeScolaireForm, CycleEvaluationForm, EvaluationConfigFormSet,
-    ResultatSelectionForm, EvaluationResultatForm, ProvinceForm
+    ResultatSelectionForm, EvaluationResultatForm, ProvinceForm,
+    ClasseDuplicateForm
 )
 from eleves.models import Eleve
 from .utils import recalculer_resultats_eleve
@@ -891,6 +892,104 @@ def classe_delete(request, pk):
         messages.success(request, f'Classe {nom} supprimée avec succès.')
         return redirect('ecoles:classe_list')
     return render(request, 'ecoles/classe_confirm_delete.html', {'classe': classe})
+
+# ===================== NOUVELLE VUE : DUPLICATION DE CLASSE (CORRIGÉE) =====================
+@login_required
+def classe_duplicate(request, pk):
+    """
+    Duplique une classe (salle) existante dans la même école et le même niveau.
+    Permet de renommer la nouvelle classe.
+    Copie automatiquement tous les cours de la classe source (avec leurs cycles et évaluations).
+    """
+    source_classe = get_object_or_404(Classe, pk=pk, est_reference=False)
+    user = request.user
+
+    # Vérification des droits
+    if user.est_parent():
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('ecoles:dashboard')
+
+    if user.est_agent() or user.est_inspecteur():
+        if source_classe.ecole != user.ecole_affectation:
+            messages.error(request, 'Accès non autorisé.')
+            return redirect('ecoles:dashboard')
+    elif user.est_proved():
+        if source_classe.ecole.province != user.province_affectation:
+            messages.error(request, 'Accès non autorisé.')
+            return redirect('ecoles:dashboard')
+    # Admin peut tout faire
+
+    if request.method == 'POST':
+        form = ClasseDuplicateForm(request.POST, source_classe=source_classe, ecole=source_classe.ecole, niveau=source_classe.niveau)
+        if form.is_valid():
+            nouveau_nom = form.cleaned_data['nouveau_nom']
+
+            # Créer la nouvelle classe
+            nouvelle_classe = Classe.objects.create(
+                nom=nouveau_nom,
+                description=source_classe.description,
+                ordre=source_classe.ordre,
+                niveau=source_classe.niveau,
+                ecole=source_classe.ecole,
+                est_reference=False
+            )
+
+            # Dupliquer les cours de la classe source vers la nouvelle classe
+            cours_source = Cours.objects.filter(classe=source_classe, est_reference=False)
+            for cours in cours_source:
+                # Générer un nouveau code unique
+                base_code = cours.code
+                code_candidat = base_code
+                suffix = 1
+                while Cours.objects.filter(code=code_candidat).exists():
+                    code_candidat = f"{base_code}_{suffix}"
+                    suffix += 1
+
+                # Créer le nouveau cours
+                nouveau_cours = Cours.objects.create(
+                    nom=cours.nom,
+                    code=code_candidat,
+                    coefficient=cours.coefficient,
+                    description=cours.description,
+                    niveau=cours.niveau,
+                    classe=nouvelle_classe,
+                    domaine=cours.domaine,
+                    ecole=cours.ecole,
+                    est_reference=False
+                )
+
+                # Dupliquer le cycle d'évaluation et ses configurations
+                cycle_source = CycleEvaluation.objects.filter(cours=cours).first()
+                if cycle_source:
+                    # Créer un nouveau cycle pour le nouveau cours
+                    nouveau_cycle = CycleEvaluation.objects.create(
+                        cours=nouveau_cours,
+                        type_cycle=cycle_source.type_cycle
+                    )
+                    # Dupliquer les configurations d'évaluation en évitant les doublons (get_or_create)
+                    for config_source in cycle_source.evaluations.all():
+                        EvaluationConfig.objects.get_or_create(
+                            cycle_evaluation=nouveau_cycle,
+                            cycle_num=config_source.cycle_num,
+                            periode_num=config_source.periode_num,
+                            type=config_source.type,
+                            defaults={
+                                'points_max': config_source.points_max,
+                                'ordre': config_source.ordre
+                            }
+                        )
+
+            messages.success(request, f"La classe '{source_classe.nom}' a été dupliquée avec succès en '{nouveau_nom}' avec tous ses cours.")
+            return redirect('ecoles:classe_list')
+    else:
+        form = ClasseDuplicateForm(source_classe=source_classe, ecole=source_classe.ecole, niveau=source_classe.niveau)
+        form.fields['nouveau_nom'].initial = f"{source_classe.nom} (copie)"
+
+    return render(request, 'ecoles/classe_duplicate.html', {
+        'form': form,
+        'source_classe': source_classe,
+        'title': 'Dupliquer une classe'
+    })
 
 # ===================== CRUD DOMAINES =====================
 @login_required

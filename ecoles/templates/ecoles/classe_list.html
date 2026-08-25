@@ -46,9 +46,16 @@
                         </td>
                         <td>{{ classe.eleves.count }}</td>
                         <td>
+                            <!-- Boutons d'actions -->
                             <a href="{% url 'ecoles:classe_edit' classe.id %}" class="btn btn-sm btn-warning" title="Modifier">
                                 <i class="fas fa-edit"></i>
                             </a>
+                            <!-- Lien de duplication (visible uniquement pour les classes non-référence) -->
+                            {% if not classe.est_reference %}
+                            <a href="{% url 'ecoles:classe_duplicate' classe.id %}" class="btn btn-sm btn-info" title="Dupliquer">
+                                <i class="fas fa-copy"></i>
+                            </a>
+                            {% endif %}
                             <a href="{% url 'ecoles:classe_delete' classe.id %}" class="btn btn-sm btn-danger" title="Supprimer">
                                 <i class="fas fa-trash"></i>
                             </a>
