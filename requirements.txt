@@ -8,3 +8,5 @@ Pillow==10.2.0
 django-crispy-forms==2.3
 crispy-bootstrap5==2025.6
 requests~=2.34.0
+cloudinary==1.36.0
+django-cloudinary-storage==0.3.0

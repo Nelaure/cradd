@@ -116,12 +116,10 @@
             </div>
             <div class="mission-image">
                 <!--
-                    IMPORTANT :
-                    - Placez votre image dans le dossier media/ avec le nom "qui-sommes-nous.jpg"
-                    - Si vous utilisez un nom avec espaces, remplacez par "Qui%20sommes-nous.jpg"
-                    - Assurez-vous que le fichier existe bien à cet emplacement
+                    L'image est maintenant servie comme fichier statique.
+                    Placez le fichier dans static/images/qui-sommes-nous.jpg
                 -->
-                <img src="{{ MEDIA_URL }}qui-sommes-nous.jpg" alt="Équipe CRADD" />
+                <img src="{% static 'images/qui-sommes-nous.jpg' %}" alt="Équipe CRADD" />
                 <div class="floating-badge">
                     <i class="fas fa-hand-holding-heart"></i>
                     <span>+92% de réussite</span>

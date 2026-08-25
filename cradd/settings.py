@@ -3,6 +3,11 @@ from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
 
+# Cloudinary
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
 load_dotenv(encoding='utf-8')
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,6 +34,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'whitenoise.runserver_nostatic',
+    # Cloudinary
+    'cloudinary_storage',
+    'cloudinary',
+    # Apps du projet
     'accounts',
     'ecoles',
     'eleves',
@@ -61,7 +70,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django.template.context_processors.media',   # <-- AJOUTÉ
+                'django.template.context_processors.media',
                 'ecoles.utils.trash_count',
             ],
         },
@@ -102,8 +111,33 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Dossier pour les fichiers statiques (CSS, JS, images)
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# ---------- CLOUDINARY ----------
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+}
+
+# Configuration de Cloudinary pour les fichiers media
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+)
+
+# En production, utiliser Cloudinary ; en développement, le système de fichiers local
+if not DEBUG:
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+else:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
