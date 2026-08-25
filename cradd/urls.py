@@ -6,8 +6,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
-    path('', include('ecoles.urls')),  # racine gérée par ecoles
+    path('', include('ecoles.urls')),          # racine gérée par ecoles
     path('eleves/', include('eleves.urls')),
+    path('actualites/', include('actualites.urls')),  # Application actualités
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ article.titre }} · CRADD{% endblock %}
+
+{% block page_title %}{{ article.titre }}{% endblock %}
+{% block page_subtitle %}Publié le {{ article.date_publication|date:"d/m/Y à H:i" }}{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'actualites:article_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Retour aux actualités
+</a>
+{% if user.is_authenticated and user.est_editeur or user.est_administrateur %}
+<a href="{% url 'actualites:article_edit' article.pk %}" class="btn btn-primary-custom ms-2">
+    <i class="fas fa-edit"></i> Modifier
+</a>
+<a href="{% url 'actualites:article_delete' article.pk %}" class="btn btn-danger ms-2">
+    <i class="fas fa-trash"></i> Supprimer
+</a>
+{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'actualites:article_list' %}">Actualités</a>
+<span class="mx-2">/</span>
+<span>{{ article.titre|truncatechars:30 }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Ajout d'un margin-top pour les visiteurs non connectés -->
+<div class="container {% if not user.is_authenticated %}mt-5{% endif %} py-4">
+    <!-- ===== EN-TÊTE DE L'ARTICLE (visible pour tous) ===== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="p-4 bg-body-secondary border rounded-3 shadow-sm">
+                <div class="d-flex flex-wrap justify-content-between align-items-start">
+                    <div class="flex-grow-1 me-3">
+                        <h1 class="fw-bold mb-2">{{ article.titre }}</h1>
+                        <div class="text-muted d-flex flex-wrap gap-3">
+                            <span><i class="fas fa-user"></i> {{ article.auteur.get_full_name|default:article.auteur.username }}</span>
+                            <span><i class="fas fa-calendar-alt"></i> {{ article.date_publication|date:"d/m/Y à H:i" }}</span>
+                            {% if article.categorie %}
+                            <span><i class="fas fa-tag"></i> {{ article.categorie.nom }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+                        <a href="{% url 'actualites:article_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                        {% if user.is_authenticated and user.est_editeur or user.est_administrateur %}
+                        <a href="{% url 'actualites:article_edit' article.pk %}" class="btn btn-primary-custom">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        <a href="{% url 'actualites:article_delete' article.pk %}" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CONTENU DE L'ARTICLE ===== -->
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <article class="card card-glass p-4">
+                {% if article.image %}
+                <div class="text-center mb-4">
+                    <img src="{{ article.image.url }}" alt="{{ article.titre }}" class="img-fluid rounded" style="max-height: 450px; width: auto; object-fit: cover;">
+                </div>
+                {% endif %}
+
+                <div class="article-content">
+                    {{ article.contenu|safe }}
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{% url 'actualites:article_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour aux actualités
+                    </a>
+                    {% if user.is_authenticated and user.est_editeur or user.est_administrateur %}
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'actualites:article_edit' article.pk %}" class="btn btn-primary-custom">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        <a href="{% url 'actualites:article_delete' article.pk %}" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+        </div>
+    </div>
+</div>
+{% endblock %}

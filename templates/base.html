@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="fr" data-bs-theme="light">
 <head>
@@ -20,6 +20,9 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     {% endif %}
+
+    <!-- CKEditor 5 (Classic) -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 
     <style>
         /* ============================================================
@@ -44,7 +47,7 @@
             --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --sidebar-width: 240px;
             --navbar-height: 70px;
-            --container-padding: 1.5rem; /* padding horizontal des conteneurs */
+            --container-padding: 1.5rem;
         }
 
         [data-bs-theme="dark"] {
@@ -205,14 +208,14 @@
         }
 
         /* ============================================================
-           MAIN WRAPPER – suppression des marges inutiles
+           MAIN WRAPPER
         ============================================================ */
         .main-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            padding: 0; /* suppression de tout padding inutile sur le wrapper */
+            padding: 0;
             transition: margin var(--transition);
         }
 
@@ -222,7 +225,7 @@
 
         .main-wrapper.has-sidebar {
             margin-left: calc(var(--sidebar-width) + 32px);
-            padding: 16px 20px 20px 20px; /* padding léger sur desktop */
+            padding: 16px 20px 20px 20px;
         }
 
         {
@@ -231,7 +234,7 @@
 
         .main-wrapper.no-sidebar {
             margin-left: 0;
-            padding: 0; /* zéro padding pour le mode public (car navbar fixe) */
+            padding: 0;
         }
 
         {
@@ -251,7 +254,7 @@
             left: 0;
             right: 0;
             z-index: 1040;
-            padding: 0 1.5rem; /* padding latéral modéré */
+            padding: 0 1.5rem;
             height: var(--navbar-height);
             display: flex;
             align-items: center;
@@ -554,13 +557,17 @@
             .breadcrumb-bar .page-title {
                 font-weight: 700;
                 font-size: 1.2rem;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
             }
 
                 .breadcrumb-bar .page-title small {
                     font-weight: 400;
                     font-size: 0.7rem;
                     color: var(--c-text-muted);
-                    margin-left: 12px;
+                    margin-left: 0;
                 }
 
             .breadcrumb-bar .breadcrumb-trail {
@@ -576,6 +583,13 @@
                     .breadcrumb-bar .breadcrumb-trail a:hover {
                         color: var(--c-accent);
                     }
+
+            .breadcrumb-bar .header-actions {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-left: auto;
+            }
 
         {
             % endif %
@@ -635,7 +649,7 @@
             }
 
             .btn-accent-custom:active {
-                transform: translateY(0) scale(0.96);
+                transform: scale(0.96);
             }
 
         .btn-outline-custom {
@@ -804,7 +818,7 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 var(--container-padding); /* padding horizontal contrôlé */
+            padding: 0 var(--container-padding);
             width: 100%;
         }
 
@@ -857,6 +871,29 @@
                 background: var(--c-surface);
                 color: var(--c-text);
             }
+
+        /* ============================================================
+           CKEDITOR – Adaptation au mode sombre
+        ============================================================ */
+        /* En mode sombre, l'éditeur garde un fond blanc et du texte noir pour une édition confortable */
+        [data-bs-theme="dark"] .ck-editor__editable_inline {
+            background-color: #ffffff !important;
+            color: #1e2b24 !important;
+        }
+
+        /* Optionnel : améliorer la visibilité des boutons de la toolbar en mode sombre */
+        [data-bs-theme="dark"] .ck-toolbar {
+            background: #2d3e34 !important;
+            border-color: var(--c-border) !important;
+        }
+
+            [data-bs-theme="dark"] .ck-toolbar .ck-button {
+                color: #e6f0ea !important;
+            }
+
+                [data-bs-theme="dark"] .ck-toolbar .ck-button:hover {
+                    background: #3d5e4a !important;
+                }
 
         /* ============================================================
            STYLES SPÉCIFIQUES À L'INDEX (public)
@@ -978,10 +1015,6 @@
                 box-shadow: 0 12px 32px rgba(201, 144, 58, 0.4);
                 background: linear-gradient(135deg, var(--c-accent-dark) 0%, var(--c-accent) 100%);
                 color: #fff;
-            }
-
-            .hero-cta:active {
-                transform: scale(0.96);
             }
 
         .hero-cta-outline {
@@ -1585,111 +1618,158 @@
                     transform: scale(0.96);
                 }
 
-        /* FOOTER */
+        /* ============================================================
+           FOOTER – version embelli
+        ============================================================ */
         .footer {
             background: var(--c-surface);
             border-top: 1px solid var(--c-border);
-            padding: 48px 0 24px;
+            padding: 60px 0 30px;
             margin-top: auto;
         }
 
-        .footer-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
-            gap: 40px;
-            margin-bottom: 32px;
-        }
-
-        .footer-brand .brand-logo {
-            font-weight: 800;
-            font-size: 1.4rem;
-            display: inline-block;
-            margin-bottom: 12px;
-            border-bottom: none;
-        }
-
-            .footer-brand .brand-logo .cradd {
-                color: var(--c-primary);
+            .footer .footer-brand .brand-logo {
+                font-weight: 800;
+                font-size: 1.6rem;
+                display: inline-block;
+                margin-bottom: 12px;
+                border-bottom: none;
             }
 
-            .footer-brand .brand-logo .asbl {
-                color: var(--c-accent);
-            }
-
-        .footer-brand p {
-            font-size: 0.9rem;
-            color: var(--c-text-muted);
-            max-width: 300px;
-        }
-
-        .footer-column h4 {
-            font-weight: 700;
-            font-size: 0.9rem;
-            margin-bottom: 12px;
-            letter-spacing: 0.3px;
-        }
-
-        .footer-column ul {
-            list-style: none;
-            padding: 0;
-        }
-
-            .footer-column ul li {
-                margin-bottom: 6px;
-            }
-
-                .footer-column ul li a {
-                    color: var(--c-text-muted);
-                    font-size: 0.85rem;
-                    border-bottom: none;
-                    transition: color var(--transition);
+                .footer .footer-brand .brand-logo .cradd {
+                    color: var(--c-primary);
                 }
 
-                    .footer-column ul li a:hover {
-                        color: var(--c-primary);
+                .footer .footer-brand .brand-logo .asbl {
+                    color: var(--c-accent);
+                }
+
+            .footer .footer-brand p {
+                font-size: 0.95rem;
+                color: var(--c-text-muted);
+                max-width: 320px;
+                line-height: 1.7;
+            }
+
+            .footer .footer-column h4 {
+                font-weight: 700;
+                font-size: 1rem;
+                margin-bottom: 16px;
+                color: var(--c-text);
+                letter-spacing: 0.3px;
+            }
+
+            .footer .footer-column ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+                .footer .footer-column ul li {
+                    margin-bottom: 8px;
+                }
+
+                    .footer .footer-column ul li a {
+                        color: var(--c-text-muted);
+                        font-size: 0.9rem;
+                        transition: color var(--transition);
+                        border-bottom: none;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
                     }
 
-        .footer-social {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-        }
+                        .footer .footer-column ul li a:hover {
+                            color: var(--c-primary);
+                        }
 
-            .footer-social a {
+                        .footer .footer-column ul li a i {
+                            width: 18px;
+                            color: var(--c-accent);
+                        }
+
+            .footer .footer-social {
                 display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 38px;
-                height: 38px;
-                border-radius: 50%;
-                background: var(--c-bg);
-                color: var(--c-text-muted);
-                border: 1px solid var(--c-border);
-                transition: all var(--transition);
+                gap: 12px;
+                margin-top: 20px;
             }
 
-                .footer-social a:hover {
-                    background: var(--c-primary);
-                    color: #fff;
-                    transform: translateY(-3px);
+                .footer .footer-social a {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    background: var(--c-bg);
+                    color: var(--c-text-muted);
+                    border: 1px solid var(--c-border);
+                    transition: all var(--transition);
+                    font-size: 1.1rem;
                 }
 
-        .footer-bottom {
-            border-top: 1px solid var(--c-border);
-            padding-top: 20px;
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--c-text-muted);
+                    .footer .footer-social a:hover {
+                        background: var(--c-primary);
+                        color: #fff;
+                        transform: translateY(-4px);
+                        box-shadow: 0 6px 16px rgba(26, 94, 42, 0.15);
+                    }
+
+            .footer .footer-bottom {
+                border-top: 1px solid var(--c-border);
+                padding-top: 24px;
+                margin-top: 16px;
+                text-align: center;
+                font-size: 0.85rem;
+                color: var(--c-text-muted);
+            }
+
+                .footer .footer-bottom .cradd {
+                    font-weight: 700;
+                    color: var(--c-primary);
+                }
+
+                .footer .footer-bottom .asbl {
+                    color: var(--c-accent);
+                }
+
+            .footer .footer-grid {
+                display: grid;
+                grid-template-columns: 1.8fr 1fr 1fr 1.2fr;
+                gap: 40px;
+                margin-bottom: 20px;
+            }
+
+        /* Responsive footer */
+        @media (max-width: 992px) {
+            .footer .footer-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 30px;
+            }
+
+            .footer .footer-brand p {
+                max-width: 100%;
+            }
         }
 
-            .footer-bottom .cradd {
-                font-weight: 700;
-                color: var(--c-primary);
+        @media (max-width: 576px) {
+            .footer .footer-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
             }
 
-            .footer-bottom .asbl {
-                color: var(--c-accent);
+            .footer .footer-social {
+                justify-content: center;
             }
+
+            .footer .footer-column ul li a {
+                justify-content: center;
+            }
+        }
+
+        {
+            % endif %
+        }
 
         /* ============================================================
            TOASTS
@@ -1728,13 +1808,11 @@
             }
 
         /* ============================================================
-           RESPONSIVE – MARGES ET PADDING ADAPTATIFS
+           RESPONSIVE
         ============================================================ */
-
-        /* Tablettes et petits écrans */
         @media (max-width: 992px) {
             :root {
-                --container-padding: 1rem; /* moins de padding sur tablette */
+                --container-padding: 1rem;
             }
 
         {
@@ -1755,7 +1833,7 @@
 
         .main-wrapper.has-sidebar {
             margin-left: 0 !important;
-            padding: 12px 12px 20px 12px; /* padding réduit sur tablette */
+            padding: 12px 12px 20px 12px;
         }
 
         .header-internal .hamburger {
@@ -1862,7 +1940,7 @@
             grid-template-columns: 1fr 1fr;
         }
 
-        .footer-grid {
+        .footer .footer-grid {
             grid-template-columns: 1fr 1fr;
             gap: 30px;
         }
@@ -1873,14 +1951,13 @@
 
         }
 
-        /* Mobiles */
         @media (max-width: 768px) {
             :root {
-                --container-padding: 0.75rem; /* padding minimal sur mobile */
+                --container-padding: 0.75rem;
             }
 
             .main-wrapper {
-                padding: 8px !important; /* padding très léger sur mobile */
+                padding: 8px !important;
             }
 
         {
@@ -1920,16 +1997,16 @@
             grid-template-columns: 1fr;
         }
 
-        .footer-grid {
+        .footer .footer-grid {
             grid-template-columns: 1fr;
             text-align: center;
         }
 
-        .footer-brand p {
+        .footer .footer-brand p {
             max-width: 100%;
         }
 
-        .footer-social {
+        .footer .footer-social {
             justify-content: center;
         }
 
@@ -1988,13 +2065,18 @@
             padding: 12px 16px;
         }
 
+            .breadcrumb-bar .header-actions {
+                margin-left: 0;
+                justify-content: flex-start;
+            }
+
         .toast-container-custom {
             right: 12px;
             min-width: 200px;
         }
 
         .main-wrapper.has-sidebar {
-            padding: 8px 8px 16px 8px; /* padding réduit sur mobile */
+            padding: 8px 8px 16px 8px;
         }
 
         {
@@ -2003,7 +2085,6 @@
 
         }
 
-        /* Très petits écrans */
         @media (max-width: 480px) {
 
         {
@@ -2039,15 +2120,6 @@
         {
             % endif %
         }
-
-        }
-
-        {
-            % endif %
-        }
-
-        {
-            # Fin du bloc conditionnel pour les styles publics #
         }
     </style>
 
@@ -2064,27 +2136,128 @@
             <i class="fas fa-graduation-cap logo-icon"></i>
             <div class="brand-text">
                 CRADDasbl
-                <small>Gestion Scolaire</small>
+                <small>
+                    {% if user.est_editeur %}
+                    Actualités
+                    {% else %}
+                    Gestion Scolaire
+                    {% endif %}
+                </small>
             </div>
         </div>
         <ul class="menu">
+
+            <!-- ==================== MENU POUR ÉDITEUR ==================== -->
+            {% if user.est_editeur %}
+            <li class="menu-label">Publications</li>
+            <li class="menu-item">
+                <a href="{% url 'actualites:dashboard' %}" class="{% if request.resolver_match.app_name == 'actualites' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-newspaper"></i> Tableau de bord
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'actualites:article_create' %}" class="{% if request.resolver_match.url_name == 'article_create' %}active{% endif %}">
+                    <i class="fas fa-plus-circle"></i> Nouvel article
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'actualites:categorie_list' %}" class="{% if request.resolver_match.url_name == 'categorie_list' %}active{% endif %}">
+                    <i class="fas fa-tags"></i> Catégories
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'actualites:article_list' %}" target="_blank">
+                    <i class="fas fa-eye"></i> Voir le site
+                </a>
+            </li>
+            <!-- Lien vers la corbeille pour les éditeurs -->
+            <li class="menu-item">
+                <a href="{% url 'actualites:trash_list' %}">
+                    <i class="fas fa-trash-alt"></i> Corbeille
+                </a>
+            </li>
+            <li class="menu-divider"></li>
+            <li class="menu-label">Compte</li>
+            <li class="menu-item"><a href="{% url 'accounts:profile' %}"><i class="fas fa-id-card"></i> Profil</a></li>
+            <li class="menu-item"><a href="{% url 'accounts:change_password' %}"><i class="fas fa-key"></i> Changer mot de passe</a></li>
+            <li class="menu-item"><a href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
+
+            <!-- ==================== MENU POUR ADMINISTRATEUR ==================== -->
+            {% elif user.est_administrateur %}
             <li class="menu-label">Navigation</li>
             <li class="menu-item">
-                <a href="{% url 'ecoles:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <a href="{% url 'ecoles:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'ecoles' %}active{% endif %}">
                     <i class="fas fa-home"></i> Tableau de bord
                 </a>
             </li>
-            {% if user.est_administrateur or user.est_agent or user.est_inspecteur or user.est_proved %}
             <li class="menu-label">Paramètres</li>
-            {% if user.est_administrateur %}
             <li class="menu-item"><a href="{% url 'ecoles:ecole_list' %}"><i class="fas fa-school"></i> Écoles</a></li>
-            {% endif %}
+            <li class="menu-item"><a href="{% url 'ecoles:niveau_list' %}"><i class="fas fa-layer-group"></i> Niveaux</a></li>
+            <li class="menu-item"><a href="{% url 'ecoles:classe_list' %}"><i class="fas fa-users"></i> Classes</a></li>
+            <li class="menu-item"><a href="{% url 'ecoles:domaine_list' %}"><i class="fas fa-tags"></i> Domaines</a></li>
+            <li class="menu-item"><a href="{% url 'ecoles:cours_list' %}"><i class="fas fa-book"></i> Cours</a></li>
+            <li class="menu-label">Gestion</li>
+            <li class="menu-item"><a href="{% url 'eleves:eleve_list' %}"><i class="fas fa-user-graduate"></i> Élèves</a></li>
+            <li class="menu-item"><a href="{% url 'ecoles:resultat_list' %}"><i class="fas fa-chart-bar"></i> Résultats</a></li>
+            <li class="menu-item"><a href="{% url 'ecoles:bulletin_view' %}"><i class="fas fa-file-alt"></i> Bulletins</a></li>
+            <li class="menu-item"><a href="{% url 'ecoles:eleves_sans_notes' %}"><i class="fas fa-user-slash"></i> Élèves sans notes</a></li>
+            <li class="menu-divider"></li>
+            <li class="menu-label">Publications</li>
+            <li class="menu-item">
+                <a href="{% url 'actualites:dashboard' %}" class="{% if request.resolver_match.app_name == 'actualites' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-newspaper"></i> Tableau de bord
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'actualites:article_create' %}" class="{% if request.resolver_match.url_name == 'article_create' %}active{% endif %}">
+                    <i class="fas fa-plus-circle"></i> Nouvel article
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'actualites:categorie_list' %}" class="{% if request.resolver_match.url_name == 'categorie_list' %}active{% endif %}">
+                    <i class="fas fa-tags"></i> Catégories
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'actualites:trash_list' %}">
+                    <i class="fas fa-trash-alt"></i> Corbeille
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'actualites:article_list' %}" target="_blank">
+                    <i class="fas fa-eye"></i> Voir le site
+                </a>
+            </li>
+            <li class="menu-divider"></li>
+            <li class="menu-label">Administration</li>
+            <li class="menu-item"><a href="{% url 'accounts:user_list' %}"><i class="fas fa-users-cog"></i> Utilisateurs</a></li>
+            <li class="menu-item"><a href="{% url 'ecoles:province_list' %}"><i class="fas fa-map-marker-alt"></i> Provinces</a></li>
+            <li class="menu-item"><a href="{% url 'accounts:audit_log' %}"><i class="fas fa-history"></i> Journal</a></li>
+            <li class="menu-item"><a href="{% url 'ecoles:trash_list' %}"><i class="fas fa-trash-alt"></i> Corbeille (écoles)</a></li>
+            <li class="menu-divider"></li>
+            <li class="menu-label">Compte</li>
+            <li class="menu-item"><a href="{% url 'accounts:profile' %}"><i class="fas fa-id-card"></i> Profil</a></li>
+            <li class="menu-item"><a href="{% url 'accounts:change_password' %}"><i class="fas fa-key"></i> Changer mot de passe</a></li>
+            <li class="menu-item"><a href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
+
+            <!-- ==================== MENU POUR AUTRES RÔLES ==================== -->
+            {% else %}
+            <!-- Agents, inspecteurs, proved, enseignants, parents, etc. -->
+            <li class="menu-label">Navigation</li>
+            <li class="menu-item">
+                <a href="{% url 'ecoles:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'ecoles' %}active{% endif %}">
+                    <i class="fas fa-home"></i> Tableau de bord
+                </a>
+            </li>
+            {% if user.est_agent or user.est_inspecteur or user.est_proved or user.est_enseignant %}
+            <li class="menu-label">Paramètres</li>
+            {% if user.est_agent or user.est_inspecteur or user.est_proved %}
             <li class="menu-item"><a href="{% url 'ecoles:niveau_list' %}"><i class="fas fa-layer-group"></i> Niveaux</a></li>
             <li class="menu-item"><a href="{% url 'ecoles:classe_list' %}"><i class="fas fa-users"></i> Classes</a></li>
             <li class="menu-item"><a href="{% url 'ecoles:domaine_list' %}"><i class="fas fa-tags"></i> Domaines</a></li>
             <li class="menu-item"><a href="{% url 'ecoles:cours_list' %}"><i class="fas fa-book"></i> Cours</a></li>
             {% endif %}
-
+            {% endif %}
             <li class="menu-label">Gestion</li>
             {% if user.est_parent %}
             <li class="menu-item"><a href="{% url 'ecoles:parent_recherche' %}"><i class="fas fa-search"></i> Rechercher un élève</a></li>
@@ -2093,24 +2266,16 @@
             {% endif %}
             <li class="menu-item"><a href="{% url 'ecoles:resultat_list' %}"><i class="fas fa-chart-bar"></i> Résultats</a></li>
             <li class="menu-item"><a href="{% url 'ecoles:bulletin_view' %}"><i class="fas fa-file-alt"></i> Bulletins</a></li>
-            {% if user.est_enseignant or user.est_agent or user.est_inspecteur or user.est_proved or user.est_administrateur %}
+            {% if user.est_enseignant or user.est_agent or user.est_inspecteur or user.est_proved %}
             <li class="menu-item"><a href="{% url 'ecoles:eleves_sans_notes' %}"><i class="fas fa-user-slash"></i> Élèves sans notes</a></li>
             {% endif %}
-
-            {% if user.est_administrateur %}
-            <li class="menu-divider"></li>
-            <li class="menu-label">Administration</li>
-            <li class="menu-item"><a href="{% url 'accounts:user_list' %}"><i class="fas fa-users-cog"></i> Utilisateurs</a></li>
-            <li class="menu-item"><a href="{% url 'ecoles:province_list' %}"><i class="fas fa-map-marker-alt"></i> Provinces</a></li>
-            <li class="menu-item"><a href="{% url 'accounts:audit_log' %}"><i class="fas fa-history"></i> Journal</a></li>
-            <li class="menu-item"><a href="{% url 'ecoles:trash_list' %}"><i class="fas fa-trash-alt"></i> Corbeille</a></li>
-            {% endif %}
-
             <li class="menu-divider"></li>
             <li class="menu-label">Compte</li>
             <li class="menu-item"><a href="{% url 'accounts:profile' %}"><i class="fas fa-id-card"></i> Profil</a></li>
             <li class="menu-item"><a href="{% url 'accounts:change_password' %}"><i class="fas fa-key"></i> Changer mot de passe</a></li>
             <li class="menu-item"><a href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
+            {% endif %}
+
         </ul>
         <div class="footer">&copy; {% now "Y" %} CRADDasbl</div>
     </aside>
@@ -2162,6 +2327,7 @@
             <div class="page-title">
                 {% block page_title %}Tableau de bord{% endblock %}
                 <small>{% block page_subtitle %}{% endblock %}</small>
+                {% block header_actions %}{% endblock %}
             </div>
             <div class="breadcrumb-trail">
                 <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i></a>
@@ -2210,7 +2376,7 @@
         <!-- ===== CONTENU PRINCIPAL ===== -->
         <main class="content-body">
             {% block content %}
-            <!-- Ce bloc sera remplacé par le contenu des pages filles -->
+            <!-- Le contenu des pages filles sera injecté ici -->
             {% endblock %}
         </main>
 
@@ -2219,11 +2385,16 @@
         <footer class="footer">
             <div class="container">
                 <div class="footer-grid">
+                    <!-- Colonne 1 : Brand + description -->
                     <div class="footer-brand">
                         <a href="/" class="brand-logo">
                             <span class="cradd">CRADD</span><span class="asbl">asbl</span><span class="dot">.org</span>
                         </a>
-                        <p>Organisation non gouvernementale dédiée à l'éducation, à l'environnement et au développement durable en RDC.</p>
+                        <p>
+                            Le <strong>Centre de Recherche et d’Actions pour le Développement Durable</strong> (CRADD)
+                            est une ONG congolaise créée en 2016, dédiée à la promotion de la recherche multidisciplinaire
+                            et des actions novatrices pour le développement intégré des communautés.
+                        </p>
                         <div class="footer-social">
                             <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                             <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
@@ -2232,35 +2403,46 @@
                             <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                         </div>
                     </div>
+
+                    <!-- Colonne 2 : Liens rapides vers les sections -->
                     <div class="footer-column">
-                        <h4>CRADDasbl</h4>
+                        <h4>Navigation</h4>
                         <ul>
-                            <li><a href="/#home">Accueil</a></li>
-                            <li><a href="/#mission">Mission</a></li>
-                            <li><a href="/#services">Nos actions</a></li>
-                            <li><a href="/#blog">Actualités</a></li>
+                            <li><a href="/#home"><i class="fas fa-home"></i> Accueil</a></li>
+                            <li><a href="/#impact"><i class="fas fa-chart-line"></i> Impact</a></li>
+                            <li><a href="/#mission"><i class="fas fa-bullseye"></i> Mission</a></li>
+                            <li><a href="/#services"><i class="fas fa-hands-helping"></i> Actions</a></li>
+                            <li><a href="/#testimonials"><i class="fas fa-comments"></i> Témoignages</a></li>
+                            <li><a href="/#blog"><i class="fas fa-newspaper"></i> Actualités</a></li>
                         </ul>
                     </div>
+
+                    <!-- Colonne 3 : Liens institutionnels et partenaires -->
                     <div class="footer-column">
-                        <h4>Accès rapide</h4>
+                        <h4>À propos</h4>
                         <ul>
-                            <li><a href="/#impact">Impact</a></li>
-                            <li><a href="/#testimonials">Témoignages</a></li>
-                            <li><a href="{% url 'accounts:login' %}">Espace enseignant</a></li>
-                            <li><a href="#">Devenir bénévole</a></li>
+                            <li><a href="/#mission"><i class="fas fa-info-circle"></i> Qui sommes‑nous</a></li>
+                            <li><a href="/#services"><i class="fas fa-tasks"></i> Nos actions</a></li>
+                            <li><a href="/#partenaires"><i class="fas fa-handshake"></i> Partenaires</a></li>
+                            <li><a href="{% url 'accounts:login' %}"><i class="fas fa-user-lock"></i> Espace membre</a></li>
+                            <li><a href="#"><i class="fas fa-envelope"></i> Nous contacter</a></li>
                         </ul>
                     </div>
+
+                    <!-- Colonne 4 : Contact -->
                     <div class="footer-column">
                         <h4>Contact</h4>
                         <ul>
-                            <li><a href="mailto:contact@craddasbl.org"><i class="fas fa-envelope me-2"></i>contact@craddasbl.org</a></li>
-                            <li><a href="tel:+243123456789"><i class="fas fa-phone me-2"></i>+243 12 345 6789</a></li>
-                            <li><a href="#"><i class="fas fa-map-marker-alt me-2"></i>Kinshasa, RDC</a></li>
+                            <li><a href="mailto:contact@craddasbl.org"><i class="fas fa-envelope"></i> contact@craddasbl.org</a></li>
+                            <li><a href="tel:+243123456789"><i class="fas fa-phone"></i> +243 12 345 6789</a></li>
+                            <li><a href="#"><i class="fas fa-map-marker-alt"></i> Kinshasa, RDC</a></li>
+                            <li><a href="#"><i class="fas fa-clock"></i> Lun–Ven : 8h00 – 17h00</a></li>
                         </ul>
                     </div>
                 </div>
+
                 <div class="footer-bottom">
-                    <p>&copy; {% now "Y" %} <span class="cradd">CRADD</span><span class="asbl">asbl</span> · Tous droits réservés</p>
+                    <p>&copy; {% now "Y" %} <span class="cradd">CRADD</span><span class="asbl">asbl</span> · Tous droits réservés · Conçu avec <i class="fas fa-heart text-danger"></i> pour l’éducation et le développement durable.</p>
                 </div>
             </div>
         </footer>
@@ -2529,6 +2711,102 @@
                         alert('Veuillez saisir une adresse email valide.');
                     }
                 });
+            }
+
+            // === CKEDITOR AVEC UPLOAD D'IMAGES ET SÉLECTION DE POLICE ===
+            if (document.getElementById('id_contenu')) {
+                ClassicEditor
+                    .create(document.querySelector('#id_contenu'), {
+                        toolbar: {
+                            items: [
+                                'heading',
+                                '|',
+                                'fontFamily',
+                                'fontSize',
+                                'fontColor',
+                                'highlight',
+                                '|',
+                                'bold',
+                                'italic',
+                                'underline',
+                                'strikethrough',
+                                '|',
+                                'bulletedList',
+                                'numberedList',
+                                '|',
+                                'link',
+                                'blockQuote',
+                                'insertTable',
+                                '|',
+                                'imageUpload',   // <-- Activation du bouton d'upload d'images
+                                '|',
+                                'undo',
+                                'redo'
+                            ]
+                        },
+                        language: 'fr',
+                        height: 500,
+                        fontSize: {
+                            options: [
+                                'tiny',
+                                'small',
+                                'default',
+                                'big',
+                                'huge'
+                            ]
+                        },
+                        fontFamily: {
+                            options: [
+                                'default',
+                                'Arial, Helvetica, sans-serif',
+                                'Courier New, Courier, monospace',
+                                'Georgia, serif',
+                                'Lucida Sans Unicode, Lucida Grande, sans-serif',
+                                'Tahoma, Geneva, sans-serif',
+                                'Times New Roman, Times, serif',
+                                'Trebuchet MS, Helvetica, sans-serif',
+                                'Verdana, Geneva, sans-serif'
+                            ]
+                        },
+                        fontColor: {
+                            colors: [
+                                { color: 'hsl(0, 0%, 0%)', label: 'Noir' },
+                                { color: 'hsl(0, 0%, 30%)', label: 'Gris foncé' },
+                                { color: 'hsl(0, 0%, 60%)', label: 'Gris' },
+                                { color: 'hsl(0, 0%, 90%)', label: 'Gris clair' },
+                                { color: 'hsl(0, 100%, 40%)', label: 'Rouge' },
+                                { color: 'hsl(30, 100%, 40%)', label: 'Orange' },
+                                { color: 'hsl(60, 100%, 40%)', label: 'Jaune' },
+                                { color: 'hsl(120, 100%, 35%)', label: 'Vert' },
+                                { color: 'hsl(200, 100%, 40%)', label: 'Bleu' },
+                                { color: 'hsl(240, 100%, 40%)', label: 'Bleu foncé' },
+                                { color: 'hsl(300, 100%, 40%)', label: 'Violet' }
+                            ]
+                        },
+                        highlight: {
+                            options: [
+                                { model: 'yellowMarker', class: 'marker-yellow', title: 'Surlignage jaune', color: 'hsl(60, 90%, 70%)', type: 'marker' },
+                                { model: 'greenMarker', class: 'marker-green', title: 'Surlignage vert', color: 'hsl(120, 80%, 60%)', type: 'marker' },
+                                { model: 'pinkMarker', class: 'marker-pink', title: 'Surlignage rose', color: 'hsl(340, 80%, 70%)', type: 'marker' },
+                                { model: 'redPen', class: 'pen-red', title: 'Texte rouge', color: 'hsl(0, 90%, 50%)', type: 'pen' }
+                            ]
+                        },
+                        // Configuration de l'upload d'images
+                        imageUpload: {
+                            // URL de la vue Django qui traite l'upload (à créer)
+                            uploadUrl: '/upload/image/'
+                        },
+                        // Autre méthode : utiliser simpleUpload (plus simple pour certaines versions)
+                        // simpleUpload: {
+                        //     uploadUrl: '/upload/image/'
+                        // }
+                    })
+                    .then(editor => {
+                        window.editor = editor;
+                    })
+                    .catch(error => {
+                        console.error('CKEditor error:', error);
+                    });
             }
 
         })();

@@ -23,6 +23,9 @@ from eleves.models import Eleve
 from .utils import recalculer_resultats_eleve
 from accounts.models import AuditLog
 
+# ==== NOUVEL IMPORT POUR LES ACTUALITÉS ====
+from actualites.models import Article
+
 # ===================== FONCTIONS UTILITAIRES =====================
 
 def get_annee_actuelle():
@@ -138,7 +141,15 @@ def get_cached_geo_data(request, cache_key, ips_function, ttl_minutes=10):
 
 # ===================== PAGE D'ACCUEIL PUBLIQUE =====================
 def index_view(request):
-    return render(request, 'ecoles/index.html')
+    """
+    Page d'accueil publique du site.
+    Récupère les 3 derniers articles publiés et visibles pour les afficher dans la section 'Actualités'.
+    """
+    articles = Article.objects.filter(
+        statut=Article.Statut.PUBLIE,
+        est_visible=True
+    ).order_by('-date_publication')[:3]
+    return render(request, 'ecoles/index.html', {'articles': articles})
 
 # ===================== TABLEAU DE BORD PAR RÔLE =====================
 @login_required

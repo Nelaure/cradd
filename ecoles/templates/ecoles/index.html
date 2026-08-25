@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
 {% block title %}CRADD · Éducation & Développement Durable{% endblock %}
@@ -20,7 +20,7 @@
                 <h1>Construisons l'avenir de <span>l'Afrique</span></h1>
                 <p>Chaque enfant congolais mérite une éducation de qualité et un environnement préservé. Ensemble, faisons de l'éducation le moteur du développement durable.</p>
                 <div class="hero-cta-group">
-                    <a href="#mission" class="hero-cta">
+                    <a href="#qui-sommes-nous" class="hero-cta">
                         Découvrir nos actions <i class="fas fa-arrow-right"></i>
                     </a>
                     <a href="#impact" class="hero-cta hero-cta-outline">
@@ -83,29 +83,45 @@
     </div>
 </section>
 
-<!-- ===== MISSION ===== -->
-<section class="mission-section section-padding bg-beige" id="mission">
+<!-- ===== QUI SOMMES-NOUS & MISSION ===== -->
+<section class="mission-section section-padding bg-beige" id="qui-sommes-nous">
     <div class="container">
         <div class="mission-grid">
             <div class="mission-text">
-                <h2>Notre <span>mission</span></h2>
+                <h2>Qui <span>sommes‑nous</span></h2>
                 <p>
-                    Le <strong>CRADD</strong> (Centre de Recherche et d'Action pour le Développement Durable)
-                    est une organisation non gouvernementale créée en 2015 pour promouvoir l'éducation inclusive,
-                    la protection de l'environnement et le développement durable en République Démocratique du Congo.
+                    Le <strong>Centre de Recherche et d’Actions pour le Développement Durable</strong> (CRADD) est une organisation non‑gouvernementale et sans but lucratif de droit congolais, créée depuis <strong>2016</strong> en République Démocratique du Congo.
+                    Ayant la volonté de promouvoir la recherche multidisciplinaire et de mener des actions novatrices pour le développement intégré des communautés tant urbaines que rurales.
                 </p>
-                <ul class="mission-list">
-                    <li><i class="fas fa-check"></i> Éducation accessible à tous, sans discrimination</li>
-                    <li><i class="fas fa-check"></i> Protection de l'environnement et éducation à l'écologie</li>
-                    <li><i class="fas fa-check"></i> Soutien psychosocial et autonomisation des communautés</li>
+                <p>
+                    Notre logo symbolise <strong>un globe, un œil, et les couleurs vertes et bleues</strong> qui représentent respectivement l’humanité vivant dans la paix et dans un environnement de biodiversité harmonieux.
+                </p>
+                <h3 class="mt-4 fw-bold" style="font-size:1.2rem;">Notre vision</h3>
+                <p>
+                    <em>« Que les communautés vivent dans des conditions acceptables par l’auto‑prise en charge permettant de concrétiser <strong>LE MONDE ENTRE VOS MAINS</strong> »</em>
+                </p>
+                <h3 class="mt-3 fw-bold" style="font-size:1.2rem;">Notre objectif</h3>
+                <p>
+                    Promouvoir la recherche multidisciplinaire et les actions novatrices pour le développement intégré des communautés tant urbaines que rurales.
+                </p>
+                <h3 class="mt-3 fw-bold" style="font-size:1.2rem;">Rayon d’action</h3>
+                <p>
+                    Il couvre toute l’étendue de la région des Grands Lacs, et pourra s’étendre aux autres pays d’Afrique subsaharienne et, le cas échéant, à d’autres continents, selon les besoins et les capacités.
+                </p>
+                <ul class="mission-list mt-3">
+                    <li><i class="fas fa-check"></i> Recherche multidisciplinaire</li>
+                    <li><i class="fas fa-check"></i> Actions novatrices pour le développement communautaire</li>
+                    <li><i class="fas fa-check"></i> Autonomisation des communautés urbaines et rurales</li>
                 </ul>
-                <p style="margin-top: 16px;">
-                    Nous croyons que l'éducation et la préservation de notre planète sont les leviers fondamentaux
-                    pour transformer les sociétés et offrir à chaque enfant, quel que soit son origine, les clés de son avenir.
-                </p>
             </div>
             <div class="mission-image">
-                <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?w=800&q=80" alt="Éducation et développement durable" />
+                <!--
+                    IMPORTANT :
+                    - Placez votre image dans le dossier media/ avec le nom "qui-sommes-nous.jpg"
+                    - Si vous utilisez un nom avec espaces, remplacez par "Qui%20sommes-nous.jpg"
+                    - Assurez-vous que le fichier existe bien à cet emplacement
+                -->
+                <img src="{{ MEDIA_URL }}qui-sommes-nous.jpg" alt="Équipe CRADD" />
                 <div class="floating-badge">
                     <i class="fas fa-hand-holding-heart"></i>
                     <span>+92% de réussite</span>
@@ -115,31 +131,46 @@
     </div>
 </section>
 
-<!-- ===== SERVICES ===== -->
+<!-- ===== NOS ACTIONS ===== -->
 <section class="services-section section-padding bg-white" id="services">
     <div class="container">
         <div class="section-title">
             <h2>Nos <span>actions</span></h2>
-            <p>Trois piliers pour un développement humain et environnemental durable</p>
+            <p>Domaines d’intervention et activités concrètes</p>
             <div class="line"></div>
         </div>
         <div class="services-grid">
             <div class="service-card">
-                <div class="icon"><i class="fas fa-graduation-cap"></i></div>
-                <h4>Éducation pour tous</h4>
-                <p>Rendre l'éducation accessible aux enfants et jeunes des communautés rurales et périurbaines à travers la construction d'écoles écologiques et la formation des enseignants.</p>
+                <div class="icon"><i class="fas fa-flask"></i></div>
+                <h4>Recherche</h4>
+                <p>Promouvoir la recherche multidisciplinaire pour le développement intégré des communautés, en produisant des connaissances utiles et en diffusant les résultats.</p>
+                <ul class="list-unstyled mt-3" style="font-size:0.9rem; color:var(--c-text-muted);">
+                    <li><i class="fas fa-check-circle text-primary me-1"></i> Études de terrain</li>
+                    <li><i class="fas fa-check-circle text-primary me-1"></i> Publications scientifiques</li>
+                    <li><i class="fas fa-check-circle text-primary me-1"></i> Recherche-action participative</li>
+                </ul>
                 <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="service-card">
-                <div class="icon"><i class="fas fa-seedling"></i></div>
-                <h4>Protection de l'environnement</h4>
-                <p>Mener des campagnes de reboisement, de gestion des déchets et d'éducation à l'écologie dans les écoles et les communautés pour un avenir plus vert.</p>
+                <div class="icon"><i class="fas fa-users-cog"></i></div>
+                <h4>Actions communautaires</h4>
+                <p>Mettre en œuvre des programmes concrets pour répondre aux besoins des populations, en particulier dans les domaines de la santé, de l'éducation et de l'environnement.</p>
+                <ul class="list-unstyled mt-3" style="font-size:0.9rem; color:var(--c-text-muted);">
+                    <li><i class="fas fa-check-circle text-primary me-1"></i> Formation en AGR pour l'autonomisation des femmes</li>
+                    <li><i class="fas fa-check-circle text-primary me-1"></i> Focus groupes et consultations</li>
+                    <li><i class="fas fa-check-circle text-primary me-1"></i> Production de champignons</li>
+                </ul>
                 <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
             </div>
             <div class="service-card">
-                <div class="icon"><i class="fas fa-hand-holding-heart"></i></div>
-                <h4>Soutien psychosocial</h4>
-                <p>Accompagner les élèves et leurs familles avec des programmes de soutien psychologique et social pour favoriser un environnement d'apprentissage serein et résilient.</p>
+                <div class="icon"><i class="fas fa-people-arrows"></i></div>
+                <h4>Éducation & Sensibilisation</h4>
+                <p>Intervenir dans les écoles, universités et instituts supérieurs pour promouvoir la santé, le leadership et la paix.</p>
+                <ul class="list-unstyled mt-3" style="font-size:0.9rem; color:var(--c-text-muted);">
+                    <li><i class="fas fa-check-circle text-primary me-1"></i> Sensibilisation VIH/Sida, Ebola, Covid-19</li>
+                    <li><i class="fas fa-check-circle text-primary me-1"></i> Lutte contre les violences sexuelles</li>
+                    <li><i class="fas fa-check-circle text-primary me-1"></i> Formation au leadership et à l'engagement civique</li>
+                </ul>
                 <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
@@ -192,7 +223,7 @@
     </div>
 </section>
 
-<!-- ===== BLOG ===== -->
+<!-- ===== BLOG / ACTUALITÉS ===== -->
 <section class="blog-section section-padding bg-white" id="blog">
     <div class="container">
         <div class="section-title">
@@ -201,48 +232,41 @@
             <div class="line"></div>
         </div>
         <div class="blog-grid">
+            {% if articles %}
+            {% for article in articles %}
             <div class="blog-card">
                 <div class="img">
-                    <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?w=800&q=80" alt="École écologique" />
-                    <span class="date">15 Jan 2025</span>
+                    {% if article.image %}
+                    <img src="{{ article.image.url }}" alt="{{ article.titre }}" />
+                    {% else %}
+                    <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80" alt="Image par défaut" />
+                    {% endif %}
+                    <span class="date">{{ article.date_publication|date:"d M Y" }}</span>
                 </div>
                 <div class="content">
-                    <span class="tag">Éducation</span>
-                    <h4>Nouvelle école écologique à Kisangani</h4>
-                    <p>Grâce à vos dons, une nouvelle école construite avec des matériaux durables et équipée de panneaux solaires a été inaugurée.</p>
-                    <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
+                    <span class="tag">{{ article.categorie.nom|default:"Actualité" }}</span>
+                    <h4>{{ article.titre|truncatechars:60 }}</h4>
+                    <p>{{ article.contenu|striptags|safe|truncatechars:150 }}</p>
+                    <a href="{% url 'actualites:article_detail' article.slug %}" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
-            <div class="blog-card">
-                <div class="img">
-                    <img src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80" alt="Reforestation" />
-                    <span class="date">8 Jan 2025</span>
-                </div>
-                <div class="content">
-                    <span class="tag">Environnement</span>
-                    <h4>Campagne de reboisement à Lubumbashi</h4>
-                    <p>Plus de 2 000 arbres plantés avec les élèves et les communautés locales pour lutter contre la déforestation et sensibiliser à la biodiversité.</p>
-                    <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
-                </div>
+            {% endfor %}
+            {% else %}
+            <div class="col-12 text-center py-5">
+                <p class="text-muted">Aucune actualité disponible pour le moment.</p>
             </div>
-            <div class="blog-card">
-                <div class="img">
-                    <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80" alt="Distribution de kits" />
-                    <span class="date">2 Jan 2025</span>
-                </div>
-                <div class="content">
-                    <span class="tag">Solidarité</span>
-                    <h4>Distribution de fournitures scolaires à Bunia</h4>
-                    <p>Plus de 1 000 kits scolaires éco-responsables ont été distribués aux enfants vulnérables de la région, leur permettant de débuter l'année sereinement.</p>
-                    <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
-                </div>
-            </div>
+            {% endif %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="{% url 'actualites:article_list' %}" class="btn btn-primary-custom">
+                Voir toutes les actualités <i class="fas fa-arrow-right ms-2"></i>
+            </a>
         </div>
     </div>
 </section>
 
 <!-- ===== PARTENAIRES ===== -->
-<section class="partners-section">
+<section class="partners-section section-padding bg-beige" id="partenaires">
     <div class="container">
         <div class="section-title">
             <h2>Nos <span>partenaires</span></h2>
@@ -250,11 +274,19 @@
             <div class="line"></div>
         </div>
         <div class="partners-grid">
-            <div class="partner-item"><i class="fas fa-university"></i> Ministère de l'Éducation</div>
-            <div class="partner-item"><i class="fas fa-globe-africa"></i> UNESCO</div>
-            <div class="partner-item"><i class="fas fa-hand-holding-usd"></i> UNICEF</div>
-            <div class="partner-item"><i class="fas fa-tree"></i> WWF</div>
-            <div class="partner-item"><i class="fas fa-heart"></i> Croix-Rouge</div>
+            <div class="partner-item"><i class="fas fa-hospital-alt"></i> MINISANTE/DPS</div>
+            <div class="partner-item"><i class="fas fa-hand-holding-heart"></i> ONUSIDA</div>
+            <div class="partner-item"><i class="fas fa-users"></i> PNMLS</div>
+            <div class="partner-item"><i class="fas fa-graduation-cap"></i> EPSP</div>
+            <div class="partner-item"><i class="fas fa-female"></i> 50MAWS</div>
+            <div class="partner-item"><i class="fas fa-globe"></i> OMS</div>
+            <div class="partner-item"><i class="fas fa-balance-scale"></i> ASPLC</div>
+            <div class="partner-item"><i class="fas fa-hand-holding-usd"></i> UCOP+</div>
+            <div class="partner-item"><i class="fas fa-shield-alt"></i> MONUSCO</div>
+            <div class="partner-item"><i class="fas fa-female"></i> UNFPA</div>
+            <div class="partner-item"><i class="fas fa-landmark"></i> MINISTERE DU PLAN</div>
+            <div class="partner-item"><i class="fas fa-university"></i> UNESCO</div>
+            <div class="partner-item"><i class="fas fa-globe-africa"></i> RET</div>
         </div>
     </div>
 </section>

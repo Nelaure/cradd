@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Actualités · CRADD{% endblock %}
+
+{% block page_title %}Actualités{% endblock %}
+{% block page_subtitle %}Toutes les actualités et annonces{% endblock %}
+
+{% block breadcrumb %}
+<span>Actualités</span>
+{% endblock %}
+
+{% block content %}
+<div class="container {% if not user.is_authenticated %}mt-5{% endif %} py-4">
+    <!-- ===== EN-TÊTE DE LA PAGE (visible pour tous) ===== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="p-4 bg-body-secondary border rounded-3 shadow-sm">
+                <div class="d-flex flex-wrap justify-content-between align-items-center">
+                    <div>
+                        <h1 class="fw-bold mb-1">Actualités</h1>
+                        <p class="text-muted mb-0">Toutes les actualités et annonces</p>
+                    </div>
+                    <!-- Optionnel : un bouton pour voir toutes les actualités si besoin -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== LISTE DES ARTICLES ===== -->
+    <div class="row">
+        {% for article in articles %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 card-glass">
+                {% if article.image %}
+                <img src="{{ article.image.url }}" class="card-img-top" alt="{{ article.titre }}" style="height:200px; object-fit:cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ article.titre }}</h5>
+                    <p class="card-text">{{ article.contenu|striptags|truncatechars:150|safe }}</p>
+                    <a href="{% url 'actualites:article_detail' article.slug %}" class="btn btn-primary-custom">Lire la suite</a>
+                </div>
+                <div class="card-footer text-muted small">
+                    {{ article.date_publication|date:"d/m/Y" }} · {{ article.auteur.get_full_name|default:article.auteur.username }}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+            <p>Aucune actualité disponible pour le moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ===== PAGINATION ===== -->
+    {% if articles.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if articles.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1">&laquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ articles.previous_page_number }}">&lsaquo;</a></li>
+            {% endif %}
+            {% for num in articles.paginator.page_range %}
+            {% if articles.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+            {% endfor %}
+            {% if articles.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ articles.next_page_number }}">&rsaquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ articles.paginator.num_pages }}">&raquo;</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

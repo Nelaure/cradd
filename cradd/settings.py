@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'accounts',
     'ecoles',
     'eleves',
+    'actualites',
 ]
 
 MIDDLEWARE = [
@@ -60,6 +61,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.media',   # <-- AJOUTÉ
                 'ecoles.utils.trash_count',
             ],
         },
@@ -70,7 +72,6 @@ WSGI_APPLICATION = 'cradd.wsgi.application'
 
 # ---------- BASE DE DONNÉES ----------
 if DEBUG:
-    # Local : SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -78,7 +79,6 @@ if DEBUG:
         }
     }
 else:
-    # Production (Render) : PostgreSQL via DATABASE_URL
     DATABASES = {
         'default': dj_database_url.config(conn_max_age=600)
     }

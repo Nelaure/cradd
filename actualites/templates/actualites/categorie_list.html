@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Catégories · CRADD{% endblock %}
+
+{% block page_title %}Catégories{% endblock %}
+{% block page_subtitle %}Gérez les catégories d'articles{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'actualites:categorie_create' %}" class="btn btn-primary-custom">
+    <i class="fas fa-plus"></i> Nouvelle catégorie
+</a>
+<a href="{% url 'actualites:dashboard' %}" class="btn btn-secondary ms-2">
+    <i class="fas fa-arrow-left"></i> Retour
+</a>
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'actualites:dashboard' %}">Actualités</a>
+<span class="mx-2">/</span>
+<span>Catégories</span>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card card-glass p-3">
+            {% if categories %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Slug</th>
+                            <th>Description</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in categories %}
+                        <tr>
+                            <td><strong>{{ cat.nom }}</strong></td>
+                            <td><code>{{ cat.slug }}</code></td>
+                            <td>{{ cat.description|default:"-" }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'actualites:categorie_edit' cat.pk %}" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'actualites:categorie_delete' cat.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                <p class="lead">Aucune catégorie n'a été créée.</p>
+                <a href="{% url 'actualites:categorie_create' %}" class="btn btn-primary-custom">
+                    <i class="fas fa-plus"></i> Créer une catégorie
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

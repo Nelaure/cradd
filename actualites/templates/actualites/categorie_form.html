@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} · CRADD{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Remplissez les informations de la catégorie{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'actualites:categorie_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Annuler
+</a>
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'actualites:dashboard' %}">Actualités</a>
+<span class="mx-2">/</span>
+<a href="{% url 'actualites:categorie_list' %}">Catégories</a>
+<span class="mx-2">/</span>
+<span>{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card card-glass p-4">
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="{{ form.nom.id_for_label }}" class="form-label">Nom *</label>
+                    {{ form.nom }}
+                    {% if form.nom.errors %}
+                    <div class="invalid-feedback d-block">{{ form.nom.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.slug.id_for_label }}" class="form-label">Slug (laisser vide pour auto-génération)</label>
+                    {{ form.slug }}
+                    {% if form.slug.errors %}
+                    <div class="invalid-feedback d-block">{{ form.slug.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                    <div class="invalid-feedback d-block">{{ form.description.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'actualites:categorie_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Annuler
+                    </a>
+                    <button type="submit" class="btn btn-primary-custom">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

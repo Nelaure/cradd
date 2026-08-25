@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Vider la corbeille · CRADD{% endblock %}
+
+{% block page_title %}Vider la corbeille{% endblock %}
+{% block page_subtitle %}Confirmation requise{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'actualites:dashboard' %}">Actualités</a>
+<span class="mx-2">/</span>
+<a href="{% url 'actualites:trash_list' %}">Corbeille</a>
+<span class="mx-2">/</span>
+<span>Vider</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card card-glass p-4 text-center">
+            <i class="fas fa-trash-alt text-danger fa-3x mb-3"></i>
+            <h4>Vider la corbeille ?</h4>
+            <p class="text-muted">
+                Cette action supprimera définitivement <strong>{{ articles.count }}</strong> article(s).
+                Cette opération est irréversible.
+            </p>
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <div class="d-flex justify-content-center gap-3 mt-3">
+                    <a href="{% url 'actualites:trash_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Oui, vider la corbeille
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

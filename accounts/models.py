@@ -10,6 +10,7 @@ class Utilisateur(AbstractUser):
         ENSEIGNANT = 'ENSEIGNANT', 'Enseignant'
         PARENT = 'PARENT', 'Parent'
         PROVED = 'PROVED', 'Directeur Provincial'
+        EDITOR = 'EDITOR', 'Éditeur'   # Nouveau rôle
 
     nom = models.CharField(max_length=100)
     postnom = models.CharField(max_length=100, blank=True)
@@ -46,7 +47,6 @@ class Utilisateur(AbstractUser):
         related_name='enseignants',
         verbose_name="Classe d'affectation"
     )
-    # Le champ eleves_associes a été SUPPRIMÉ
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
     est_actif = models.BooleanField(default=True)
@@ -70,6 +70,7 @@ class Utilisateur(AbstractUser):
     def est_enseignant(self): return self.role == self.Role.ENSEIGNANT
     def est_parent(self): return self.role == self.Role.PARENT
     def est_proved(self): return self.role == self.Role.PROVED
+    def est_editeur(self): return self.role == self.Role.EDITOR   # Nouvelle méthode
     
     def generate_reset_code(self):
         import random

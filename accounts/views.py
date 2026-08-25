@@ -16,14 +16,12 @@ from .forms import (
 from ecoles.models import Ecole, Niveau, Classe
 from eleves.models import Eleve
 
-# Configuration du logger
 logger = logging.getLogger(__name__)
 
 # ===================== FONCTIONS UTILITAIRES =====================
 
 def log_audit(user, action, model_name=None, object_id=None, object_repr=None, 
               changes=None, ip_address=None, user_agent=None, success=True, message=None):
-    """Enregistre une action dans le journal d'activité"""
     try:
         AuditLog.objects.create(
             utilisateur=user,
@@ -41,7 +39,6 @@ def log_audit(user, action, model_name=None, object_id=None, object_repr=None,
         logger.error(f"Erreur lors de l'enregistrement du journal d'activité : {e}")
 
 def get_client_ip(request):
-    """Récupère l'adresse IP du client"""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]
@@ -52,7 +49,6 @@ def get_client_ip(request):
 # ===================== AUTHENTIFICATION =====================
 
 def login_view(request):
-    """Page de connexion."""
     if request.user.is_authenticated:
         return redirect('ecoles:dashboard')
     
@@ -74,7 +70,11 @@ def login_view(request):
                 success=True,
                 message=f"Connexion depuis {ip}"
             )
-            return redirect(request.GET.get('next', 'ecoles:dashboard'))
+            # Redirection selon le rôle
+            if user.est_editeur():
+                return redirect('actualites:dashboard')
+            else:
+                return redirect(request.GET.get('next', 'ecoles:dashboard'))
         else:
             if user:
                 log_audit(
@@ -92,10 +92,8 @@ def login_view(request):
 
 @login_required
 def logout_view(request):
-    """Déconnexion."""
     ip = get_client_ip(request)
     user_agent = request.META.get('HTTP_USER_AGENT', '')
-    
     log_audit(
         user=request.user,
         action=AuditLog.ActionType.LOGOUT,
@@ -104,7 +102,6 @@ def logout_view(request):
         success=True,
         message=f"Déconnexion depuis {ip}"
     )
-    
     logout(request)
     messages.info(request, 'Vous avez été déconnecté avec succès.')
     return redirect('ecoles:index')
@@ -112,13 +109,11 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
-    """Profil de l'utilisateur connecté."""
     return render(request, 'accounts/profile.html', {'user': request.user})
 
 
 @login_required
 def change_password_view(request):
-    """Changement de mot de passe."""
     if request.method == 'POST':
         old_password = request.POST.get('old_password')
         new_password = request.POST.get('new_password')
@@ -145,7 +140,6 @@ def change_password_view(request):
                 success=True,
                 message="Changement de mot de passe"
             )
-            
             messages.success(request, 'Votre mot de passe a été modifié avec succès.')
             return redirect('accounts:profile')
     
@@ -154,7 +148,6 @@ def change_password_view(request):
 # ===================== RÉINITIALISATION MOT DE PASSE =====================
 
 def password_reset_request_view(request):
-    """Demande de réinitialisation du mot de passe."""
     if request.user.is_authenticated:
         return redirect('ecoles:dashboard')
     
@@ -164,11 +157,8 @@ def password_reset_request_view(request):
             email = form.cleaned_data['email']
             try:
                 user = Utilisateur.objects.get(email=email)
-                
-                # Générer un code de réinitialisation
                 code = user.generate_reset_code()
                 
-                # Construction de l'email
                 subject = 'Réinitialisation de votre mot de passe - Cradd'
                 message = f"""
                 Bonjour {user.get_full_name()},
@@ -185,7 +175,6 @@ def password_reset_request_view(request):
                 L'équipe Cradd
                 """
                 
-                # Tentative d'envoi avec gestion d'erreur détaillée
                 try:
                     send_mail(
                         subject,
@@ -194,8 +183,6 @@ def password_reset_request_view(request):
                         [email],
                         fail_silently=False,
                     )
-                    
-                    # Journaliser la demande
                     ip = get_client_ip(request)
                     user_agent = request.META.get('HTTP_USER_AGENT', '')
                     log_audit(
@@ -206,10 +193,7 @@ def password_reset_request_view(request):
                         success=True,
                         message=f"Demande de réinitialisation envoyée à {email}"
                     )
-                    
-                    # Stocker l'email en session pour la vérification
                     request.session['reset_email'] = email
-                    
                     messages.success(
                         request, 
                         f'Un code de réinitialisation a été envoyé à {email}. '
@@ -218,10 +202,7 @@ def password_reset_request_view(request):
                     return redirect('accounts:password_reset_verify')
                     
                 except Exception as e:
-                    # Log de l'erreur complète
                     logger.error(f"Erreur SMTP lors de l'envoi à {email} : {str(e)}")
-                    
-                    # En mode DEBUG, afficher l'erreur précise, sinon message générique
                     if settings.DEBUG:
                         messages.error(
                             request, 
@@ -235,7 +216,6 @@ def password_reset_request_view(request):
                         )
                     
             except Utilisateur.DoesNotExist:
-                # Ne pas révéler que l'email n'existe pas pour des raisons de sécurité
                 messages.success(
                     request, 
                     'Si un compte existe avec cet email, '
@@ -251,7 +231,6 @@ def password_reset_request_view(request):
 
 
 def password_reset_verify_view(request):
-    """Vérification du code de réinitialisation et nouveau mot de passe."""
     if request.user.is_authenticated:
         return redirect('ecoles:dashboard')
     
@@ -270,7 +249,6 @@ def password_reset_verify_view(request):
                 )
                 
                 if user.verify_reset_code(code):
-                    # Réinitialiser le mot de passe
                     user.set_password(new_password)
                     user.reset_code = None
                     user.reset_code_created_at = None
@@ -317,7 +295,6 @@ def password_reset_verify_view(request):
 
 @login_required
 def user_list_view(request):
-    """Liste des utilisateurs (admin uniquement)."""
     if not request.user.est_administrateur():
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
@@ -332,7 +309,6 @@ def user_list_view(request):
 
 @login_required
 def user_create_view(request):
-    """Création d'un utilisateur (admin uniquement)."""
     if not request.user.est_administrateur():
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
@@ -371,7 +347,6 @@ def user_create_view(request):
 
 @login_required
 def user_edit_view(request, pk):
-    """Modification d'un utilisateur (admin uniquement)."""
     if not request.user.est_administrateur():
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
@@ -412,14 +387,12 @@ def user_edit_view(request, pk):
 
 @login_required
 def user_delete_view(request, pk):
-    """Suppression d'un utilisateur (admin uniquement)."""
     if not request.user.est_administrateur():
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
     
     user = get_object_or_404(Utilisateur, pk=pk)
     
-    # --- INTERDIRE LA SUPPRESSION DE L'ADMINISTRATEUR PRINCIPAL ---
     if user.is_superuser:
         messages.error(request, "Cet utilisateur est un administrateur principal et ne peut pas être supprimé.")
         return redirect('accounts:user_list')
@@ -456,7 +429,6 @@ def user_delete_view(request, pk):
 
 @login_required
 def audit_log_view(request):
-    """Visualisation du journal d'activité (admin uniquement)."""
     if not request.user.est_administrateur():
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')

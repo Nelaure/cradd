@@ -26,7 +26,6 @@ class UtilisateurCreationForm(UserCreationForm):
         # Filtrer les choix en fonction du rôle de l'utilisateur connecté
         if self.request_user:
             if self.request_user.est_proved():
-                # Un proved ne peut créer que des utilisateurs pour sa province
                 province = self.request_user.province_affectation
                 if province:
                     self.fields['ecole_affectation'].queryset = Ecole.objects.filter(province=province)
