@@ -1,8 +1,11 @@
 from django import forms
 from django.forms import inlineformset_factory
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Row, Column, Field, Fieldset, Div, HTML, Submit
 from .models import (
     Ecole, Niveau, Classe, Domaine, Cours, AnneeScolaire,
-    CycleEvaluation, EvaluationConfig, EvaluationResultat, Province
+    CycleEvaluation, EvaluationConfig, EvaluationResultat, Province,
+    Section, Option
 )
 from eleves.models import Eleve
 from accounts.models import Utilisateur
@@ -14,17 +17,39 @@ class ProvinceForm(forms.ModelForm):
         model = Province
         fields = ['nom', 'code', 'description']
         widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control'}),
-            'code': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom de la province'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code (ex: KN)'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Description'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('nom', css_class='form-group col-md-6'),
+                Column('code', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('description', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:province_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='text-end'
+            )
+        )
+
 
 class EcoleForm(forms.ModelForm):
     niveaux_reference = forms.ModelMultipleChoiceField(
         queryset=Niveau.objects.filter(est_reference=True, ecole__isnull=True),
         required=False,
         label="Niveaux de référence à affecter",
-        widget=forms.SelectMultiple(attrs={'class': 'form-select'})
+        widget=forms.SelectMultiple(attrs={'class': 'form-select select2', 'data-placeholder': 'Sélectionnez les niveaux...'})
     )
     province = forms.ModelChoiceField(
         queryset=Province.objects.all(),
@@ -41,19 +66,29 @@ class EcoleForm(forms.ModelForm):
         model = Ecole
         fields = ['nom', 'code', 'province', 'type_gestion', 'responsable', 'contact', 'adresse', 'telephone', 'email', 'est_active']
         widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control'}),
-            'code': forms.TextInput(attrs={'class': 'form-control'}),
-            'responsable': forms.TextInput(attrs={'class': 'form-control'}),
-            'contact': forms.TextInput(attrs={'class': 'form-control'}),
-            'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'telephone': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom de l\'école'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code unique'}),
+            'responsable': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom du responsable'}),
+            'contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact principal'}),
+            'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Adresse complète'}),
+            'telephone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Téléphone'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@exemple.com'}),
             'est_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+
+        # Personnalisation de l'affichage des choix de niveaux de référence
+        def label_from_instance(obj):
+            nom = obj.nom
+            section = obj.section.nom if obj.section else "Sans section"
+            option = obj.option.nom if obj.option else "Sans option"
+            return f"{nom} ({section} - {option})"
+        self.fields['niveaux_reference'].label_from_instance = label_from_instance
+
+        # Gestion de la province désactivée selon le rôle
         if self.user:
             if self.user.est_agent() or self.user.est_inspecteur() or self.user.est_proved():
                 self.fields['province'].disabled = True
@@ -63,6 +98,64 @@ class EcoleForm(forms.ModelForm):
                 elif self.user.est_agent() and self.user.ecole_affectation:
                     self.fields['province'].initial = self.user.ecole_affectation.province.id
                     self.fields['province'].queryset = Province.objects.filter(id=self.user.ecole_affectation.province.id)
+
+        # Configuration de crispy forms
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Fieldset(
+                'Informations générales',
+                Row(
+                    Column('nom', css_class='form-group col-md-6'),
+                    Column('code', css_class='form-group col-md-6'),
+                    css_class='row'
+                ),
+                Row(
+                    Column('province', css_class='form-group col-md-6'),
+                    Column('type_gestion', css_class='form-group col-md-6'),
+                    css_class='row'
+                ),
+            ),
+            Fieldset(
+                'Coordonnées',
+                Row(
+                    Column('responsable', css_class='form-group col-md-6'),
+                    Column('contact', css_class='form-group col-md-6'),
+                    css_class='row'
+                ),
+                Row(
+                    Column('telephone', css_class='form-group col-md-6'),
+                    Column('email', css_class='form-group col-md-6'),
+                    css_class='row'
+                ),
+                Row(
+                    Column('adresse', css_class='form-group col-12'),
+                    css_class='row'
+                ),
+            ),
+            Fieldset(
+                'Statut et niveaux',
+                Row(
+                    Column('est_active', css_class='form-group col-12'),
+                    css_class='row'
+                ),
+                Row(
+                    Column('niveaux_reference', css_class='form-group col-12'),
+                    css_class='row'
+                ),
+                HTML("""
+                    <div class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i> Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs niveaux.
+                        Chaque niveau sera copié avec sa section et son option définies dans la référence.
+                    </div>
+                """),
+            ),
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:ecole_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -75,13 +168,26 @@ class EcoleForm(forms.ModelForm):
 
 
 class NiveauForm(forms.ModelForm):
+    section = forms.ModelChoiceField(
+        queryset=Section.objects.all(),
+        required=False,
+        label="Section",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    option = forms.ModelChoiceField(
+        queryset=Option.objects.none(),
+        required=False,
+        label="Option",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
     class Meta:
         model = Niveau
-        fields = ['nom', 'description', 'ordre', 'ecole', 'est_reference']
+        fields = ['nom', 'description', 'ordre', 'ecole', 'est_reference', 'section', 'option']
         widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'ordre': forms.NumberInput(attrs={'class': 'form-control'}),
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Primaire, Secondaire...'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Description'}),
+            'ordre': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
             'ecole': forms.Select(attrs={'class': 'form-select'}),
             'est_reference': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -90,6 +196,20 @@ class NiveauForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         self.is_reference = kwargs.pop('is_reference', False)
         super().__init__(*args, **kwargs)
+
+        section_id = None
+        if self.data and 'section' in self.data:
+            try:
+                section_id = int(self.data.get('section'))
+            except (TypeError, ValueError):
+                pass
+        if section_id is None and self.instance and self.instance.pk and self.instance.section:
+            section_id = self.instance.section_id
+
+        if section_id:
+            self.fields['option'].queryset = Option.objects.filter(section_id=section_id)
+        else:
+            self.fields['option'].queryset = Option.objects.none()
 
         if self.is_reference:
             self.fields['ecole'].queryset = Ecole.objects.none()
@@ -119,8 +239,44 @@ class NiveauForm(forms.ModelForm):
                 else:
                     self.fields['ecole'].queryset = Ecole.objects.all()
 
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('nom', css_class='form-group col-md-6'),
+                Column('ordre', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('ecole', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Row(
+                Column('est_reference', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Row(
+                Column('section', css_class='form-group col-md-6'),
+                Column('option', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('description', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:niveau_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )
+
     def clean(self):
         cleaned_data = super().clean()
+        section = cleaned_data.get('section')
+        option = cleaned_data.get('option')
+        if option and section and option.section != section:
+            raise forms.ValidationError("L'option choisie ne correspond pas à la section sélectionnée.")
         if self.is_reference:
             cleaned_data['ecole'] = None
             cleaned_data['est_reference'] = True
@@ -145,9 +301,9 @@ class ClasseForm(forms.ModelForm):
         model = Classe
         fields = ['nom', 'description', 'ordre', 'niveau', 'ecole', 'est_reference']
         widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'ordre': forms.NumberInput(attrs={'class': 'form-control'}),
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 6ème A'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Description'}),
+            'ordre': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
             'niveau': forms.Select(attrs={'class': 'form-select'}),
             'ecole': forms.Select(attrs={'class': 'form-select'}),
             'est_reference': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -196,6 +352,34 @@ class ClasseForm(forms.ModelForm):
                     self.fields['ecole'].queryset = Ecole.objects.all()
                     self.fields['niveau'].queryset = Niveau.objects.filter(est_reference=False)
 
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('nom', css_class='form-group col-md-6'),
+                Column('ordre', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('niveau', css_class='form-group col-md-6'),
+                Column('ecole', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('est_reference', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Row(
+                Column('description', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:classe_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )
+
     def clean(self):
         cleaned_data = super().clean()
         if self.is_reference:
@@ -219,12 +403,12 @@ class DomaineForm(forms.ModelForm):
         model = Domaine
         fields = ['nom', 'description', 'ecole', 'est_reference', 'niveaux', 'classes']
         widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom du domaine'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Description'}),
             'ecole': forms.Select(attrs={'class': 'form-select'}),
             'est_reference': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'niveaux': forms.SelectMultiple(attrs={'class': 'form-select'}),
-            'classes': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            'niveaux': forms.SelectMultiple(attrs={'class': 'form-select select2'}),
+            'classes': forms.SelectMultiple(attrs={'class': 'form-select select2'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -276,6 +460,37 @@ class DomaineForm(forms.ModelForm):
                     self.fields['niveaux'].queryset = Niveau.objects.filter(est_reference=False)
                     self.fields['classes'].queryset = Classe.objects.filter(est_reference=False)
 
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('nom', css_class='form-group col-md-6'),
+                Column('ecole', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('est_reference', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Row(
+                Column('niveaux', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Row(
+                Column('classes', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Row(
+                Column('description', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:domaine_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )
+
     def clean(self):
         cleaned_data = super().clean()
         if self.is_reference:
@@ -299,10 +514,10 @@ class CoursForm(forms.ModelForm):
         model = Cours
         fields = ['nom', 'code', 'coefficient', 'description', 'niveau', 'classe', 'domaine', 'ecole', 'est_reference']
         widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control'}),
-            'code': forms.TextInput(attrs={'class': 'form-control'}),
-            'coefficient': forms.NumberInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom du cours'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code unique'}),
+            'coefficient': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '1'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Description'}),
             'niveau': forms.Select(attrs={'class': 'form-select'}),
             'classe': forms.Select(attrs={'class': 'form-select'}),
             'domaine': forms.Select(attrs={'class': 'form-select'}),
@@ -372,6 +587,40 @@ class CoursForm(forms.ModelForm):
                     self.fields['classe'].queryset = Classe.objects.filter(est_reference=False)
                     self.fields['domaine'].queryset = Domaine.objects.filter(est_reference=False)
 
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('nom', css_class='form-group col-md-6'),
+                Column('code', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('coefficient', css_class='form-group col-md-4'),
+                Column('niveau', css_class='form-group col-md-4'),
+                Column('classe', css_class='form-group col-md-4'),
+                css_class='row'
+            ),
+            Row(
+                Column('domaine', css_class='form-group col-md-6'),
+                Column('ecole', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('est_reference', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Row(
+                Column('description', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:cours_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )
+
     def clean(self):
         cleaned_data = super().clean()
         if self.is_reference:
@@ -402,16 +651,39 @@ class AnneeScolaireForm(forms.ModelForm):
         model = AnneeScolaire
         fields = ['annee', 'date_debut', 'date_fin', 'est_actuelle', 'ecoles']
         widgets = {
-            'annee': forms.TextInput(attrs={'class': 'form-control'}),
+            'annee': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 2024-2025'}),
             'date_debut': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'date_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'est_actuelle': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'ecoles': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            'ecoles': forms.SelectMultiple(attrs={'class': 'form-select select2'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['ecoles'].queryset = Ecole.objects.all()
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('annee', css_class='form-group col-md-6'),
+                Column('est_actuelle', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('date_debut', css_class='form-group col-md-6'),
+                Column('date_fin', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('ecoles', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:annee_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )
 
 
 class CycleEvaluationForm(forms.ModelForm):
@@ -422,17 +694,33 @@ class CycleEvaluationForm(forms.ModelForm):
             'type_cycle': forms.Select(attrs={'class': 'form-select'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('type_cycle', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:cours_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )
+
 
 class EvaluationConfigForm(forms.ModelForm):
     class Meta:
         model = EvaluationConfig
         fields = ['cycle_num', 'periode_num', 'type', 'points_max', 'ordre']
         widgets = {
-            'cycle_num': forms.NumberInput(attrs={'class': 'form-control'}),
-            'periode_num': forms.NumberInput(attrs={'class': 'form-control'}),
+            'cycle_num': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '1'}),
+            'periode_num': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '1'}),
             'type': forms.Select(attrs={'class': 'form-select'}),
-            'points_max': forms.NumberInput(attrs={'class': 'form-control'}),
-            'ordre': forms.NumberInput(attrs={'class': 'form-control'}),
+            'points_max': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '20'}),
+            'ordre': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
         }
 
 
@@ -537,13 +825,36 @@ class ResultatSelectionForm(forms.Form):
                     self.fields['cours'].queryset = Cours.objects.none()
                     self.fields['eleve'].queryset = Eleve.objects.none()
             else:
-                # Admin
                 self.fields['ecole'].queryset = Ecole.objects.all()
                 self.fields['niveau'].queryset = Niveau.objects.filter(est_reference=False)
                 self.fields['classe'].queryset = Classe.objects.filter(est_reference=False)
                 self.fields['cours'].queryset = Cours.objects.filter(est_reference=False)
                 self.fields['eleve'].queryset = Eleve.objects.all()
                 self.fields['annee_scolaire'].queryset = AnneeScolaire.objects.all()
+
+        self.helper = FormHelper()
+        self.helper.form_method = 'get'
+        self.helper.layout = Layout(
+            Row(
+                Column('ecole', css_class='form-group col-md-4'),
+                Column('niveau', css_class='form-group col-md-4'),
+                Column('classe', css_class='form-group col-md-4'),
+                css_class='row'
+            ),
+            Row(
+                Column('eleve', css_class='form-group col-md-6'),
+                Column('cours', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('annee_scolaire', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Rechercher', css_class='btn btn-primary'),
+                css_class='d-flex justify-content-end mt-3'
+            )
+        )
 
 
 class EvaluationResultatForm(forms.Form):
@@ -586,6 +897,22 @@ class EvaluationResultatForm(forms.Form):
                 )
                 self.fields[field_name].config_id = config.id
 
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        layout_fields = []
+        for field_name in self.fields:
+            layout_fields.append(Field(field_name, css_class='form-group col-md-4'))
+        layout_fields.append(
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:resultat_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )
+        self.helper.layout = Layout(
+            Row(*layout_fields, css_class='row'),
+        )
+
     def save(self):
         saved_count = 0
         for field_name, field in self.fields.items():
@@ -611,12 +938,11 @@ class EvaluationResultatForm(forms.Form):
         return saved_count
 
 
-# Nouveau formulaire pour la duplication de classe
 class ClasseDuplicateForm(forms.Form):
     nouveau_nom = forms.CharField(
         max_length=50,
         label="Nom de la nouvelle classe",
-        widget=forms.TextInput(attrs={'class': 'form-control'})
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 6ème A (copie)'})
     )
 
     def __init__(self, *args, **kwargs):
@@ -624,6 +950,20 @@ class ClasseDuplicateForm(forms.Form):
         self.ecole = kwargs.pop('ecole', None)
         self.niveau = kwargs.pop('niveau', None)
         super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('nouveau_nom', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Dupliquer', css_class='btn btn-success'),
+                HTML('<a href="{% url "ecoles:classe_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )
 
     def clean_nouveau_nom(self):
         nom = self.cleaned_data['nouveau_nom']
@@ -636,3 +976,79 @@ class ClasseDuplicateForm(forms.Form):
             ).exists():
                 raise forms.ValidationError("Une classe avec ce nom existe déjà pour ce niveau et cette école.")
         return nom
+
+
+class SectionForm(forms.ModelForm):
+    class Meta:
+        model = Section
+        fields = ['nom', 'code', 'description', 'ordre']
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Enseignement Général'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code unique'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Description'}),
+            'ordre': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('nom', css_class='form-group col-md-6'),
+                Column('code', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('ordre', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('description', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:section_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )
+
+
+class OptionForm(forms.ModelForm):
+    class Meta:
+        model = Option
+        fields = ['nom', 'code', 'section', 'description', 'ordre']
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Latin-Philosophie'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code unique'}),
+            'section': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Description'}),
+            'ordre': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column('nom', css_class='form-group col-md-6'),
+                Column('code', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('section', css_class='form-group col-md-6'),
+                Column('ordre', css_class='form-group col-md-6'),
+                css_class='row'
+            ),
+            Row(
+                Column('description', css_class='form-group col-12'),
+                css_class='row'
+            ),
+            Div(
+                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
+                HTML('<a href="{% url "ecoles:option_list" %}" class="btn btn-secondary">Annuler</a>'),
+                css_class='d-flex gap-2 justify-content-end mt-4'
+            )
+        )

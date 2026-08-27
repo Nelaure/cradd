@@ -41,7 +41,36 @@ class Province(SoftDeleteMixin):
         return self.nom
 
 
-# ===================== MODÈLES =====================
+# ===================== SECTION ET OPTION =====================
+class Section(models.Model):
+    nom = models.CharField(max_length=100)
+    code = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    description = models.TextField(blank=True)
+    ordre = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['ordre', 'nom']
+
+    def __str__(self):
+        return self.nom
+
+
+class Option(models.Model):
+    nom = models.CharField(max_length=100)
+    code = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='options')
+    description = models.TextField(blank=True)
+    ordre = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['section__ordre', 'ordre', 'nom']
+        unique_together = ['nom', 'section']
+
+    def __str__(self):
+        return f"{self.nom} ({self.section.nom})"
+
+
+# ===================== ECOLE =====================
 class Ecole(SoftDeleteMixin):
     TYPE_GESTION_CHOICES = (
         ('public', 'Publique'),
@@ -72,44 +101,76 @@ class Ecole(SoftDeleteMixin):
         return self.nom
 
 
+# ===================== NIVEAU (MODIFIÉ) =====================
 class Niveau(SoftDeleteMixin):
     nom = models.CharField(max_length=50)
     description = models.TextField(blank=True)
     ordre = models.PositiveSmallIntegerField(default=0)
     ecole = models.ForeignKey(Ecole, on_delete=models.CASCADE, null=True, blank=True, related_name='niveaux')
     est_reference = models.BooleanField(default=False)
+    section = models.ForeignKey(Section, on_delete=models.SET_NULL, null=True, blank=True, related_name='niveaux')
+    option = models.ForeignKey(Option, on_delete=models.SET_NULL, null=True, blank=True, related_name='niveaux')
 
     objects = SoftDeleteManager()
     all_objects = models.Manager()
 
     class Meta:
-        unique_together = [['nom', 'ecole']]
+        # CONTRAINTE MODIFIÉE : permet plusieurs instances du même nom si section/option diffèrent
+        unique_together = [['nom', 'ecole', 'section', 'option']]
         indexes = [
             models.Index(fields=['ecole', 'est_reference']),
+            models.Index(fields=['section', 'option']),
         ]
 
     def __str__(self):
-        return f"{self.nom}" + (" (réf.)" if self.est_reference else "")
+        base = f"{self.nom}"
+        if self.section:
+            base += f" - {self.section.nom}"
+        if self.option:
+            base += f" ({self.option.nom})"
+        return base + (" (réf.)" if self.est_reference else "")
 
     def clean(self):
         if self.est_reference and self.ecole is not None:
             raise ValidationError("Une référence ne peut pas être associée à une école.")
         if not self.est_reference and self.ecole is None:
             raise ValidationError("Une instance doit être associée à une école.")
+        if self.option and self.section and self.option.section != self.section:
+            raise ValidationError("L'option choisie ne correspond pas à la section sélectionnée.")
 
-    def affecter_a_ecole(self, ecole):
+    def affecter_a_ecole(self, ecole, section=None, option=None):
+        """
+        Crée une copie (instance) du niveau de référence dans l'école donnée.
+        Si section et/ou option sont fournis, ils remplacent ceux du niveau de référence.
+        """
         if not self.est_reference or self.ecole is not None:
             raise ValueError("Seul un niveau de référence peut être affecté à une école.")
-        if Niveau.objects.filter(nom=self.nom, ecole=ecole, est_reference=False).exists():
-            raise ValidationError(f"Le niveau '{self.nom}' est déjà affecté à cette école.")
+        # Vérification d'existence basée sur la combinaison (nom, ecole, section, option)
+        section_a_utiliser = section if section is not None else self.section
+        option_a_utiliser = option if option is not None else self.option
+
+        if Niveau.objects.filter(
+            nom=self.nom,
+            ecole=ecole,
+            section=section_a_utiliser,
+            option=option_a_utiliser,
+            est_reference=False
+        ).exists():
+            raise ValidationError(
+                f"Le niveau '{self.nom}' avec la section '{section_a_utiliser.nom if section_a_utiliser else '-'}' "
+                f"et l'option '{option_a_utiliser.nom if option_a_utiliser else '-'}' existe déjà dans cette école."
+            )
 
         nouveau_niveau = Niveau.objects.create(
             nom=self.nom,
             description=self.description,
             ordre=self.ordre,
             ecole=ecole,
-            est_reference=False
+            est_reference=False,
+            section=section_a_utiliser,
+            option=option_a_utiliser
         )
+
         classes_ref = Classe.objects.filter(niveau=self, ecole=None, est_reference=True)
         for classe_ref in classes_ref:
             nouvelle_classe = Classe.objects.create(
@@ -176,6 +237,7 @@ class Niveau(SoftDeleteMixin):
                 )
 
 
+# ===================== CLASSE =====================
 class Classe(SoftDeleteMixin):
     nom = models.CharField(max_length=50)
     description = models.TextField(blank=True)
@@ -203,6 +265,7 @@ class Classe(SoftDeleteMixin):
             raise ValidationError("Une instance doit être associée à une école.")
 
 
+# ===================== DOMAINE =====================
 class Domaine(SoftDeleteMixin):
     nom = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -230,6 +293,7 @@ class Domaine(SoftDeleteMixin):
             raise ValidationError("Une instance doit être associée à une école.")
 
 
+# ===================== COURS =====================
 class Cours(SoftDeleteMixin):
     nom = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True)
@@ -260,6 +324,7 @@ class Cours(SoftDeleteMixin):
             raise ValidationError("Une instance doit être associée à une école.")
 
 
+# ===================== ANNÉE SCOLAIRE =====================
 class AnneeScolaire(models.Model):
     annee = models.CharField(max_length=9, unique=True)
     date_debut = models.DateField()
@@ -281,6 +346,7 @@ class AnneeScolaire(models.Model):
         super().save(*args, **kwargs)
 
 
+# ===================== CYCLE D'ÉVALUATION =====================
 class CycleEvaluation(models.Model):
     CYCLE_TYPES = (
         ('trimestre', 'Trimestriel'),

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des options - Cradd{% endblock %}
+{% block page_heading %}Options pédagogiques{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-tasks"></i> Options</h1>
+    <a href="{% url 'ecoles:option_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Ajouter une option
+    </a>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <!-- Filtre par section -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="sectionFilter" class="form-label">Filtrer par section</label>
+                <select id="sectionFilter" class="form-select" onchange="window.location.href='?section='+this.value">
+                    <option value="">Toutes les sections</option>
+                    {% for section in sections %}
+                    <option value="{{ section.id }}" {% if selected_section|stringformat:"s" == section.id|stringformat:"s" %}selected{% endif %}>
+                        {{ section.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Code</th>
+                        <th>Section</th>
+                        <th>Ordre</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for option in options %}
+                    <tr>
+                        <td>{{ option.nom }}</td>
+                        <td>{{ option.code|default:"-" }}</td>
+                        <td>{{ option.section.nom }}</td>
+                        <td>{{ option.ordre }}</td>
+                        <td>
+                            <a href="{% url 'ecoles:option_edit' option.id %}" class="btn btn-sm btn-warning" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'ecoles:option_delete' option.id %}" class="btn btn-sm btn-danger" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">Aucune option trouvée.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if options.has_other_pages %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if options.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ options.previous_page_number }}{% if selected_section %}&section={{ selected_section }}{% endif %}">Précédent</a></li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                {% endif %}
+                {% for num in options.paginator.page_range %}
+                {% if options.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% else %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}{% if selected_section %}&section={{ selected_section }}{% endif %}">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+                {% if options.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ options.next_page_number }}{% if selected_section %}&section={{ selected_section }}{% endif %}">Suivant</a></li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

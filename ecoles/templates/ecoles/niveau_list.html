@@ -1,18 +1,55 @@
 {% extends "base.html" %}
 
 {% block title %}Liste des niveaux - Cradd{% endblock %}
-{% block page_heading %}Liste des niveaux{% endblock %}
+{% block page_heading %}Niveaux{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1><i class="fas fa-layer-group"></i> Niveaux</h1>
-    {% if user.est_administrateur %}
     <a href="{% url 'ecoles:niveau_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Ajouter un niveau de référence
+        <i class="fas fa-plus"></i> Ajouter un niveau
     </a>
-    {% endif %}
 </div>
 
+<!-- Filtres -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="sectionFilter" class="form-label">Section</label>
+                <select name="section" id="sectionFilter" class="form-select">
+                    <option value="">Toutes les sections</option>
+                    {% for section in sections %}
+                    <option value="{{ section.id }}" {% if selected_section|stringformat:"s" == section.id|stringformat:"s" %}selected{% endif %}>
+                        {{ section.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="optionFilter" class="form-label">Option</label>
+                <select name="option" id="optionFilter" class="form-select">
+                    <option value="">Toutes les options</option>
+                    {% for option in options %}
+                    <option value="{{ option.id }}" {% if selected_option|stringformat:"s" == option.id|stringformat:"s" %}selected{% endif %}>
+                        {{ option.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-filter"></i> Filtrer
+                </button>
+                <a href="{% url 'ecoles:niveau_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Réinitialiser
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des niveaux -->
 <div class="card shadow">
     <div class="card-body">
         <div class="table-responsive">
@@ -20,9 +57,12 @@
                 <thead>
                     <tr>
                         <th>Nom</th>
-                        <th>Type</th>
-                        <th>École / Statut</th>
                         <th>Description</th>
+                        <th>Ordre</th>
+                        <th>Section</th>
+                        <th>Option</th>
+                        <th>Type</th>
+                        <th>École</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -30,79 +70,79 @@
                     {% for niveau in niveaux %}
                     <tr>
                         <td>{{ niveau.nom }}</td>
+                        <td>{{ niveau.description|truncatechars:30 }}</td>
+                        <td>{{ niveau.ordre }}</td>
+                        <td>{{ niveau.section.nom|default:"-" }}</td>
+                        <td>{{ niveau.option.nom|default:"-" }}</td>
                         <td>
                             {% if niveau.est_reference %}
-                            <span class="badge bg-info">Référence</span>
+                                <span class="badge bg-info">Référence</span>
                             {% else %}
-                            <span class="badge bg-secondary">Instance</span>
+                                <span class="badge bg-secondary">Instance</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if niveau.est_reference %}
-                            <span class="text-muted">—</span>
+                                -
                             {% else %}
-                            {{ niveau.ecole.nom|default:"(sans école)" }}
+                                {{ niveau.ecole.nom|default:"-" }}
                             {% endif %}
                         </td>
-                        <td>{{ niveau.description|default:"-"|truncatewords:10 }}</td>
                         <td>
+                            <a href="{% url 'ecoles:niveau_edit' niveau.id %}" class="btn btn-sm btn-warning" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
                             {% if niveau.est_reference %}
-                            {% if user.est_administrateur %}
-                            <a href="{% url 'ecoles:niveau_edit' niveau.id %}" class="btn btn-sm btn-warning">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="{% url 'ecoles:niveau_delete' niveau.id %}" class="btn btn-sm btn-danger">
+                                <a href="{% url 'ecoles:niveau_affecter' niveau.id %}" class="btn btn-sm btn-success" title="Affecter à une école">
+                                    <i class="fas fa-school"></i>
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'ecoles:niveau_delete' niveau.id %}" class="btn btn-sm btn-danger" title="Supprimer">
                                 <i class="fas fa-trash"></i>
                             </a>
-                            {% endif %}
-                            {% if user.est_agent or user.est_enseignant %}
-                            {% if user.ecole_affectation %}
-                            <a href="{% url 'ecoles:niveau_affecter' niveau.id %}" class="btn btn-sm btn-success">
-                                <i class="fas fa-arrow-right"></i> Affecter
-                            </a>
-                            {% endif %}
-                            {% endif %}
-                            {% else %}
-                            {# Instance : l'utilisateur peut modifier/supprimer s'il appartient à l'école #}
-                            {% if user.est_administrateur or user.ecole_affectation == niveau.ecole %}
-                            <a href="{% url 'ecoles:niveau_edit' niveau.id %}" class="btn btn-sm btn-warning">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="{% url 'ecoles:niveau_delete' niveau.id %}" class="btn btn-sm btn-danger">
-                                <i class="fas fa-trash"></i>
-                            </a>
-                            {% else %}
-                            <span class="text-muted">—</span>
-                            {% endif %}
-                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center">Aucun niveau trouvé</td>
+                        <td colspan="8" class="text-center">Aucun niveau trouvé.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <!-- Pagination -->
+
+        <!-- Pagination avec conservation des filtres -->
         {% if niveaux.has_other_pages %}
         <nav>
             <ul class="pagination justify-content-center">
                 {% if niveaux.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ niveaux.previous_page_number }}">Précédent</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ niveaux.previous_page_number }}{% if selected_section %}&section={{ selected_section }}{% endif %}{% if selected_option %}&option={{ selected_option }}{% endif %}">
+                        Précédent
+                    </a>
+                </li>
                 {% else %}
                 <li class="page-item disabled"><span class="page-link">Précédent</span></li>
                 {% endif %}
+
                 {% for num in niveaux.paginator.page_range %}
                 {% if niveaux.number == num %}
                 <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                 {% else %}
-                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if selected_section %}&section={{ selected_section }}{% endif %}{% if selected_option %}&option={{ selected_option }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
                 {% endif %}
                 {% endfor %}
+
                 {% if niveaux.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ niveaux.next_page_number }}">Suivant</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ niveaux.next_page_number }}{% if selected_section %}&section={{ selected_section }}{% endif %}{% if selected_option %}&option={{ selected_option }}{% endif %}">
+                        Suivant
+                    </a>
+                </li>
                 {% else %}
                 <li class="page-item disabled"><span class="page-link">Suivant</span></li>
                 {% endif %}

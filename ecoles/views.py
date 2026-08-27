@@ -6,25 +6,26 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count, Avg, F
+from django.db import IntegrityError
 from django.urls import reverse
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import (
     Ecole, Niveau, Classe, Domaine, Cours, AnneeScolaire,
     CycleEvaluation, EvaluationConfig, EvaluationResultat,
-    ResultatCycle, ResultatAnnuel, Province
+    ResultatCycle, ResultatAnnuel, Province,
+    Section, Option
 )
 from .forms import (
     EcoleForm, NiveauForm, ClasseForm, DomaineForm, CoursForm,
     AnneeScolaireForm, CycleEvaluationForm, EvaluationConfigFormSet,
     ResultatSelectionForm, EvaluationResultatForm, ProvinceForm,
-    ClasseDuplicateForm
+    ClasseDuplicateForm,
+    SectionForm, OptionForm
 )
 from eleves.models import Eleve
 from .utils import recalculer_resultats_eleve
 from accounts.models import AuditLog
-
-# ==== NOUVEL IMPORT POUR LES ACTUALITÉS ====
 from actualites.models import Article
 
 # ===================== FONCTIONS UTILITAIRES =====================
@@ -48,9 +49,6 @@ def calculer_moyenne_generale(queryset_resultats):
     return round(avg, 2) if avg is not None else 0
 
 def get_geo_data_from_ips(ips):
-    """
-    Prend une liste d'adresses IP et retourne les comptages par pays et par ville.
-    """
     country_counts = {}
     city_counts = {}
     city_detail = {}
@@ -95,10 +93,6 @@ def get_geo_data_from_ips(ips):
     }
 
 def get_cached_geo_data(request, cache_key, ips_function, ttl_minutes=10):
-    """
-    Récupère les données de géolocalisation avec cache en session.
-    Utilise timezone.now() pour être aware.
-    """
     now = timezone.now()
     cache_data = None
     cache_time_key = f"{cache_key}_time"
@@ -107,7 +101,6 @@ def get_cached_geo_data(request, cache_key, ips_function, ttl_minutes=10):
         try:
             cache_time_str = request.session[cache_time_key]
             cache_time = datetime.fromisoformat(cache_time_str)
-            # Rendre aware en utilisant le fuseau par défaut (UTC)
             cache_time = timezone.make_aware(cache_time)
             if now - cache_time < timedelta(minutes=ttl_minutes):
                 cache_data = request.session[cache_key]
@@ -142,10 +135,6 @@ def get_cached_geo_data(request, cache_key, ips_function, ttl_minutes=10):
 
 # ===================== PAGE D'ACCUEIL PUBLIQUE =====================
 def index_view(request):
-    """
-    Page d'accueil publique du site.
-    Récupère les 3 derniers articles publiés et visibles pour les afficher dans la section 'Actualités'.
-    """
     articles = Article.objects.filter(
         statut=Article.Statut.PUBLIE,
         est_visible=True
@@ -167,7 +156,6 @@ def dashboard_view(request):
         'total_annees': AnneeScolaire.objects.count(),
     }
 
-    # --- ADMIN ---
     if user.est_administrateur():
         province_id = request.GET.get('province')
         province_filter = None
@@ -177,7 +165,6 @@ def dashboard_view(request):
             except Province.DoesNotExist:
                 province_filter = None
 
-        # Base des querysets
         ecoles_qs = Ecole.objects.all()
         eleves_qs = Eleve.objects.all()
         niveaux_qs = Niveau.objects.filter(est_reference=False)
@@ -195,7 +182,6 @@ def dashboard_view(request):
             resultats_qs = resultats_qs.filter(eleve__ecole__province=province_filter)
             resultats_annuels_qs = resultats_annuels_qs.filter(eleve__ecole__province=province_filter)
 
-        # Statistiques globales
         total_ecoles = ecoles_qs.count()
         total_niveaux = niveaux_qs.count()
         total_classes = classes_qs.count()
@@ -208,7 +194,6 @@ def dashboard_view(request):
         moyenne_generale_globale = calculer_moyenne_generale(resultats_annuels_qs)
         taux_reussite_global = calculer_taux_reussite(resultats_annuels_qs)
 
-        # Graphiques : élèves par école
         eleves_par_ecole = (
             eleves_qs.values('ecole__nom')
             .annotate(total=Count('id'))
@@ -217,7 +202,6 @@ def dashboard_view(request):
         ecole_labels = [item['ecole__nom'] for item in eleves_par_ecole]
         ecole_counts = [item['total'] for item in eleves_par_ecole]
 
-        # Répartition par sexe
         eleves_par_sexe = (
             eleves_qs.values('sexe')
             .annotate(total=Count('id'))
@@ -226,7 +210,6 @@ def dashboard_view(request):
         sexe_labels = [sexe_map.get(item['sexe'], item['sexe']) for item in eleves_par_sexe]
         sexe_counts = [item['total'] for item in eleves_par_sexe]
 
-        # Élèves par niveau
         eleves_par_niveau = (
             eleves_qs.values('niveau__nom')
             .annotate(total=Count('id'))
@@ -235,7 +218,6 @@ def dashboard_view(request):
         niveau_labels = [item['niveau__nom'] or 'Non défini' for item in eleves_par_niveau]
         niveau_counts = [item['total'] for item in eleves_par_niveau]
 
-        # Statistiques par école
         stats_par_ecole = []
         for ecole in ecoles_qs:
             res = resultats_annuels_qs.filter(eleve__ecole=ecole)
@@ -261,11 +243,6 @@ def dashboard_view(request):
 
         provinces = Province.objects.all().order_by('nom')
 
-        # ============================================================
-        # STATISTIQUES DE GÉOLOCALISATION (VISITEURS + UTILISATEURS)
-        # ============================================================
-
-        # 1. Visiteurs anonymes (actions VIEW sur les 7 derniers jours)
         seven_days_ago = timezone.now() - timedelta(days=7)
         view_ips = AuditLog.objects.filter(
             action=AuditLog.ActionType.VIEW,
@@ -280,7 +257,6 @@ def dashboard_view(request):
             ttl_minutes=10
         )
 
-        # 2. Utilisateurs connectés (actions LOGIN)
         login_ips = AuditLog.objects.filter(
             action=AuditLog.ActionType.LOGIN,
             success=True
@@ -312,14 +288,12 @@ def dashboard_view(request):
             'stats_par_ecole': stats_par_ecole,
             'provinces': provinces,
             'province_filter': province_filter,
-            # Données visiteurs
             'visitor_country_items': visitor_data['country_items'],
             'visitor_city_items': visitor_data['city_items'],
             'visitor_country_labels': visitor_data['country_labels'],
             'visitor_country_data': visitor_data['country_data'],
             'total_visitor_pays': visitor_data['total_pays'],
             'total_visitor_villes': visitor_data['total_villes'],
-            # Données utilisateurs connectés
             'user_country_items': user_data['country_items'],
             'user_city_items': user_data['city_items'],
             'user_country_labels': user_data['country_labels'],
@@ -329,7 +303,6 @@ def dashboard_view(request):
         })
         template = 'ecoles/dashboard_admin.html'
 
-    # --- PROVED ---
     elif user.est_proved():
         province = user.province_affectation
         if not province:
@@ -377,7 +350,6 @@ def dashboard_view(request):
         })
         template = 'ecoles/dashboard_proved.html'
 
-    # --- AGENT / INSPECTEUR ---
     elif user.est_agent() or user.est_inspecteur():
         ecole = user.ecole_affectation
         if not ecole:
@@ -422,7 +394,6 @@ def dashboard_view(request):
         })
         template = 'ecoles/dashboard_agent.html'
 
-    # --- ENSEIGNANT ---
     elif user.est_enseignant():
         classe = user.classe_affectation
         if not classe:
@@ -458,7 +429,6 @@ def dashboard_view(request):
         })
         template = 'ecoles/dashboard_enseignant.html'
 
-    # --- PARENT ---
     elif user.est_parent():
         return redirect('ecoles:parent_recherche')
 
@@ -501,7 +471,6 @@ def parent_recherche(request):
             eleve_trouve = eleves.first()
             resultat_annuel = ResultatAnnuel.objects.filter(eleve=eleve_trouve, annee_scolaire=annee_scolaire).first()
             if resultat_annuel:
-                # ... (logique de calcul des résultats, déjà présente)
                 pass
             else:
                 messages.warning(request, "Aucun résultat trouvé pour cet élève cette année.")
@@ -577,6 +546,7 @@ def province_delete(request, pk):
         return redirect('ecoles:province_list')
     return render(request, 'ecoles/province_confirm_delete.html', {'province': province})
 
+
 # ===================== CRUD ÉCOLES =====================
 @login_required
 def ecole_list(request):
@@ -584,7 +554,8 @@ def ecole_list(request):
     if user.est_parent():
         messages.warning(request, "Vous n'avez pas accès à cette liste.")
         return redirect('ecoles:dashboard')
-    elif user.est_enseignant():
+
+    if user.est_enseignant():
         ecoles = Ecole.objects.filter(id=user.ecole_affectation.id) if user.ecole_affectation else Ecole.objects.none()
     elif user.est_agent() or user.est_inspecteur():
         ecoles = Ecole.objects.filter(id=user.ecole_affectation.id) if user.ecole_affectation else Ecole.objects.none()
@@ -595,10 +566,44 @@ def ecole_list(request):
             ecoles = Ecole.objects.none()
     else:
         ecoles = Ecole.objects.all()
+
+    search = request.GET.get('search', '').strip()
+    province_id = request.GET.get('province')
+    type_gestion = request.GET.get('type_gestion')
+    est_active = request.GET.get('est_active')
+
+    if search:
+        ecoles = ecoles.filter(Q(nom__icontains=search) | Q(code__icontains=search))
+    if province_id:
+        ecoles = ecoles.filter(province_id=province_id)
+    if type_gestion:
+        ecoles = ecoles.filter(type_gestion=type_gestion)
+    if est_active in ['0', '1']:
+        ecoles = ecoles.filter(est_active=(est_active == '1'))
+
     paginator = Paginator(ecoles, 20)
     page = request.GET.get('page')
     ecoles = paginator.get_page(page)
-    return render(request, 'ecoles/ecole_list.html', {'ecoles': ecoles})
+
+    if user.est_administrateur():
+        provinces = Province.objects.all()
+    elif user.est_proved():
+        provinces = Province.objects.filter(id=user.province_affectation.id) if user.province_affectation else Province.objects.none()
+    else:
+        if user.ecole_affectation:
+            provinces = Province.objects.filter(id=user.ecole_affectation.province.id)
+        else:
+            provinces = Province.objects.none()
+
+    context = {
+        'ecoles': ecoles,
+        'provinces': provinces,
+        'selected_province': province_id,
+        'selected_type_gestion': type_gestion,
+        'selected_est_active': est_active,
+    }
+    return render(request, 'ecoles/ecole_list.html', context)
+
 
 @login_required
 def ecole_create(request):
@@ -613,7 +618,30 @@ def ecole_create(request):
             if niveaux_ref:
                 for niveau_ref in niveaux_ref:
                     try:
-                        niveau_ref.affecter_a_ecole(ecole)
+                        existing = Niveau.all_objects.filter(
+                            nom=niveau_ref.nom,
+                            ecole=ecole,
+                            section=niveau_ref.section,
+                            option=niveau_ref.option,
+                            est_reference=False
+                        ).first()
+                        if existing:
+                            if existing.deleted_at:
+                                existing.deleted_at = None
+                                existing.section = niveau_ref.section
+                                existing.option = niveau_ref.option
+                                existing.save()
+                                messages.success(request, f'Niveau {niveau_ref.nom} restauré avec succès.')
+                            else:
+                                messages.warning(
+                                    request,
+                                    f"Le niveau {niveau_ref.nom} avec la section \"{niveau_ref.section.nom if niveau_ref.section else '-'}\" et l'option \"{niveau_ref.option.nom if niveau_ref.option else '-'}\" existe déjà."
+                                )
+                        else:
+                            niveau_ref.affecter_a_ecole(ecole)
+                            messages.success(request, f'Niveau {niveau_ref.nom} attribué avec succès.')
+                    except IntegrityError as e:
+                        messages.warning(request, f'Erreur d\'intégrité pour {niveau_ref.nom}: {str(e)}')
                     except Exception as e:
                         messages.warning(request, f'Erreur lors de l\'affectation du niveau {niveau_ref.nom}: {str(e)}')
             messages.success(request, f'École {ecole.nom} créée avec succès.')
@@ -621,6 +649,7 @@ def ecole_create(request):
     else:
         form = EcoleForm(user=request.user)
     return render(request, 'ecoles/ecole_form.html', {'form': form, 'title': 'Créer une école'})
+
 
 @login_required
 def ecole_edit(request, pk):
@@ -635,22 +664,44 @@ def ecole_edit(request, pk):
             niveaux_ref = form.cleaned_data.get('niveaux_reference')
             if niveaux_ref:
                 for niveau_ref in niveaux_ref:
-                    if not Niveau.objects.filter(nom=niveau_ref.nom, ecole=ecole, est_reference=False).exists():
+                    existing = Niveau.all_objects.filter(
+                        nom=niveau_ref.nom,
+                        ecole=ecole,
+                        section=niveau_ref.section,
+                        option=niveau_ref.option,
+                        est_reference=False
+                    ).first()
+                    if existing:
+                        if existing.deleted_at:
+                            existing.deleted_at = None
+                            existing.section = niveau_ref.section
+                            existing.option = niveau_ref.option
+                            existing.save()
+                            messages.success(request, f'Niveau {niveau_ref.nom} restauré avec succès.')
+                        else:
+                            messages.warning(
+                                request,
+                                f"Le niveau {niveau_ref.nom} avec la section \"{niveau_ref.section.nom if niveau_ref.section else '-'}\" et l'option \"{niveau_ref.option.nom if niveau_ref.option else '-'}\" existe déjà."
+                            )
+                    else:
                         try:
                             niveau_ref.affecter_a_ecole(ecole)
                             messages.success(request, f'Niveau {niveau_ref.nom} attribué avec succès.')
+                        except IntegrityError as e:
+                            messages.warning(request, f'Erreur d\'intégrité pour {niveau_ref.nom}: {str(e)}')
                         except Exception as e:
                             messages.warning(request, f'Erreur lors de l\'attribution du niveau {niveau_ref.nom}: {str(e)}')
             messages.success(request, 'École modifiée avec succès.')
             return redirect('ecoles:ecole_list')
     else:
         form = EcoleForm(instance=ecole, user=request.user)
-        niveaux_attribues = ecole.niveaux.all()
+        niveaux_attribues = Niveau.all_objects.filter(ecole=ecole, est_reference=False)
         return render(request, 'ecoles/ecole_form.html', {
             'form': form,
             'title': 'Modifier une école',
             'niveaux_attribues': niveaux_attribues
         })
+
 
 @login_required
 def ecole_delete(request, pk):
@@ -665,6 +716,7 @@ def ecole_delete(request, pk):
         return redirect('ecoles:ecole_list')
     return render(request, 'ecoles/ecole_confirm_delete.html', {'ecole': ecole})
 
+
 # ===================== CRUD NIVEAUX =====================
 @login_required
 def niveau_list(request):
@@ -672,7 +724,11 @@ def niveau_list(request):
     if user.est_parent():
         messages.warning(request, "Vous n'avez pas accès à cette liste.")
         return redirect('ecoles:dashboard')
-    elif user.est_enseignant():
+
+    section_id = request.GET.get('section')
+    option_id = request.GET.get('option')
+
+    if user.est_enseignant():
         niveaux = Niveau.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Niveau.objects.none()
     elif user.est_agent() or user.est_inspecteur():
         niveaux = Niveau.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Niveau.objects.none()
@@ -684,10 +740,29 @@ def niveau_list(request):
             niveaux = Niveau.objects.none()
     else:
         niveaux = Niveau.objects.all().order_by('-est_reference', 'nom')
+
+    if section_id:
+        niveaux = niveaux.filter(section_id=section_id)
+    if option_id:
+        niveaux = niveaux.filter(option_id=option_id)
+
     paginator = Paginator(niveaux, 20)
     page = request.GET.get('page')
     niveaux = paginator.get_page(page)
-    return render(request, 'ecoles/niveau_list.html', {'niveaux': niveaux})
+
+    sections = Section.objects.all()
+    options = Option.objects.all()
+    if section_id:
+        options = options.filter(section_id=section_id)
+
+    context = {
+        'niveaux': niveaux,
+        'sections': sections,
+        'options': options,
+        'selected_section': section_id,
+        'selected_option': option_id,
+    }
+    return render(request, 'ecoles/niveau_list.html', context)
 
 @login_required
 def niveau_create(request):
@@ -764,6 +839,18 @@ def niveau_delete(request, pk):
         return redirect('ecoles:niveau_list')
     return render(request, 'ecoles/niveau_confirm_delete.html', {'niveau': niveau})
 
+
+@login_required
+def restore_niveau(request, pk):
+    niveau = get_object_or_404(Niveau.all_objects, pk=pk, deleted_at__isnull=False)
+    if not request.user.est_administrateur():
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('ecoles:dashboard')
+    niveau.restore()
+    messages.success(request, f'Niveau "{niveau.nom}" restauré avec succès.')
+    return redirect('ecoles:ecole_edit', pk=niveau.ecole.id)
+
+
 @login_required
 def niveau_affecter_ecole(request, pk):
     niveau_ref = get_object_or_404(Niveau, pk=pk, est_reference=True, ecole=None)
@@ -792,6 +879,7 @@ def niveau_affecter_ecole(request, pk):
         'ecole': ecole
     })
 
+
 # ===================== CRUD CLASSES =====================
 @login_required
 def classe_list(request):
@@ -799,11 +887,10 @@ def classe_list(request):
     if user.est_parent():
         messages.warning(request, "Vous n'avez pas accès à cette liste.")
         return redirect('ecoles:dashboard')
-    elif user.est_enseignant():
-        if user.classe_affectation:
-            classes = Classe.objects.filter(id=user.classe_affectation.id, est_reference=False)
-        else:
-            classes = Classe.objects.none()
+
+    # Base queryset selon le rôle
+    if user.est_enseignant():
+        classes = Classe.objects.filter(id=user.classe_affectation.id, est_reference=False) if user.classe_affectation else Classe.objects.none()
     elif user.est_agent() or user.est_inspecteur():
         classes = Classe.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Classe.objects.none()
     elif user.est_proved():
@@ -814,10 +901,47 @@ def classe_list(request):
             classes = Classe.objects.none()
     else:
         classes = Classe.objects.all().order_by('-est_reference', 'nom')
+
+    # Filtres
+    ecole_id = request.GET.get('ecole')
+    niveau_id = request.GET.get('niveau')
+
+    if ecole_id:
+        classes = classes.filter(ecole_id=ecole_id)
+    if niveau_id:
+        classes = classes.filter(niveau_id=niveau_id)
+
     paginator = Paginator(classes, 20)
     page = request.GET.get('page')
     classes = paginator.get_page(page)
-    return render(request, 'ecoles/classe_list.html', {'classes': classes})
+
+    # Récupérer les listes pour les filtres (selon rôle)
+    if user.est_administrateur():
+        ecoles = Ecole.objects.all()
+        niveaux = Niveau.objects.filter(est_reference=False)
+    elif user.est_proved():
+        if user.province_affectation:
+            ecoles = Ecole.objects.filter(province=user.province_affectation)
+            niveaux = Niveau.objects.filter(ecole__in=ecoles, est_reference=False)
+        else:
+            ecoles = Ecole.objects.none()
+            niveaux = Niveau.objects.none()
+    else:
+        if user.ecole_affectation:
+            ecoles = Ecole.objects.filter(id=user.ecole_affectation.id)
+            niveaux = Niveau.objects.filter(ecole=user.ecole_affectation, est_reference=False)
+        else:
+            ecoles = Ecole.objects.none()
+            niveaux = Niveau.objects.none()
+
+    context = {
+        'classes': classes,
+        'ecoles': ecoles,
+        'niveaux': niveaux,
+        'selected_ecole': ecole_id,
+        'selected_niveau': niveau_id,
+    }
+    return render(request, 'ecoles/classe_list.html', context)
 
 @login_required
 def classe_create(request):
@@ -893,18 +1017,12 @@ def classe_delete(request, pk):
         return redirect('ecoles:classe_list')
     return render(request, 'ecoles/classe_confirm_delete.html', {'classe': classe})
 
-# ===================== NOUVELLE VUE : DUPLICATION DE CLASSE (CORRIGÉE) =====================
+# ===================== DUPLICATION DE CLASSE =====================
 @login_required
 def classe_duplicate(request, pk):
-    """
-    Duplique une classe (salle) existante dans la même école et le même niveau.
-    Permet de renommer la nouvelle classe.
-    Copie automatiquement tous les cours de la classe source (avec leurs cycles et évaluations).
-    """
     source_classe = get_object_or_404(Classe, pk=pk, est_reference=False)
     user = request.user
 
-    # Vérification des droits
     if user.est_parent():
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
@@ -917,14 +1035,11 @@ def classe_duplicate(request, pk):
         if source_classe.ecole.province != user.province_affectation:
             messages.error(request, 'Accès non autorisé.')
             return redirect('ecoles:dashboard')
-    # Admin peut tout faire
 
     if request.method == 'POST':
         form = ClasseDuplicateForm(request.POST, source_classe=source_classe, ecole=source_classe.ecole, niveau=source_classe.niveau)
         if form.is_valid():
             nouveau_nom = form.cleaned_data['nouveau_nom']
-
-            # Créer la nouvelle classe
             nouvelle_classe = Classe.objects.create(
                 nom=nouveau_nom,
                 description=source_classe.description,
@@ -933,19 +1048,14 @@ def classe_duplicate(request, pk):
                 ecole=source_classe.ecole,
                 est_reference=False
             )
-
-            # Dupliquer les cours de la classe source vers la nouvelle classe
             cours_source = Cours.objects.filter(classe=source_classe, est_reference=False)
             for cours in cours_source:
-                # Générer un nouveau code unique
                 base_code = cours.code
                 code_candidat = base_code
                 suffix = 1
                 while Cours.objects.filter(code=code_candidat).exists():
                     code_candidat = f"{base_code}_{suffix}"
                     suffix += 1
-
-                # Créer le nouveau cours
                 nouveau_cours = Cours.objects.create(
                     nom=cours.nom,
                     code=code_candidat,
@@ -957,16 +1067,9 @@ def classe_duplicate(request, pk):
                     ecole=cours.ecole,
                     est_reference=False
                 )
-
-                # Dupliquer le cycle d'évaluation et ses configurations
                 cycle_source = CycleEvaluation.objects.filter(cours=cours).first()
                 if cycle_source:
-                    # Créer un nouveau cycle pour le nouveau cours
-                    nouveau_cycle = CycleEvaluation.objects.create(
-                        cours=nouveau_cours,
-                        type_cycle=cycle_source.type_cycle
-                    )
-                    # Dupliquer les configurations d'évaluation en évitant les doublons (get_or_create)
+                    nouveau_cycle = CycleEvaluation.objects.create(cours=nouveau_cours, type_cycle=cycle_source.type_cycle)
                     for config_source in cycle_source.evaluations.all():
                         EvaluationConfig.objects.get_or_create(
                             cycle_evaluation=nouveau_cycle,
@@ -978,8 +1081,7 @@ def classe_duplicate(request, pk):
                                 'ordre': config_source.ordre
                             }
                         )
-
-            messages.success(request, f"La classe '{source_classe.nom}' a été dupliquée avec succès en '{nouveau_nom}' avec tous ses cours.")
+            messages.success(request, f"La classe '{source_classe.nom}' a été dupliquée avec succès en '{nouveau_nom}'.")
             return redirect('ecoles:classe_list')
     else:
         form = ClasseDuplicateForm(source_classe=source_classe, ecole=source_classe.ecole, niveau=source_classe.niveau)
@@ -991,6 +1093,7 @@ def classe_duplicate(request, pk):
         'title': 'Dupliquer une classe'
     })
 
+
 # ===================== CRUD DOMAINES =====================
 @login_required
 def domaine_list(request):
@@ -998,7 +1101,9 @@ def domaine_list(request):
     if user.est_parent():
         messages.warning(request, "Vous n'avez pas accès à cette liste.")
         return redirect('ecoles:dashboard')
-    elif user.est_enseignant():
+
+    # Base queryset selon le rôle
+    if user.est_enseignant():
         domaines = Domaine.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Domaine.objects.none()
     elif user.est_agent() or user.est_inspecteur():
         domaines = Domaine.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Domaine.objects.none()
@@ -1010,10 +1115,43 @@ def domaine_list(request):
             domaines = Domaine.objects.none()
     else:
         domaines = Domaine.objects.all().order_by('-est_reference', 'nom')
+
+    # Filtres
+    ecole_id = request.GET.get('ecole')
+    type_filter = request.GET.get('type')
+
+    if ecole_id:
+        domaines = domaines.filter(ecole_id=ecole_id)
+    if type_filter == 'reference':
+        domaines = domaines.filter(est_reference=True)
+    elif type_filter == 'instance':
+        domaines = domaines.filter(est_reference=False)
+
     paginator = Paginator(domaines, 20)
     page = request.GET.get('page')
     domaines = paginator.get_page(page)
-    return render(request, 'ecoles/domaine_list.html', {'domaines': domaines})
+
+    # Récupérer les écoles pour le filtre (selon rôle)
+    if user.est_administrateur():
+        ecoles = Ecole.objects.all()
+    elif user.est_proved():
+        if user.province_affectation:
+            ecoles = Ecole.objects.filter(province=user.province_affectation)
+        else:
+            ecoles = Ecole.objects.none()
+    else:
+        if user.ecole_affectation:
+            ecoles = Ecole.objects.filter(id=user.ecole_affectation.id)
+        else:
+            ecoles = Ecole.objects.none()
+
+    context = {
+        'domaines': domaines,
+        'ecoles': ecoles,
+        'selected_ecole': ecole_id,
+        'selected_type': type_filter,
+    }
+    return render(request, 'ecoles/domaine_list.html', context)
 
 @login_required
 def domaine_create(request):
@@ -1088,6 +1226,7 @@ def domaine_delete(request, pk):
         return redirect('ecoles:domaine_list')
     return render(request, 'ecoles/domaine_confirm_delete.html', {'domaine': domaine})
 
+
 # ===================== CRUD COURS =====================
 @login_required
 def cours_list(request):
@@ -1095,13 +1234,18 @@ def cours_list(request):
     if user.est_parent():
         messages.warning(request, "Vous n'avez pas accès à cette liste.")
         return redirect('ecoles:dashboard')
-    elif user.est_enseignant():
+
+    # Base queryset selon le rôle
+    if user.est_enseignant():
         if user.classe_affectation:
             cours_qs = Cours.objects.filter(classe=user.classe_affectation, est_reference=False)
         else:
             cours_qs = Cours.objects.none()
     elif user.est_agent() or user.est_inspecteur():
-        cours_qs = Cours.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Cours.objects.none()
+        if user.ecole_affectation:
+            cours_qs = Cours.objects.filter(ecole=user.ecole_affectation, est_reference=False)
+        else:
+            cours_qs = Cours.objects.none()
     elif user.est_proved():
         if user.province_affectation:
             ecoles = Ecole.objects.filter(province=user.province_affectation)
@@ -1111,6 +1255,7 @@ def cours_list(request):
     else:
         cours_qs = Cours.objects.all().order_by('-est_reference', 'nom')
 
+    # Filtres
     ecole_id = request.GET.get('ecole')
     niveau_id = request.GET.get('niveau')
     classe_id = request.GET.get('classe')
@@ -1129,16 +1274,12 @@ def cours_list(request):
     page = request.GET.get('page')
     cours = paginator.get_page(page)
 
-    if user.est_enseignant():
-        ecoles = Ecole.objects.filter(id=user.ecole_affectation.id) if user.ecole_affectation else Ecole.objects.none()
-        niveaux = Niveau.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Niveau.objects.none()
-        classes = Classe.objects.filter(id=user.classe_affectation.id) if user.classe_affectation else Classe.objects.none()
-        domaines = Domaine.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Domaine.objects.none()
-    elif user.est_agent() or user.est_inspecteur():
-        ecoles = Ecole.objects.filter(id=user.ecole_affectation.id) if user.ecole_affectation else Ecole.objects.none()
-        niveaux = Niveau.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Niveau.objects.none()
-        classes = Classe.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Classe.objects.none()
-        domaines = Domaine.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Domaine.objects.none()
+    # Récupérer les listes pour les filtres (selon rôle)
+    if user.est_administrateur():
+        ecoles = Ecole.objects.all()
+        niveaux = Niveau.objects.filter(est_reference=False)
+        classes = Classe.objects.filter(est_reference=False)
+        domaines = Domaine.objects.filter(est_reference=False)
     elif user.est_proved():
         if user.province_affectation:
             ecoles = Ecole.objects.filter(province=user.province_affectation)
@@ -1151,10 +1292,16 @@ def cours_list(request):
             classes = Classe.objects.none()
             domaines = Domaine.objects.none()
     else:
-        ecoles = Ecole.objects.all()
-        niveaux = Niveau.objects.filter(est_reference=False)
-        classes = Classe.objects.filter(est_reference=False)
-        domaines = Domaine.objects.filter(est_reference=False)
+        if user.ecole_affectation:
+            ecoles = Ecole.objects.filter(id=user.ecole_affectation.id)
+            niveaux = Niveau.objects.filter(ecole=user.ecole_affectation, est_reference=False)
+            classes = Classe.objects.filter(ecole=user.ecole_affectation, est_reference=False)
+            domaines = Domaine.objects.filter(ecole=user.ecole_affectation, est_reference=False)
+        else:
+            ecoles = Ecole.objects.none()
+            niveaux = Niveau.objects.none()
+            classes = Classe.objects.none()
+            domaines = Domaine.objects.none()
 
     context = {
         'cours': cours,
@@ -1259,6 +1406,7 @@ def cours_delete(request, pk):
         return redirect('ecoles:cours_list')
     return render(request, 'ecoles/cours_confirm_delete.html', {'cours': cours})
 
+
 # ===================== CRUD ANNÉES SCOLAIRES =====================
 @login_required
 def annee_list(request):
@@ -1314,6 +1462,133 @@ def annee_delete(request, pk):
         messages.success(request, f'Année {nom} supprimée avec succès.')
         return redirect('ecoles:annee_list')
     return render(request, 'ecoles/annee_confirm_delete.html', {'annee': annee})
+
+
+# ===================== CRUD SECTIONS =====================
+@login_required
+def section_list(request):
+    if not request.user.est_administrateur():
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('ecoles:dashboard')
+    sections = Section.objects.all().order_by('ordre', 'nom')
+    paginator = Paginator(sections, 20)
+    page = request.GET.get('page')
+    sections = paginator.get_page(page)
+    return render(request, 'ecoles/section_list.html', {'sections': sections})
+
+@login_required
+def section_create(request):
+    if not request.user.est_administrateur():
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('ecoles:dashboard')
+    if request.method == 'POST':
+        form = SectionForm(request.POST)
+        if form.is_valid():
+            section = form.save()
+            messages.success(request, f'Section "{section.nom}" créée avec succès.')
+            return redirect('ecoles:section_list')
+    else:
+        form = SectionForm()
+    return render(request, 'ecoles/section_form.html', {'form': form, 'title': 'Créer une section'})
+
+@login_required
+def section_edit(request, pk):
+    if not request.user.est_administrateur():
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('ecoles:dashboard')
+    section = get_object_or_404(Section, pk=pk)
+    if request.method == 'POST':
+        form = SectionForm(request.POST, instance=section)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Section "{section.nom}" modifiée avec succès.')
+            return redirect('ecoles:section_list')
+    else:
+        form = SectionForm(instance=section)
+    return render(request, 'ecoles/section_form.html', {'form': form, 'title': 'Modifier une section'})
+
+@login_required
+def section_delete(request, pk):
+    if not request.user.est_administrateur():
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('ecoles:dashboard')
+    section = get_object_or_404(Section, pk=pk)
+    if request.method == 'POST':
+        nom = section.nom
+        section.delete()
+        messages.success(request, f'Section "{nom}" supprimée avec succès.')
+        return redirect('ecoles:section_list')
+    return render(request, 'ecoles/section_confirm_delete.html', {'section': section})
+
+
+# ===================== CRUD OPTIONS =====================
+@login_required
+def option_list(request):
+    if not request.user.est_administrateur():
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('ecoles:dashboard')
+    
+    section_id = request.GET.get('section')
+    options = Option.objects.all().select_related('section').order_by('section__ordre', 'ordre', 'nom')
+    if section_id:
+        options = options.filter(section_id=section_id)
+    
+    paginator = Paginator(options, 20)
+    page = request.GET.get('page')
+    options = paginator.get_page(page)
+    
+    sections = Section.objects.all()
+    context = {
+        'options': options,
+        'sections': sections,
+        'selected_section': section_id,
+    }
+    return render(request, 'ecoles/option_list.html', context)
+
+@login_required
+def option_create(request):
+    if not request.user.est_administrateur():
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('ecoles:dashboard')
+    if request.method == 'POST':
+        form = OptionForm(request.POST)
+        if form.is_valid():
+            option = form.save()
+            messages.success(request, f'Option "{option.nom}" créée avec succès.')
+            return redirect('ecoles:option_list')
+    else:
+        form = OptionForm()
+    return render(request, 'ecoles/option_form.html', {'form': form, 'title': 'Créer une option'})
+
+@login_required
+def option_edit(request, pk):
+    if not request.user.est_administrateur():
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('ecoles:dashboard')
+    option = get_object_or_404(Option, pk=pk)
+    if request.method == 'POST':
+        form = OptionForm(request.POST, instance=option)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Option "{option.nom}" modifiée avec succès.')
+            return redirect('ecoles:option_list')
+    else:
+        form = OptionForm(instance=option)
+    return render(request, 'ecoles/option_form.html', {'form': form, 'title': 'Modifier une option'})
+
+@login_required
+def option_delete(request, pk):
+    if not request.user.est_administrateur():
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('ecoles:dashboard')
+    option = get_object_or_404(Option, pk=pk)
+    if request.method == 'POST':
+        nom = option.nom
+        option.delete()
+        messages.success(request, f'Option "{nom}" supprimée avec succès.')
+        return redirect('ecoles:option_list')
+    return render(request, 'ecoles/option_confirm_delete.html', {'option': option})
+
 
 # ===================== RÉSULTATS =====================
 @login_required
@@ -1541,6 +1816,7 @@ def resultat_delete(request, pk):
         return redirect('ecoles:resultat_list')
     return render(request, 'ecoles/resultat_confirm_delete.html', {'resultat': resultat})
 
+
 # ===================== BULLETINS =====================
 @login_required
 def bulletin_view(request):
@@ -1631,6 +1907,7 @@ def bulletin_view(request):
     }
     return render(request, 'ecoles/bulletin_list.html', context)
 
+
 # ===================== ÉLÈVES SANS NOTES =====================
 @login_required
 def eleves_sans_notes(request):
@@ -1672,7 +1949,7 @@ def eleves_sans_notes(request):
             eleves = Eleve.objects.none()
             classes = Classe.objects.none()
             cours_qs = Cours.objects.none()
-    else:  # Admin
+    else:
         eleves = Eleve.objects.all()
         classes = Classe.objects.filter(est_reference=False)
         cours_qs = Cours.objects.filter(est_reference=False)
@@ -1755,6 +2032,7 @@ def eleves_sans_notes(request):
 
     return render(request, 'ecoles/eleves_sans_notes.html', context)
 
+
 # ===================== CORBEILLE =====================
 def trash_list(request):
     items = []
@@ -1835,6 +2113,7 @@ def empty_trash(request):
     messages.success(request, f'La corbeille a été vidée définitivement ({deleted_count} élément(s) supprimé(s)).')
     return redirect('ecoles:trash_list')
 
+
 # ===================== API =====================
 @login_required
 def api_get_niveaux(request):
@@ -1900,6 +2179,15 @@ def api_get_cours(request):
         queryset = queryset.filter(classe_id=classe_id)
     cours = queryset.values('id', 'nom')
     return JsonResponse(list(cours), safe=False)
+
+@login_required
+def api_get_options_by_section(request):
+    section_id = request.GET.get('section_id')
+    if not section_id:
+        return JsonResponse([], safe=False)
+    options = Option.objects.filter(section_id=section_id).values('id', 'nom').order_by('nom')
+    return JsonResponse(list(options), safe=False)
+
 
 # ===================== API PUBLIQUES =====================
 def autocomplete_eleves(request):

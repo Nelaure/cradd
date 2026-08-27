@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Liste des écoles - Cradd{% endblock %}
-{% block page_heading %}Liste des écoles{% endblock %}
+{% block page_heading %}Écoles{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,6 +11,56 @@
     </a>
 </div>
 
+<!-- Filtres -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Recherche</label>
+                <input type="text" name="search" id="search" class="form-control" 
+                       placeholder="Nom ou code..." value="{{ request.GET.search|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <label for="province" class="form-label">Province</label>
+                <select name="province" id="province" class="form-select">
+                    <option value="">Toutes les provinces</option>
+                    {% for province in provinces %}
+                    <option value="{{ province.id }}" {% if selected_province|stringformat:"s" == province.id|stringformat:"s" %}selected{% endif %}>
+                        {{ province.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="type_gestion" class="form-label">Type de gestion</label>
+                <select name="type_gestion" id="type_gestion" class="form-select">
+                    <option value="">Tous</option>
+                    <option value="public" {% if selected_type_gestion == 'public' %}selected{% endif %}>Publique</option>
+                    <option value="prive" {% if selected_type_gestion == 'prive' %}selected{% endif %}>Privée</option>
+                    <option value="conventionne" {% if selected_type_gestion == 'conventionne' %}selected{% endif %}>Conventionné</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="est_active" class="form-label">Statut</label>
+                <select name="est_active" id="est_active" class="form-select">
+                    <option value="">Tous</option>
+                    <option value="1" {% if selected_est_active == '1' %}selected{% endif %}>Actives</option>
+                    <option value="0" {% if selected_est_active == '0' %}selected{% endif %}>Inactives</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-filter"></i> Filtrer
+                </button>
+                <a href="{% url 'ecoles:ecole_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Réinitialiser
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des écoles -->
 <div class="card shadow">
     <div class="card-body">
         <div class="table-responsive">
@@ -20,9 +70,9 @@
                         <th>Nom</th>
                         <th>Code</th>
                         <th>Province</th>
+                        <th>Type de gestion</th>
                         <th>Responsable</th>
-                        <th>Contact</th>
-                        <th>Niveaux</th>
+                        <th>Téléphone</th>
                         <th>Statut</th>
                         <th>Actions</th>
                     </tr>
@@ -32,58 +82,67 @@
                     <tr>
                         <td>{{ ecole.nom }}</td>
                         <td>{{ ecole.code }}</td>
-                        <td>{{ ecole.province|default:"-" }}</td>
+                        <td>{{ ecole.province.nom }}</td>
+                        <td>{{ ecole.get_type_gestion_display }}</td>
                         <td>{{ ecole.responsable|default:"-" }}</td>
-                        <td>{{ ecole.contact|default:"-" }}</td>
-                        <td>
-                            {% for niveau in ecole.niveaux.all %}
-                            <span class="badge bg-info me-1">{{ niveau.nom }}</span>
-                            {% empty %}
-                            <span class="text-muted">-</span>
-                            {% endfor %}
-                        </td>
+                        <td>{{ ecole.telephone|default:"-" }}</td>
                         <td>
                             {% if ecole.est_active %}
-                            <span class="badge bg-success">Active</span>
+                                <span class="badge bg-success">Active</span>
                             {% else %}
-                            <span class="badge bg-danger">Inactive</span>
+                                <span class="badge bg-danger">Inactive</span>
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'ecoles:ecole_edit' ecole.id %}" class="btn btn-sm btn-warning">
+                            <a href="{% url 'ecoles:ecole_edit' ecole.id %}" class="btn btn-sm btn-warning" title="Modifier">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <a href="{% url 'ecoles:ecole_delete' ecole.id %}" class="btn btn-sm btn-danger">
+                            <a href="{% url 'ecoles:ecole_delete' ecole.id %}" class="btn btn-sm btn-danger" title="Supprimer">
                                 <i class="fas fa-trash"></i>
                             </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center">Aucune école enregistrée</td>
+                        <td colspan="8" class="text-center">Aucune école trouvée.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <!-- Pagination -->
+
+        <!-- Pagination avec conservation des filtres -->
         {% if ecoles.has_other_pages %}
         <nav>
             <ul class="pagination justify-content-center">
                 {% if ecoles.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ ecoles.previous_page_number }}">Précédent</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ ecoles.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if selected_province %}&province={{ selected_province }}{% endif %}{% if selected_type_gestion %}&type_gestion={{ selected_type_gestion }}{% endif %}{% if selected_est_active %}&est_active={{ selected_est_active }}{% endif %}">
+                        Précédent
+                    </a>
+                </li>
                 {% else %}
                 <li class="page-item disabled"><span class="page-link">Précédent</span></li>
                 {% endif %}
+
                 {% for num in ecoles.paginator.page_range %}
                 {% if ecoles.number == num %}
                 <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                 {% else %}
-                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if selected_province %}&province={{ selected_province }}{% endif %}{% if selected_type_gestion %}&type_gestion={{ selected_type_gestion }}{% endif %}{% if selected_est_active %}&est_active={{ selected_est_active }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
                 {% endif %}
                 {% endfor %}
+
                 {% if ecoles.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ ecoles.next_page_number }}">Suivant</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ ecoles.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if selected_province %}&province={{ selected_province }}{% endif %}{% if selected_type_gestion %}&type_gestion={{ selected_type_gestion }}{% endif %}{% if selected_est_active %}&est_active={{ selected_est_active }}{% endif %}">
+                        Suivant
+                    </a>
+                </li>
                 {% else %}
                 <li class="page-item disabled"><span class="page-link">Suivant</span></li>
                 {% endif %}

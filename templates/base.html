@@ -11,22 +11,22 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-    <!-- Google Fonts : Inter -->
+    <!-- Google Fonts : Inter (moderne et lisible) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
 
-    <!-- DataTables & Select2 (internes) -->
+    <!-- DataTables & Select2 (pour les utilisateurs connectés) -->
     {% if user.is_authenticated %}
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     {% endif %}
 
-    <!-- CKEditor 5 (Classic) -->
+    <!-- CKEditor 5 (Classic) pour l'édition de contenu -->
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 
     <style>
         /* ============================================================
-           VARIABLES – design épuré
+           VARIABLES – design raffiné
         ============================================================ */
         :root {
             --c-primary: #1a5e2a;
@@ -60,6 +60,7 @@
             --c-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.6);
         }
 
+        /* Réinitialisation et base */
         * {
             margin: 0;
             padding: 0;
@@ -74,6 +75,7 @@
             display: flex;
             min-height: 100vh;
             transition: background var(--transition), color var(--transition);
+            -webkit-font-smoothing: antialiased;
         }
 
         a {
@@ -87,7 +89,7 @@
             }
 
         /* ============================================================
-           SIDEBAR (connecté)
+           SIDEBAR (connecté) – version améliorée
         ============================================================ */
         {
             % if user.is_authenticated %
@@ -109,6 +111,7 @@
             z-index: 1050;
             transition: transform 0.3s ease, background var(--transition);
             overflow-y: auto;
+            backdrop-filter: blur(4px);
         }
 
             .sidebar .brand {
@@ -242,7 +245,7 @@
         }
 
         /* ============================================================
-           NAVBAR PUBLIQUE
+           NAVBAR PUBLIQUE (page d'accueil non connecté)
         ============================================================ */
         {
             % if not user.is_authenticated %
@@ -631,10 +634,6 @@
                 color: #fff;
             }
 
-            .btn-primary-custom:active {
-                transform: translateY(0) scale(0.96);
-            }
-
         .btn-accent-custom {
             background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-light) 100%);
             color: #fff;
@@ -646,10 +645,6 @@
                 box-shadow: 0 10px 32px rgba(201, 144, 58, 0.35);
                 background: linear-gradient(135deg, var(--c-accent-dark) 0%, var(--c-accent) 100%);
                 color: #fff;
-            }
-
-            .btn-accent-custom:active {
-                transform: scale(0.96);
             }
 
         .btn-outline-custom {
@@ -665,10 +660,6 @@
                 box-shadow: 0 6px 20px rgba(26, 94, 42, 0.15);
             }
 
-            .btn-outline-custom:active {
-                transform: scale(0.96);
-            }
-
         .btn-ghost-custom {
             background: transparent;
             color: var(--c-text);
@@ -679,10 +670,6 @@
                 background: var(--c-border);
                 color: var(--c-primary);
                 transform: translateY(-2px);
-            }
-
-            .btn-ghost-custom:active {
-                transform: scale(0.96);
             }
 
         .btn-icon-circle {
@@ -708,7 +695,7 @@
                 box-shadow: 0 6px 16px rgba(26, 94, 42, 0.15);
             }
 
-        /* Cartes */
+        /* Cartes améliorées */
         .card-glass {
             background: var(--c-surface);
             border-radius: var(--radius);
@@ -856,7 +843,11 @@
                 border-radius: 4px;
             }
 
-        .form-control-custom {
+        /* ============================================================
+           FORMULAIRES – amélioration du rendu
+        ============================================================ */
+        .form-control,
+        .form-select {
             background: var(--c-bg);
             border: 1px solid var(--c-border);
             border-radius: var(--radius-sm);
@@ -865,23 +856,33 @@
             transition: border-color var(--transition), box-shadow var(--transition);
         }
 
-            .form-control-custom:focus {
+            .form-control:focus,
+            .form-select:focus {
                 border-color: var(--c-primary);
                 box-shadow: 0 0 0 4px rgba(26, 94, 42, 0.10);
                 background: var(--c-surface);
                 color: var(--c-text);
             }
 
+        .form-label {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--c-text);
+        }
+
+        .form-text {
+            color: var(--c-text-muted);
+            font-size: 0.85rem;
+        }
+
         /* ============================================================
            CKEDITOR – Adaptation au mode sombre
         ============================================================ */
-        /* En mode sombre, l'éditeur garde un fond blanc et du texte noir pour une édition confortable */
         [data-bs-theme="dark"] .ck-editor__editable_inline {
             background-color: #ffffff !important;
             color: #1e2b24 !important;
         }
 
-        /* Optionnel : améliorer la visibilité des boutons de la toolbar en mode sombre */
         [data-bs-theme="dark"] .ck-toolbar {
             background: #2d3e34 !important;
             border-color: var(--c-border) !important;
@@ -1614,12 +1615,8 @@
                     background: linear-gradient(135deg, var(--c-accent-dark), var(--c-accent));
                 }
 
-                .newsletter-form button:active {
-                    transform: scale(0.96);
-                }
-
         /* ============================================================
-           FOOTER – version embelli
+           FOOTER (version embelli)
         ============================================================ */
         .footer {
             background: var(--c-surface);
@@ -1808,7 +1805,7 @@
             }
 
         /* ============================================================
-           RESPONSIVE
+           RESPONSIVE – améliorations
         ============================================================ */
         @media (max-width: 992px) {
             :root {
@@ -2170,7 +2167,6 @@
                     <i class="fas fa-eye"></i> Voir le site
                 </a>
             </li>
-            <!-- Lien vers la corbeille pour les éditeurs -->
             <li class="menu-item">
                 <a href="{% url 'actualites:trash_list' %}">
                     <i class="fas fa-trash-alt"></i> Corbeille
@@ -2193,6 +2189,8 @@
             <li class="menu-label">Paramètres</li>
             <li class="menu-item"><a href="{% url 'ecoles:ecole_list' %}"><i class="fas fa-school"></i> Écoles</a></li>
             <li class="menu-item"><a href="{% url 'ecoles:niveau_list' %}"><i class="fas fa-layer-group"></i> Niveaux</a></li>
+            <li class="menu-item"><a href="{% url 'ecoles:section_list' %}"><i class="fas fa-layer-group"></i> Sections</a></li>
+            <li class="menu-item"><a href="{% url 'ecoles:option_list' %}"><i class="fas fa-tasks"></i> Options</a></li>
             <li class="menu-item"><a href="{% url 'ecoles:classe_list' %}"><i class="fas fa-users"></i> Classes</a></li>
             <li class="menu-item"><a href="{% url 'ecoles:domaine_list' %}"><i class="fas fa-tags"></i> Domaines</a></li>
             <li class="menu-item"><a href="{% url 'ecoles:cours_list' %}"><i class="fas fa-book"></i> Cours</a></li>
@@ -2242,7 +2240,6 @@
 
             <!-- ==================== MENU POUR AUTRES RÔLES ==================== -->
             {% else %}
-            <!-- Agents, inspecteurs, proved, enseignants, parents, etc. -->
             <li class="menu-label">Navigation</li>
             <li class="menu-item">
                 <a href="{% url 'ecoles:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'ecoles' %}active{% endif %}">
@@ -2738,7 +2735,7 @@
                                 'blockQuote',
                                 'insertTable',
                                 '|',
-                                'imageUpload',   // <-- Activation du bouton d'upload d'images
+                                'imageUpload',
                                 '|',
                                 'undo',
                                 'redo'
@@ -2791,15 +2788,9 @@
                                 { model: 'redPen', class: 'pen-red', title: 'Texte rouge', color: 'hsl(0, 90%, 50%)', type: 'pen' }
                             ]
                         },
-                        // Configuration de l'upload d'images
                         imageUpload: {
-                            // URL de la vue Django qui traite l'upload (à créer)
                             uploadUrl: '/upload/image/'
                         },
-                        // Autre méthode : utiliser simpleUpload (plus simple pour certaines versions)
-                        // simpleUpload: {
-                        //     uploadUrl: '/upload/image/'
-                        // }
                     })
                     .then(editor => {
                         window.editor = editor;

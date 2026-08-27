@@ -1,68 +1,121 @@
 {% extends "base.html" %}
 
 {% block title %}Liste des domaines - Cradd{% endblock %}
-{% block page_heading %}Liste des domaines{% endblock %}
+{% block page_heading %}Domaines{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="fas fa-tags"></i> Domaines</h1>
-    <a href="{% url 'ecoles:domaine_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Ajouter un domaine
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1><i class="fas fa-tags text-gold me-2"></i> Domaines</h1>
+    <a href="{% url 'ecoles:domaine_create' %}" class="btn btn-primary-custom">
+        <i class="fas fa-plus-circle"></i> Ajouter un domaine
     </a>
 </div>
 
-<div class="card shadow">
+<!-- Filtres -->
+<div class="card-glass mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="ecoleFilter" class="form-label fw-semibold">
+                    <i class="fas fa-school me-1 text-gold"></i> École
+                </label>
+                <select name="ecole" id="ecoleFilter" class="form-select">
+                    <option value="">Toutes les écoles</option>
+                    {% for ecole in ecoles %}
+                    <option value="{{ ecole.id }}" {% if selected_ecole|stringformat:"s" == ecole.id|stringformat:"s" %}selected{% endif %}>
+                        {{ ecole.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="typeFilter" class="form-label fw-semibold">
+                    <i class="fas fa-info-circle me-1 text-gold"></i> Type
+                </label>
+                <select name="type" id="typeFilter" class="form-select">
+                    <option value="">Tous</option>
+                    <option value="reference" {% if selected_type == 'reference' %}selected{% endif %}>Référence</option>
+                    <option value="instance" {% if selected_type == 'instance' %}selected{% endif %}>Instance</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary-custom flex-grow-1">
+                    <i class="fas fa-filter"></i> Filtrer
+                </button>
+                <a href="{% url 'ecoles:domaine_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Réinitialiser
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des domaines -->
+<div class="card-glass">
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
+            <table class="table table-hover align-middle">
+                <thead class="bg-gold-soft">
                     <tr>
                         <th>Nom</th>
+                        <th>Description</th>
+                        <th>École</th>
                         <th>Type</th>
                         <th>Niveaux</th>
                         <th>Classes</th>
-                        <th>Description</th>
-                        <th>Actions</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for domaine in domaines %}
                     <tr>
-                        <td>{{ domaine.nom }}</td>
+                        <td><strong>{{ domaine.nom }}</strong></td>
+                        <td>{{ domaine.description|truncatechars:40|default:"-" }}</td>
                         <td>
                             {% if domaine.est_reference %}
-                            <span class="badge bg-info">Référence</span>
+                                <span class="badge bg-info">Référence</span>
                             {% else %}
-                            <span class="badge bg-secondary">{{ domaine.ecole.nom|default:"-" }}</span>
+                                {{ domaine.ecole.nom|default:"-" }}
                             {% endif %}
                         </td>
                         <td>
-                            {% for niveau in domaine.niveaux.all %}
-                            <span class="badge bg-primary me-1">{{ niveau.nom }}</span>
-                            {% empty %}
-                            <span class="text-muted">-</span>
-                            {% endfor %}
+                            {% if domaine.est_reference %}
+                                <span class="badge bg-info">Référence</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Instance</span>
+                            {% endif %}
                         </td>
                         <td>
-                            {% for classe in domaine.classes.all %}
-                            <span class="badge bg-success me-1">{{ classe.nom }}</span>
-                            {% empty %}
-                            <span class="text-muted">-</span>
-                            {% endfor %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                                {{ domaine.niveaux.count }}
+                            </span>
                         </td>
-                        <td>{{ domaine.description|truncatechars:50|default:"-" }}</td>
                         <td>
-                            <a href="{% url 'ecoles:domaine_edit' domaine.id %}" class="btn btn-sm btn-warning" title="Modifier">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="{% url 'ecoles:domaine_delete' domaine.id %}" class="btn btn-sm btn-danger" title="Supprimer">
-                                <i class="fas fa-trash"></i>
-                            </a>
+                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                                {{ domaine.classes.count }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'ecoles:domaine_edit' domaine.id %}" class="btn btn-outline-warning" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'ecoles:domaine_delete' domaine.id %}" class="btn btn-outline-danger" title="Supprimer"
+                                   onclick="return confirm('Supprimer ce domaine ? Toutes les données associées seront perdues.');">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center">Aucun domaine enregistré</td>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-tags fa-3x text-muted mb-3 d-block"></i>
+                            <p class="text-muted">Aucun domaine trouvé.</p>
+                            <a href="{% url 'ecoles:domaine_create' %}" class="btn btn-primary-custom btn-sm">
+                                <i class="fas fa-plus"></i> Créer un domaine
+                            </a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -71,28 +124,69 @@
 
         <!-- Pagination -->
         {% if domaines.has_other_pages %}
-        <nav>
+        <nav aria-label="Pagination des domaines" class="mt-4">
             <ul class="pagination justify-content-center">
                 {% if domaines.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ domaines.previous_page_number }}">Précédent</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ domaines.previous_page_number }}{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
                 {% else %}
-                <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i></span></li>
                 {% endif %}
+
                 {% for num in domaines.paginator.page_range %}
                 {% if domaines.number == num %}
                 <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                 {% else %}
-                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
                 {% endif %}
                 {% endfor %}
+
                 {% if domaines.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ domaines.next_page_number }}">Suivant</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ domaines.next_page_number }}{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
                 {% else %}
-                <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-right"></i></span></li>
                 {% endif %}
             </ul>
         </nav>
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bg-gold-soft {
+        background: rgba(201, 144, 58, 0.10);
+    }
+    .btn-group .btn {
+        border-radius: 0;
+    }
+    .btn-group .btn:first-child {
+        border-radius: 50px 0 0 50px;
+    }
+    .btn-group .btn:last-child {
+        border-radius: 0 50px 50px 0;
+    }
+    .btn-group .btn:only-child {
+        border-radius: 50px;
+    }
+    .badge.bg-primary.bg-opacity-10 {
+        background-color: rgba(26, 94, 42, 0.10) !important;
+        color: var(--c-primary);
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(201, 144, 58, 0.04);
+    }
+</style>
 {% endblock %}

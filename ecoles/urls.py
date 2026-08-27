@@ -12,7 +12,7 @@ urlpatterns = [
     # Dashboard
     path('dashboard/', views.dashboard_view, name='dashboard'),
 
-    # RECHERCHE PARENT (NOUVEAU)
+    # RECHERCHE PARENT
     path('parent/recherche/', views.parent_recherche, name='parent_recherche'),
 
     # Provinces
@@ -34,12 +34,24 @@ urlpatterns = [
     path('niveaux/supprimer/<int:pk>/', views.niveau_delete, name='niveau_delete'),
     path('niveaux/affecter/<int:pk>/', views.niveau_affecter_ecole, name='niveau_affecter'),
 
+    # === NOUVEAUX : SECTIONS ===
+    path('sections/', views.section_list, name='section_list'),
+    path('sections/creer/', views.section_create, name='section_create'),
+    path('sections/modifier/<int:pk>/', views.section_edit, name='section_edit'),
+    path('sections/supprimer/<int:pk>/', views.section_delete, name='section_delete'),
+
+    # === NOUVEAUX : OPTIONS ===
+    path('options/', views.option_list, name='option_list'),
+    path('options/creer/', views.option_create, name='option_create'),
+    path('options/modifier/<int:pk>/', views.option_edit, name='option_edit'),
+    path('options/supprimer/<int:pk>/', views.option_delete, name='option_delete'),
+
     # Classes
     path('classes/', views.classe_list, name='classe_list'),
     path('classes/creer/', views.classe_create, name='classe_create'),
     path('classes/modifier/<int:pk>/', views.classe_edit, name='classe_edit'),
     path('classes/supprimer/<int:pk>/', views.classe_delete, name='classe_delete'),
-    path('classes/dupliquer/<int:pk>/', views.classe_duplicate, name='classe_duplicate'),  # <-- NOUVEAU
+    path('classes/dupliquer/<int:pk>/', views.classe_duplicate, name='classe_duplicate'),
 
     # Domaines
     path('domaines/', views.domaine_list, name='domaine_list'),
@@ -82,4 +94,5 @@ urlpatterns = [
     path('api/domaines-par-niveau/', views.api_get_domaines_by_niveau, name='api_get_domaines_by_niveau'),
     path('api/eleves/', views.api_get_eleves, name='api_get_eleves'),
     path('api/cours/', views.api_get_cours, name='api_get_cours'),
+    path('api/options-par-section/', views.api_get_options_by_section, name='api_get_options_by_section'),
 ]

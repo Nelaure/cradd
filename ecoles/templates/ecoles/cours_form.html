@@ -7,21 +7,27 @@
 <div class="row justify-content-center">
     <div class="col-md-10 col-lg-9">
         <div class="card-glass">
-            <div class="card-header">
-                <i class="fas fa-book text-gold me-2"></i> {{ title }}
+            <div class="card-header bg-gradient-primary text-white">
+                <i class="fas fa-book me-2"></i> {{ title }}
+                <span class="badge bg-light text-dark ms-2 float-end">{{ form.instance.code|default:"Nouveau" }}</span>
             </div>
             <div class="card-body">
                 <form method="post" id="coursForm" novalidate>
                     {% csrf_token %}
 
-                    <!-- Champs principaux -->
-                    <div class="row g-3">
+                    <!-- ========== CHAMPS PRINCIPAUX ========== -->
+                    <div class="row g-4">
                         {% for field in form %}
                         <div class="col-md-6">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                                <i class="fas fa-{% if field.name == 'nom' %}pencil-alt{% elif field.name == 'code' %}barcode{% elif field.name == 'coefficient' %}hashtag{% elif field.name == 'description' %}align-left{% elif field.name == 'niveau' %}layers{% elif field.name == 'classe' %}users{% elif field.name == 'domaine' %}tags{% elif field.name == 'ecole' %}school{% elif field.name == 'est_reference' %}star{% else %}circle{% endif %} me-1 text-gold"></i>
+                                {{ field.label }}
+                            </label>
                             {{ field }}
                             {% if field.errors %}
-                            <div class="text-danger small">{{ field.errors|striptags }}</div>
+                            <div class="text-danger small mt-1">
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ field.errors|striptags }}
+                            </div>
                             {% endif %}
                             {% if field.help_text %}
                             <div class="form-text">{{ field.help_text }}</div>
@@ -30,50 +36,63 @@
                         {% endfor %}
                     </div>
 
-                    <hr>
-                    <h5 class="mt-3 text-gold">Configuration du cycle d'évaluation</h5>
+                    <hr class="my-4 border-gold opacity-50">
+
+                    <!-- ========== CONFIGURATION DU CYCLE D'ÉVALUATION ========== -->
+                    <h5 class="mt-3 text-gold">
+                        <i class="fas fa-sync-alt me-2"></i> Configuration du cycle d'évaluation
+                    </h5>
                     {% if cycle_form %}
-                    <div class="row g-3">
+                    <div class="row g-3 mt-2">
                         {% for field in cycle_form %}
                         <div class="col-md-6">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                                <i class="fas fa-{% if field.name == 'type_cycle' %}calendar-alt{% else %}circle{% endif %} me-1 text-gold"></i>
+                                {{ field.label }}
+                            </label>
                             {{ field }}
                             {% if field.errors %}
-                            <div class="text-danger small">{{ field.errors|striptags }}</div>
+                            <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
                             {% endif %}
                         </div>
                         {% endfor %}
                     </div>
                     {% endif %}
 
-                    <!-- Formset des évaluations -->
+                    <!-- ========== FORMSET DES ÉVALUATIONS ========== -->
                     {% if formset %}
-                    <h6 class="mt-3">Détails des évaluations</h6>
+                    <h6 class="mt-4 fw-bold">
+                        <i class="fas fa-list-ul me-2 text-gold"></i> Détails des évaluations
+                    </h6>
                     {{ formset.management_form }}
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered align-middle">
-                            <thead class="bg-gold-soft">
+                    <div class="table-responsive mt-2">
+                        <table class="table table-hover table-bordered align-middle shadow-sm">
+                            <thead class="bg-gold-soft text-dark">
                                 <tr>
-                                    <th>Cycle</th>
-                                    <th>Période</th>
-                                    <th>Type</th>
-                                    <th>Points max</th>
-                                    <th>Ordre</th>
-                                    <th>Supprimer</th>
+                                    <th><i class="fas fa-sync-alt me-1"></i> Cycle</th>
+                                    <th><i class="fas fa-calendar-day me-1"></i> Période</th>
+                                    <th><i class="fas fa-tag me-1"></i> Type</th>
+                                    <th><i class="fas fa-star me-1"></i> Points max</th>
+                                    <th><i class="fas fa-sort me-1"></i> Ordre</th>
+                                    <th class="text-center"><i class="fas fa-trash-alt me-1"></i> Supprimer</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for f in formset %}
-                                <tr>
+                                <tr class="eval-row">
                                     <td>{{ f.cycle_num }}</td>
                                     <td>{{ f.periode_num }}</td>
                                     <td>{{ f.type }}</td>
                                     <td>{{ f.points_max }}</td>
                                     <td>{{ f.ordre }}</td>
-                                    <td class="text-center">{{ f.DELETE }}</td>
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ f.DELETE }}
+                                        </div>
+                                    </td>
                                 </tr>
-                                <tr>
-                                    <td colspan="6" class="bg-light">
+                                <tr class="eval-errors-row">
+                                    <td colspan="6" class="bg-light p-1">
                                         {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
                                         {% if f.errors %}
                                         <div class="text-danger small">
@@ -86,13 +105,18 @@
                             </tbody>
                         </table>
                     </div>
-                    <small class="text-muted"><i class="fas fa-info-circle"></i> Vous pouvez ajouter ou supprimer des évaluations.</small>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i> Vous pouvez ajouter ou supprimer des évaluations à l'aide des cases à cocher.
+                    </small>
                     {% endif %}
 
-                    <div class="d-flex gap-2 justify-content-end mt-4">
-                        <a href="{% url 'ecoles:cours_list' %}" class="btn btn-secondary">Annuler</a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Enregistrer
+                    <!-- ========== BOUTONS ========== -->
+                    <div class="d-flex gap-3 justify-content-end mt-4">
+                        <a href="{% url 'ecoles:cours_list' %}" class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="fas fa-times me-2"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary-custom btn-lg px-5">
+                            <i class="fas fa-save me-2"></i> Enregistrer
                         </button>
                     </div>
                 </form>
@@ -100,9 +124,101 @@
         </div>
     </div>
 </div>
-{% endblock %}
+
+<style>
+    /* Styles personnalisés pour le formulaire */
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-primary-dark) 100%);
+        color: white;
+        border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .bg-gold-soft {
+        background: rgba(201, 144, 58, 0.12);
+    }
+
+    .border-gold {
+        border-color: var(--c-accent) !important;
+    }
+
+    .text-gold {
+        color: var(--c-accent);
+    }
+
+    .eval-row:hover {
+        background-color: rgba(201, 144, 58, 0.06);
+        transition: background-color 0.2s ease;
+    }
+
+    .card-glass {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .card-glass:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--c-shadow-hover);
+        }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--c-accent);
+        box-shadow: 0 0 0 0.25rem rgba(201, 144, 58, 0.25);
+    }
+
+    .btn-primary-custom {
+        background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-primary-light) 100%);
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 20px rgba(26, 94, 42, 0.25);
+    }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 32px rgba(26, 94, 42, 0.35);
+            background: linear-gradient(135deg, var(--c-primary-dark) 0%, var(--c-primary) 100%);
+            color: #fff;
+        }
+
+    .btn-outline-secondary {
+        border-radius: 50px;
+        border: 2px solid var(--c-border);
+        color: var(--c-text);
+        background: transparent;
+        transition: all 0.3s ease;
+    }
+
+        .btn-outline-secondary:hover {
+            background: var(--c-border);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+        }
+
+    .form-check-input:checked {
+        background-color: var(--c-accent);
+        border-color: var(--c-accent);
+    }
+    /* Animation d'apparition des lignes du formset */
+    .eval-row {
+        animation: fadeInRow 0.3s ease;
+    }
+
+    @keyframes fadeInRow {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
 
 {% block extra_js %}
+{{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const niveauSelect = document.getElementById('id_niveau');
@@ -154,7 +270,11 @@
         }
 
         niveauSelect.addEventListener('change', updateFields);
-        if (niveauSelect.value) updateFields();
+        // Si un niveau est déjà sélectionné (cas d'édition), mettre à jour au chargement
+        if (niveauSelect.value) {
+            updateFields();
+        }
     });
 </script>
+{% endblock %}
 {% endblock %}

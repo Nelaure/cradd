@@ -41,3 +41,74 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Récupération des éléments
+        const sectionSelect = document.getElementById('id_section');
+        const optionSelect = document.getElementById('id_option');
+
+        if (!sectionSelect) {
+            console.error('Élément #id_section introuvable dans le DOM.');
+            return;
+        }
+        if (!optionSelect) {
+            console.error('Élément #id_option introuvable dans le DOM.');
+            return;
+        }
+
+        // URL de l'API (construite dynamiquement avec Django)
+        const apiUrl = "{% url 'ecoles:api_get_options_by_section' %}";
+        console.log('URL de l\'API :', apiUrl);
+
+        // Fonction pour charger les options
+        function loadOptions(sectionId, selectedOptionId = null) {
+            if (!sectionId) {
+                optionSelect.innerHTML = '<option value="">---------</option>';
+                return;
+            }
+
+            fetch(`${apiUrl}?section_id=${sectionId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Options reçues :', data);
+                    const currentValue = optionSelect.value;
+                    optionSelect.innerHTML = '<option value="">---------</option>';
+                    data.forEach(option => {
+                        const opt = document.createElement('option');
+                        opt.value = option.id;
+                        opt.textContent = option.nom;
+                        if (selectedOptionId && selectedOptionId == option.id) {
+                            opt.selected = true;
+                        } else if (currentValue && currentValue == option.id) {
+                            opt.selected = true;
+                        }
+                        optionSelect.appendChild(opt);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des options :', error);
+                });
+        }
+
+        // Chargement initial si une section est pré-sélectionnée (cas d'édition)
+        const initialSectionId = sectionSelect.value;
+        const initialOptionValue = optionSelect.value;
+        if (initialSectionId) {
+            loadOptions(initialSectionId, initialOptionValue);
+        }
+
+        // Écouter le changement de section
+        sectionSelect.addEventListener('change', function () {
+            const sectionId = this.value;
+            loadOptions(sectionId);
+        });
+    });
+</script>
+{% endblock %}

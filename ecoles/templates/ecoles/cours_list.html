@@ -1,170 +1,186 @@
 {% extends "base.html" %}
 
 {% block title %}Liste des cours - Cradd{% endblock %}
+{% block page_heading %}Cours{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="page-title">
-        <i class="fas fa-book text-gold me-2"></i> Cours
-    </h1>
-    <a href="{% url 'ecoles:cours_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Ajouter un cours
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1><i class="fas fa-book text-gold me-2"></i> Cours</h1>
+    <a href="{% url 'ecoles:cours_create' %}" class="btn btn-primary-custom">
+        <i class="fas fa-plus-circle"></i> Ajouter un cours
     </a>
 </div>
 
-<!-- ===== GRAPHIQUES ===== -->
-<div class="row g-4 mb-4">
-    <div class="col-md-4">
-        <div class="card-glass h-100">
-            <div class="card-header">
-                <i class="fas fa-layer-group me-2 text-gold"></i> Cours par niveau
-            </div>
-            <div class="card-body">
-                <canvas id="chartNiveau" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card-glass h-100">
-            <div class="card-header">
-                <i class="fas fa-tags me-2 text-gold"></i> Cours par domaine
-            </div>
-            <div class="card-body">
-                <canvas id="chartDomaine" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card-glass h-100">
-            <div class="card-header">
-                <i class="fas fa-users me-2 text-gold"></i> Cours par classe
-            </div>
-            <div class="card-body">
-                <canvas id="chartClasse" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== FILTRES ===== -->
+<!-- Filtres -->
 <div class="card-glass mb-4">
     <div class="card-body">
         <form method="get" class="row g-3 align-items-end">
             <div class="col-md-3">
-                <label class="form-label">École</label>
-                <select name="ecole" class="form-select">
+                <label for="ecoleFilter" class="form-label fw-semibold">
+                    <i class="fas fa-school me-1 text-gold"></i> École
+                </label>
+                <select name="ecole" id="ecoleFilter" class="form-select">
                     <option value="">Toutes les écoles</option>
-                    {% for e in ecoles %}
-                        <option value="{{ e.id }}" {% if e.id|stringformat:"s" == selected_ecole %}selected{% endif %}>{{ e.nom }}</option>
+                    {% for ecole in ecoles %}
+                    <option value="{{ ecole.id }}" {% if selected_ecole|stringformat:"s" == ecole.id|stringformat:"s" %}selected{% endif %}>
+                        {{ ecole.nom }}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Niveau</label>
-                <select name="niveau" class="form-select">
+                <label for="niveauFilter" class="form-label fw-semibold">
+                    <i class="fas fa-layer-group me-1 text-gold"></i> Niveau
+                </label>
+                <select name="niveau" id="niveauFilter" class="form-select">
                     <option value="">Tous les niveaux</option>
-                    {% for n in niveaux %}
-                        <option value="{{ n.id }}" {% if n.id|stringformat:"s" == selected_niveau %}selected{% endif %}>{{ n.nom }}</option>
+                    {% for niveau in niveaux %}
+                    <option value="{{ niveau.id }}" {% if selected_niveau|stringformat:"s" == niveau.id|stringformat:"s" %}selected{% endif %}>
+                        {{ niveau.nom }}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Classe</label>
-                <select name="classe" class="form-select">
+                <label for="classeFilter" class="form-label fw-semibold">
+                    <i class="fas fa-users me-1 text-gold"></i> Classe
+                </label>
+                <select name="classe" id="classeFilter" class="form-select">
                     <option value="">Toutes les classes</option>
-                    {% for c in classes %}
-                        <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_classe %}selected{% endif %}>{{ c.nom }}</option>
+                    {% for classe in classes %}
+                    <option value="{{ classe.id }}" {% if selected_classe|stringformat:"s" == classe.id|stringformat:"s" %}selected{% endif %}>
+                        {{ classe.nom }}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Domaine</label>
-                <select name="domaine" class="form-select">
+                <label for="domaineFilter" class="form-label fw-semibold">
+                    <i class="fas fa-tags me-1 text-gold"></i> Domaine
+                </label>
+                <select name="domaine" id="domaineFilter" class="form-select">
                     <option value="">Tous les domaines</option>
-                    {% for d in domaines %}
-                        <option value="{{ d.id }}" {% if d.id|stringformat:"s" == selected_domaine %}selected{% endif %}>{{ d.nom }}</option>
+                    {% for domaine in domaines %}
+                    <option value="{{ domaine.id }}" {% if selected_domaine|stringformat:"s" == domaine.id|stringformat:"s" %}selected{% endif %}>
+                        {{ domaine.nom }}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-12 d-flex gap-2">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filtrer</button>
-                <a href="{% url 'ecoles:cours_list' %}" class="btn btn-secondary"><i class="fas fa-undo"></i> Réinitialiser</a>
+            <div class="col-12 d-flex gap-2 justify-content-end">
+                <button type="submit" class="btn btn-primary-custom">
+                    <i class="fas fa-filter"></i> Filtrer
+                </button>
+                <a href="{% url 'ecoles:cours_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Réinitialiser
+                </a>
             </div>
         </form>
     </div>
 </div>
 
-<!-- ===== TABLEAU ===== -->
+<!-- Liste des cours -->
 <div class="card-glass">
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
+            <table class="table table-hover align-middle">
+                <thead class="bg-gold-soft">
                     <tr>
                         <th>Nom</th>
                         <th>Code</th>
-                        <th>Type</th>
-                        <th>Coefficient</th>
+                        <th>Coeff.</th>
                         <th>Niveau</th>
                         <th>Classe</th>
                         <th>Domaine</th>
-                        <th class="text-end">Actions</th>
+                        <th>École</th>
+                        <th>Type</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for c in cours %}
+                    {% for cours in cours %}
                     <tr>
-                        <td><strong>{{ c.nom }}</strong></td>
-                        <td>{{ c.code }}</td>
+                        <td><strong>{{ cours.nom }}</strong></td>
+                        <td><code>{{ cours.code }}</code></td>
+                        <td>{{ cours.coefficient }}</td>
+                        <td>{{ cours.niveau.nom }}</td>
+                        <td>{{ cours.classe.nom }}</td>
+                        <td>{{ cours.domaine.nom|default:"-" }}</td>
                         <td>
-                            {% if c.est_reference %}
+                            {% if cours.est_reference %}
                                 <span class="badge bg-info">Référence</span>
                             {% else %}
-                                <span class="badge bg-secondary">{{ c.ecole.nom|default:"-" }}</span>
+                                {{ cours.ecole.nom|default:"-" }}
                             {% endif %}
                         </td>
-                        <td>{{ c.coefficient }}</td>
-                        <td>{{ c.niveau.nom }}</td>
-                        <td>{{ c.classe.nom }}</td>
-                        <td>{{ c.domaine.nom }}</td>
-                        <td class="text-end">
-                            <a href="{% url 'ecoles:cours_edit' c.id %}" class="btn btn-sm btn-outline-primary" title="Modifier">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="{% url 'ecoles:cours_delete' c.id %}" class="btn btn-sm btn-outline-danger btn-delete" title="Supprimer">
-                                <i class="fas fa-trash"></i>
-                            </a>
+                        <td>
+                            {% if cours.est_reference %}
+                                <span class="badge bg-info">Référence</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Instance</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'ecoles:cours_edit' cours.id %}" class="btn btn-outline-warning" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'ecoles:cours_delete' cours.id %}" class="btn btn-outline-danger" title="Supprimer"
+                                   onclick="return confirm('Supprimer ce cours ? Toutes les données associées seront perdues.');">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">Aucun cours enregistré</td>
+                        <td colspan="9" class="text-center py-4">
+                            <i class="fas fa-book-open fa-3x text-muted mb-3 d-block"></i>
+                            <p class="text-muted">Aucun cours trouvé.</p>
+                            <a href="{% url 'ecoles:cours_create' %}" class="btn btn-primary-custom btn-sm">
+                                <i class="fas fa-plus"></i> Créer un cours
+                            </a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <!-- Pagination Django -->
+        <!-- Pagination -->
         {% if cours.has_other_pages %}
-        <nav class="mt-3">
+        <nav aria-label="Pagination des cours" class="mt-4">
             <ul class="pagination justify-content-center">
                 {% if cours.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?page={{ cours.previous_page_number }}">Précédent</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ cours.previous_page_number }}{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_niveau %}&niveau={{ selected_niveau }}{% endif %}{% if selected_classe %}&classe={{ selected_classe }}{% endif %}{% if selected_domaine %}&domaine={{ selected_domaine }}{% endif %}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
                 {% else %}
-                    <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i></span></li>
                 {% endif %}
+
                 {% for num in cours.paginator.page_range %}
-                    {% if cours.number == num %}
-                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                    {% else %}
-                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                    {% endif %}
-                {% endfor %}
-                {% if cours.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ cours.next_page_number }}">Suivant</a></li>
+                {% if cours.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                 {% else %}
-                    <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_niveau %}&niveau={{ selected_niveau }}{% endif %}{% if selected_classe %}&classe={{ selected_classe }}{% endif %}{% if selected_domaine %}&domaine={{ selected_domaine }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if cours.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ cours.next_page_number }}{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_niveau %}&niveau={{ selected_niveau }}{% endif %}{% if selected_classe %}&classe={{ selected_classe }}{% endif %}{% if selected_domaine %}&domaine={{ selected_domaine }}{% endif %}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-right"></i></span></li>
                 {% endif %}
             </ul>
         </nav>
@@ -173,74 +189,33 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // ---- Graphique Cours par niveau (vert) ----
-        const ctxNiveau = document.getElementById('chartNiveau').getContext('2d');
-        new Chart(ctxNiveau, {
-            type: 'bar',
-            data: {
-                labels: {{ niveau_labels|safe }},
-                datasets: [{
-                    label: 'Cours',
-                    data: {{ niveau_data|safe }},
-                    backgroundColor: 'rgba(30, 74, 43, 0.7)',
-                    borderColor: '#1e4a2b',
-                    borderWidth: 1,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-            }
-        });
-
-        // ---- Graphique Cours par domaine (vert clair) ----
-        const ctxDomaine = document.getElementById('chartDomaine').getContext('2d');
-        new Chart(ctxDomaine, {
-            type: 'bar',
-            data: {
-                labels: {{ domaine_labels|safe }},
-                datasets: [{
-                    label: 'Cours',
-                    data: {{ domaine_data|safe }},
-                    backgroundColor: 'rgba(102, 187, 106, 0.7)',
-                    borderColor: '#66bb6a',
-                    borderWidth: 1,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-            }
-        });
-
-        // ---- Graphique Cours par classe (vert moyen) ----
-        const ctxClasse = document.getElementById('chartClasse').getContext('2d');
-        new Chart(ctxClasse, {
-            type: 'bar',
-            data: {
-                labels: {{ classe_labels|safe }},
-                datasets: [{
-                    label: 'Cours',
-                    data: {{ classe_data|safe }},
-                    backgroundColor: 'rgba(46, 125, 50, 0.7)',
-                    borderColor: '#2e7d32',
-                    borderWidth: 1,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-            }
-        });
-    });
-</script>
+{% block extra_css %}
+<style>
+    .bg-gold-soft {
+        background: rgba(201, 144, 58, 0.10);
+    }
+    .btn-group .btn {
+        border-radius: 0;
+    }
+    .btn-group .btn:first-child {
+        border-radius: 50px 0 0 50px;
+    }
+    .btn-group .btn:last-child {
+        border-radius: 0 50px 50px 0;
+    }
+    .btn-group .btn:only-child {
+        border-radius: 50px;
+    }
+    code {
+        background: var(--c-bg);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        color: var(--c-primary);
+        border: 1px solid var(--c-border);
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(201, 144, 58, 0.04);
+    }
+</style>
 {% endblock %}
