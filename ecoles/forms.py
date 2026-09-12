@@ -516,10 +516,11 @@ class CoursForm(forms.ModelForm):
     """
     Formulaire de création/modification d'un cours.
     - Permet la sélection MULTIPLE des classes et des domaines.
-    - En mode édition, les sélections actuelles sont pré-cochées.
-    - IMPORTANT : `classe` et `domaine` sont retirés de `Meta.fields`
-      pour empêcher Django d'assigner un QuerySet sur une ForeignKey.
-      La logique multi-cours est gérée dans la vue `cours_create`.
+    - `classe` et `domaine` sont exclus de `Meta.fields` pour éviter
+      l'assignation d'un QuerySet sur une ForeignKey.
+    - La configuration du cycle d'évaluation est OPTIONNELLE :
+      elle est gérée séparément via `cycle_form` et `formset` dans la vue.
+    - En mode édition, les classes/domaines sélectionnées sont pré-cochées.
     """
 
     classe = forms.ModelMultipleChoiceField(
@@ -627,6 +628,7 @@ class CoursForm(forms.ModelForm):
 
         # ---------- Pré-sélection en mode édition ----------
         if self.instance.pk:
+            # Récupérer les classes/domaines existants pour ce cours
             if self.instance.classe_id:
                 self.fields['classe'].initial = [self.instance.classe_id]
             if self.instance.domaine_id:
@@ -690,6 +692,92 @@ class CoursForm(forms.ModelForm):
                     raise forms.ValidationError("L'école choisie n'appartient pas à votre province.")
         return cleaned_data
 
+
+# ===================== CONFIGURATION CYCLE D'ÉVALUATION (OPTIONNEL) =====================
+
+class CycleEvaluationConfigForm(forms.Form):
+    """
+    Formulaire OPTIONNEL de configuration du cycle d'évaluation.
+    Utilisé lors de la création d'un cours pour personnaliser
+    le nombre de cycles, les périodes et examens.
+    """
+    CYCLE_TYPES = (
+        ('trimestre', 'Trimestriel (3 cycles)'),
+        ('semestre', 'Semestriel (2 cycles)'),
+    )
+
+    type_cycle = forms.ChoiceField(
+        choices=CYCLE_TYPES,
+        initial='trimestre',
+        required=False,
+        label="Type de cycle",
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_type_cycle'})
+    )
+
+    nombre_cycles = forms.IntegerField(
+        min_value=1,
+        max_value=6,
+        initial=3,
+        required=False,
+        label="Nombre de cycles",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'id': 'id_nombre_cycles',
+            'placeholder': '3'
+        })
+    )
+
+    periodes_par_cycle = forms.IntegerField(
+        min_value=1,
+        max_value=5,
+        initial=2,
+        required=False,
+        label="Périodes par cycle",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'id': 'id_periodes_par_cycle',
+            'placeholder': '2'
+        })
+    )
+
+    inclure_examen = forms.BooleanField(
+        initial=True,
+        required=False,
+        label="Inclure un examen par cycle",
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input',
+            'id': 'id_inclure_examen'
+        })
+    )
+
+    points_max = forms.IntegerField(
+        min_value=1,
+        max_value=100,
+        initial=20,
+        required=False,
+        label="Points max par évaluation",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'id': 'id_points_max',
+            'placeholder': '20'
+        })
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        self.is_reference = kwargs.pop('is_reference', False)
+        super().__init__(*args, **kwargs)
+
+        if self.user and self.user.est_ministre():
+            for field in self.fields.values():
+                field.disabled = True
+
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout()
+
+
+# ===================== ANNÉE SCOLAIRE =====================
 
 class AnneeScolaireForm(forms.ModelForm):
     class Meta:
@@ -798,6 +886,8 @@ EvaluationConfigFormSet = inlineformset_factory(
     min_num=0,
 )
 
+
+# ===================== RÉSULTATS =====================
 
 class ResultatSelectionForm(forms.Form):
     ecole = forms.ModelChoiceField(

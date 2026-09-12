@@ -1,4 +1,4 @@
-import requests
+﻿import requests
 from collections import Counter
 from datetime import datetime, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
@@ -18,6 +18,7 @@ from .models import (
 )
 from .forms import (
     EcoleForm, NiveauForm, ClasseForm, DomaineForm, CoursForm,
+    CycleEvaluationConfigForm,
     AnneeScolaireForm, CycleEvaluationForm, EvaluationConfigFormSet,
     ResultatSelectionForm, EvaluationResultatForm, ProvinceForm,
     ClasseDuplicateForm,
@@ -1466,10 +1467,16 @@ def cours_list(request):
 def cours_create(request):
     """
     Créer un ou plusieurs cours.
+
     - ADMIN : peut créer un cours de référence (is_reference=True)
     - AGENT  : peut créer UNIQUEMENT un cours de référence (is_reference=True)
-    - Si plusieurs classes ET plusieurs domaines sont sélectionnés :
-      un cours est créé pour chaque combinaison (classe × domaine).
+
+    Si plusieurs classes ET plusieurs domaines sont sélectionnés :
+    → un cours est créé pour chaque combinaison (classe × domaine).
+
+    La configuration du cycle d'évaluation est OPTIONNELLE :
+    - Si le switch "Personnaliser" est activé → utilise les paramètres saisis.
+    - Sinon → utilise la configuration par défaut (trimestre, 3 cycles, 2 périodes, examen).
     """
     user = request.user
     if not (user.est_administrateur() or user.est_agent()):
@@ -1479,7 +1486,6 @@ def cours_create(request):
     # L'agent ne peut créer QUE des références
     is_reference = True
     if user.est_administrateur():
-        # Admin peut choisir via paramètre GET (par défaut : référence)
         ref_param = request.GET.get('ref', '1')
         is_reference = (ref_param == '1')
 
@@ -1487,8 +1493,15 @@ def cours_create(request):
         form = CoursForm(request.POST, user=request.user, is_reference=is_reference)
         form.instance.est_reference = is_reference
 
+        # ----- Formulaire de configuration du cycle (OPTIONNEL) -----
+        cycle_config_form = CycleEvaluationConfigForm(
+            request.POST,
+            user=request.user,
+            is_reference=is_reference
+        )
+
         if form.is_valid():
-            # ----- Récupérer les données -----
+            # ----- Récupérer les données du cours -----
             nom = form.cleaned_data['nom']
             base_code = form.cleaned_data['code']
             coefficient = form.cleaned_data['coefficient']
@@ -1497,6 +1510,17 @@ def cours_create(request):
             classes = form.cleaned_data['classe']       # QuerySet de classes
             domaines = form.cleaned_data['domaine']     # QuerySet de domaines
             ecole = None if is_reference else form.cleaned_data.get('ecole')
+
+            # ----- Récupérer la configuration du cycle (optionnelle) -----
+            config_data = None
+            if cycle_config_form.is_valid() and cycle_config_form.cleaned_data.get('type_cycle'):
+                config_data = {
+                    'type_cycle': cycle_config_form.cleaned_data.get('type_cycle', 'trimestre'),
+                    'nombre_cycles': cycle_config_form.cleaned_data.get('nombre_cycles') or 3,
+                    'periodes_par_cycle': cycle_config_form.cleaned_data.get('periodes_par_cycle') or 2,
+                    'inclure_examen': cycle_config_form.cleaned_data.get('inclure_examen', True),
+                    'points_max': cycle_config_form.cleaned_data.get('points_max') or 20,
+                }
 
             created_cours = []
             errors = []
@@ -1523,8 +1547,43 @@ def cours_create(request):
                             ecole=None if is_reference else ecole,
                             est_reference=is_reference,
                         )
-                        # Créer le cycle d'évaluation par défaut
-                        CycleEvaluation.objects.create(cours=cours, type_cycle='trimestre')
+
+                        # ----- Créer le cycle d'évaluation -----
+                        cycle_eval = CycleEvaluation.objects.create(
+                            cours=cours,
+                            type_cycle=config_data['type_cycle'] if config_data else 'trimestre'
+                        )
+
+                        if config_data:
+                            # Config personnalisée
+                            nb_cycles = config_data['nombre_cycles']
+                            nb_periodes = config_data['periodes_par_cycle']
+                            inclure_examen = config_data['inclure_examen']
+                            pts_max = config_data['points_max']
+
+                            for cycle_num in range(1, nb_cycles + 1):
+                                for periode_num in range(1, nb_periodes + 1):
+                                    EvaluationConfig.objects.create(
+                                        cycle_evaluation=cycle_eval,
+                                        cycle_num=cycle_num,
+                                        periode_num=periode_num,
+                                        type='periode',
+                                        points_max=pts_max,
+                                        ordre=periode_num
+                                    )
+                                if inclure_examen:
+                                    EvaluationConfig.objects.create(
+                                        cycle_evaluation=cycle_eval,
+                                        cycle_num=cycle_num,
+                                        periode_num=None,
+                                        type='examen',
+                                        points_max=pts_max,
+                                        ordre=nb_periodes + 1
+                                    )
+                        else:
+                            # Config par défaut (trimestre, 3 cycles, 2 périodes, examen)
+                            cycle_eval.creer_evaluations_par_defaut()
+
                         created_cours.append(cours)
                     except Exception as e:
                         errors.append(f"{classe.nom} × {domaine.nom} : {str(e)}")
@@ -1540,17 +1599,29 @@ def cours_create(request):
                     messages.warning(request, err)
 
             return redirect('ecoles:cours_list')
-
     else:
         form = CoursForm(user=request.user, is_reference=is_reference)
         form.instance.est_reference = is_reference
+        cycle_config_form = CycleEvaluationConfigForm(user=request.user, is_reference=is_reference)
 
     title = 'Créer un cours de référence' if is_reference else 'Créer un cours'
-    return render(request, 'ecoles/cours_form.html', {'form': form, 'title': title})
+    return render(request, 'ecoles/cours_form.html', {
+        'form': form,
+        'cycle_config_form': cycle_config_form,
+        'title': title,
+        'is_edit': False,
+    })
 
 
 @login_required
 def cours_edit(request, pk):
+    """
+    Modifier un cours existant.
+
+    IMPORTANT : Le mode édition ne concerne qu'UN SEUL cours (l'instance ciblée par pk).
+    Lorsque plusieurs classes/domaines sont sélectionnés, seul le PREMIER élément
+    de chaque liste sera utilisé pour modifier ce cours.
+    """
     cours = get_object_or_404(Cours, pk=pk)
     user = request.user
     if user.est_parent() or user.est_ministre():
@@ -1577,30 +1648,52 @@ def cours_edit(request, pk):
         is_reference = False
 
     cycle_eval, created = CycleEvaluation.objects.get_or_create(cours=cours)
+
     if request.method == 'POST':
         form = CoursForm(request.POST, instance=cours, user=user, is_reference=is_reference)
         cycle_form = CycleEvaluationForm(request.POST, instance=cycle_eval)
         formset = EvaluationConfigFormSet(request.POST, instance=cycle_eval)
+
         if form.is_valid() and cycle_form.is_valid() and formset.is_valid():
-            # ----- Gestion multi-classes / multi-domaines en édition -----
-            # En édition, on ne peut modifier que le premier objet (le cours actuel).
-            # Pour éviter la complexité, on utilise uniquement la 1ère valeur sélectionnée.
-            form.save()
+            # ----- Sauvegarder le cours (uniquement la 1ère classe/domaine sélectionné) -----
+            classes = form.cleaned_data.get('classe')
+            domaines = form.cleaned_data.get('domaine')
+
+            # Prendre le premier élément de chaque QuerySet pour l'assignation
+            if classes:
+                cours.classe = classes.first() if hasattr(classes, 'first') else classes[0]
+            if domaines:
+                cours.domaine = domaines.first() if hasattr(domaines, 'first') else domaines[0]
+
+            # Sauvegarder les autres champs
+            cours.nom = form.cleaned_data['nom']
+            cours.code = form.cleaned_data['code']
+            cours.coefficient = form.cleaned_data['coefficient']
+            cours.description = form.cleaned_data.get('description', '')
+            cours.niveau = form.cleaned_data['niveau']
+            cours.ecole = None if is_reference else form.cleaned_data.get('ecole')
+            cours.est_reference = is_reference
+            cours.save()
+
+            # Sauvegarder le cycle d'évaluation
             cycle_form.save()
             formset.save()
             cycle_eval.nettoyer_evaluations()
+
             messages.success(request, 'Cours modifié avec succès.')
             return redirect('ecoles:cours_list')
     else:
         form = CoursForm(instance=cours, user=user, is_reference=is_reference)
         cycle_form = CycleEvaluationForm(instance=cycle_eval)
         formset = EvaluationConfigFormSet(instance=cycle_eval)
+
     context = {
         'form': form,
         'cycle_form': cycle_form,
         'formset': formset,
         'cours': cours,
-        'title': 'Modifier un cours'
+        'title': 'Modifier un cours',
+        'is_edit': True,
     }
     return render(request, 'ecoles/cours_form.html', context)
 
@@ -1613,7 +1706,6 @@ def cours_delete(request, pk):
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
 
-    # Agent : ne peut supprimer QUE les cours de référence
     if user.est_agent() and not cours.est_reference:
         messages.error(request, "En tant qu'agent, vous ne pouvez supprimer que les cours de référence.")
         return redirect('ecoles:cours_list')

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}{{ title }} - Cradd{% endblock %}
 
@@ -19,77 +19,48 @@
                         <i class="fas fa-info-circle me-2"></i> Informations générales
                     </h5>
                     <div class="row g-3">
-                        <!-- Nom -->
                         <div class="col-md-6">
                             <label for="{{ form.nom.id_for_label }}" class="form-label-custom">
                                 <i class="fas fa-pencil-alt me-1"></i> {{ form.nom.label }}
                             </label>
                             {{ form.nom }}
                             {% if form.nom.errors %}
-                            <div class="text-danger small mt-1">
-                                <i class="fas fa-exclamation-circle me-1"></i>{{ form.nom.errors|striptags }}
-                            </div>
+                            <div class="text-danger small mt-1">{{ form.nom.errors|striptags }}</div>
                             {% endif %}
                         </div>
-
-                        <!-- Code -->
                         <div class="col-md-6">
                             <label for="{{ form.code.id_for_label }}" class="form-label-custom">
                                 <i class="fas fa-barcode me-1"></i> {{ form.code.label }}
                             </label>
                             {{ form.code }}
                             {% if form.code.errors %}
-                            <div class="text-danger small mt-1">
-                                <i class="fas fa-exclamation-circle me-1"></i>{{ form.code.errors|striptags }}
-                            </div>
+                            <div class="text-danger small mt-1">{{ form.code.errors|striptags }}</div>
                             {% endif %}
                         </div>
-
-                        <!-- Coefficient -->
                         <div class="col-md-4">
                             <label for="{{ form.coefficient.id_for_label }}" class="form-label-custom">
                                 <i class="fas fa-hashtag me-1"></i> {{ form.coefficient.label }}
                             </label>
                             {{ form.coefficient }}
-                            {% if form.coefficient.errors %}
-                            <div class="text-danger small mt-1">{{ form.coefficient.errors|striptags }}</div>
-                            {% endif %}
                         </div>
-
-                        <!-- Niveau -->
                         <div class="col-md-4">
                             <label for="{{ form.niveau.id_for_label }}" class="form-label-custom">
                                 <i class="fas fa-layer-group me-1"></i> {{ form.niveau.label }}
                             </label>
                             {{ form.niveau }}
-                            {% if form.niveau.errors %}
-                            <div class="text-danger small mt-1">{{ form.niveau.errors|striptags }}</div>
-                            {% endif %}
                         </div>
-
-                        <!-- École -->
                         <div class="col-md-4">
                             <label for="{{ form.ecole.id_for_label }}" class="form-label-custom">
                                 <i class="fas fa-school me-1"></i> {{ form.ecole.label }}
                             </label>
                             {{ form.ecole }}
-                            {% if form.ecole.errors %}
-                            <div class="text-danger small mt-1">{{ form.ecole.errors|striptags }}</div>
-                            {% endif %}
                         </div>
-
-                        <!-- Description -->
                         <div class="col-12">
                             <label for="{{ form.description.id_for_label }}" class="form-label-custom">
                                 <i class="fas fa-align-left me-1"></i> {{ form.description.label }}
                             </label>
                             {{ form.description }}
-                            {% if form.description.errors %}
-                            <div class="text-danger small mt-1">{{ form.description.errors|striptags }}</div>
-                            {% endif %}
                         </div>
-
-                        <!-- Est référence (masqué si présent) -->
                         {% if form.est_reference %}
                         <div class="col-12">
                             <div class="form-check">
@@ -107,6 +78,17 @@
                     <h5 class="mb-3" style="color: var(--c-primary);">
                         <i class="fas fa-layer-group me-2"></i> Classes & Domaines concernés
                     </h5>
+
+                    {% if is_edit %}
+                    <div class="alert-warning-custom">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>
+                            <strong>Mode édition</strong> : Seul le <strong>premier</strong> élément sélectionné
+                            dans chaque liste sera utilisé pour modifier ce cours existant.
+                            Pour créer plusieurs cours, utilisez plutôt <em>Créer un cours</em>.
+                        </p>
+                    </div>
+                    {% else %}
                     <div class="info-banner">
                         <i class="fas fa-info-circle"></i>
                         <p>
@@ -115,36 +97,30 @@
                             Un cours sera créé pour <strong>chaque combinaison</strong> classe × domaine.
                         </p>
                     </div>
+                    {% endif %}
 
                     <div class="row g-3">
-                        <!-- Classes (sélection multiple) -->
                         <div class="col-md-6">
                             <label for="{{ form.classe.id_for_label }}" class="form-label-custom">
-                                <i class="fas fa-users me-1"></i> {{ form.classe.label }}s
+                                <i class="fas fa-users me-1"></i> {{ form.classe.label }}
                                 <span class="badge-count" id="classeCount">0</span>
                             </label>
                             {{ form.classe }}
                             {% if form.classe.errors %}
-                            <div class="text-danger small mt-1">
-                                <i class="fas fa-exclamation-circle me-1"></i>{{ form.classe.errors|striptags }}
-                            </div>
+                            <div class="text-danger small mt-1">{{ form.classe.errors|striptags }}</div>
                             {% endif %}
                             <div class="form-hint">
                                 <i class="fas fa-hand-pointer"></i> Maintenez <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> pour sélectionner plusieurs classes
                             </div>
                         </div>
-
-                        <!-- Domaines (sélection multiple) -->
                         <div class="col-md-6">
                             <label for="{{ form.domaine.id_for_label }}" class="form-label-custom">
-                                <i class="fas fa-tags me-1"></i> {{ form.domaine.label }}s
+                                <i class="fas fa-tags me-1"></i> {{ form.domaine.label }}
                                 <span class="badge-count" id="domaineCount">0</span>
                             </label>
                             {{ form.domaine }}
                             {% if form.domaine.errors %}
-                            <div class="text-danger small mt-1">
-                                <i class="fas fa-exclamation-circle me-1"></i>{{ form.domaine.errors|striptags }}
-                            </div>
+                            <div class="text-danger small mt-1">{{ form.domaine.errors|striptags }}</div>
                             {% endif %}
                             <div class="form-hint">
                                 <i class="fas fa-hand-pointer"></i> Maintenez <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> pour sélectionner plusieurs domaines
@@ -152,6 +128,7 @@
                         </div>
                     </div>
 
+                    {% if not is_edit %}
                     <!-- Récapitulatif des combinaisons -->
                     <div class="recap-box" id="recapBox" style="display: none;">
                         <div class="recap-header">
@@ -160,9 +137,80 @@
                         </div>
                         <ul class="recap-list" id="recapList"></ul>
                     </div>
+                    {% endif %}
 
-                    <!-- ========== CONFIGURATION DU CYCLE D'ÉVALUATION ========== -->
-                    {% if cycle_form %}
+                    <!-- ========== CONFIGURATION CYCLE D'ÉVALUATION (OPTIONNEL EN CRÉATION) ========== -->
+                    {% if not is_edit and cycle_config_form %}
+                    <hr class="my-4">
+                    <div class="config-toggle-wrapper">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="toggleCycleConfig" role="switch">
+                            <label class="form-check-label" for="toggleCycleConfig">
+                                <i class="fas fa-sync-alt me-1 text-gold"></i>
+                                <strong>Personnaliser la configuration du cycle d'évaluation</strong>
+                                <small class="text-muted ms-2">(facultatif — laisser désactivé pour la config par défaut)</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="cycleConfigSection" class="cycle-config-section" style="display: none;">
+                        <div class="info-banner">
+                            <i class="fas fa-info-circle"></i>
+                            <p>
+                                Ces paramètres seront appliqués à <strong>tous les cours</strong> créés.
+                                Par défaut, chaque cours reçoit un cycle <em>trimestriel</em> avec
+                                <strong>3 cycles</strong>, <strong>2 périodes</strong> et <strong>1 examen</strong> par cycle.
+                            </p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ cycle_config_form.type_cycle.id_for_label }}" class="form-label-custom">
+                                    <i class="fas fa-calendar-alt me-1"></i> {{ cycle_config_form.type_cycle.label }}
+                                </label>
+                                {{ cycle_config_form.type_cycle }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ cycle_config_form.nombre_cycles.id_for_label }}" class="form-label-custom">
+                                    <i class="fas fa-layer-group me-1"></i> {{ cycle_config_form.nombre_cycles.label }}
+                                </label>
+                                {{ cycle_config_form.nombre_cycles }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ cycle_config_form.periodes_par_cycle.id_for_label }}" class="form-label-custom">
+                                    <i class="fas fa-list-ol me-1"></i> {{ cycle_config_form.periodes_par_cycle.label }}
+                                </label>
+                                {{ cycle_config_form.periodes_par_cycle }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ cycle_config_form.points_max.id_for_label }}" class="form-label-custom">
+                                    <i class="fas fa-star me-1"></i> {{ cycle_config_form.points_max.label }}
+                                </label>
+                                {{ cycle_config_form.points_max }}
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="form-check">
+                                    {{ cycle_config_form.inclure_examen }}
+                                    <label class="form-check-label" for="{{ cycle_config_form.inclure_examen.id_for_label }}">
+                                        <i class="fas fa-clipboard-check me-1"></i>
+                                        {{ cycle_config_form.inclure_examen.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aperçu des évaluations générées -->
+                        <div class="preview-box">
+                            <div class="preview-header">
+                                <i class="fas fa-eye"></i>
+                                <strong>Aperçu des évaluations par cours :</strong>
+                            </div>
+                            <div id="previewContent" class="preview-content"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- ========== CONFIGURATION CYCLE D'ÉVALUATION (ÉDITION) ========== -->
+                    {% if is_edit and cycle_form and formset %}
                     <hr class="my-4">
                     <h5 class="mb-3" style="color: var(--c-primary);">
                         <i class="fas fa-sync-alt me-2"></i> Configuration du cycle d'évaluation
@@ -174,16 +222,10 @@
                                 <i class="fas fa-calendar-alt me-1"></i> {{ field.label }}
                             </label>
                             {{ field }}
-                            {% if field.errors %}
-                            <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
-                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
-                    {% endif %}
 
-                    <!-- ========== FORMSET DES ÉVALUATIONS ========== -->
-                    {% if formset %}
                     <h6 class="mt-4 fw-bold" style="color: var(--c-primary);">
                         <i class="fas fa-list-ul me-2"></i> Détails des évaluations
                     </h6>
@@ -197,7 +239,7 @@
                                     <th><i class="fas fa-tag me-1"></i> Type</th>
                                     <th><i class="fas fa-star me-1"></i> Points max</th>
                                     <th><i class="fas fa-sort me-1"></i> Ordre</th>
-                                    <th class="text-center"><i class="fas fa-trash-alt me-1"></i> Supprimer</th>
+                                    <th class="text-center"><i class="fas fa-trash-alt me-1"></i> Suppr.</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -228,9 +270,6 @@
                             </tbody>
                         </table>
                     </div>
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle me-1"></i> Ces évaluations seront appliquées à tous les cours créés.
-                    </small>
                     {% endif %}
 
                     <!-- ========== BOUTONS ========== -->
@@ -252,9 +291,6 @@
 
 {% block extra_css %}
 <style>
-    /* ============================================================
-       LABEL PERSONNALISÉ
-    ============================================================ */
     .form-label-custom {
         display: block;
         font-weight: 600;
@@ -268,46 +304,59 @@
             font-size: 0.85rem;
         }
 
-    /* ============================================================
-       BANDEAU D'INFORMATION
-    ============================================================ */
-    .info-banner {
+    .info-banner,
+    .alert-warning-custom {
         display: flex;
         gap: 12px;
-        background: var(--c-primary-soft);
-        border-left: 4px solid var(--c-primary);
         border-radius: var(--radius-sm);
         padding: 14px 18px;
         margin-bottom: 20px;
     }
 
-        .info-banner i {
-            color: var(--c-primary);
+    .info-banner {
+        background: var(--c-primary-soft);
+        border-left: 4px solid var(--c-primary);
+    }
+
+    .alert-warning-custom {
+        background: var(--c-accent-soft);
+        border-left: 4px solid var(--c-accent);
+    }
+
+        .info-banner i,
+        .alert-warning-custom i {
             font-size: 1.1rem;
             margin-top: 2px;
             flex-shrink: 0;
         }
 
-        .info-banner p {
-            font-size: 0.88rem;
-            color: var(--c-text);
-            margin: 0;
-            line-height: 1.6;
-        }
+    .info-banner i {
+        color: var(--c-primary);
+    }
 
-        .info-banner kbd {
-            background: var(--c-surface);
-            border: 1px solid var(--c-border-strong);
-            border-radius: 4px;
-            padding: 1px 6px;
-            font-size: 0.78rem;
-            color: var(--c-text-strong);
-            font-family: monospace;
-        }
+    .alert-warning-custom i {
+        color: var(--c-accent-dark);
+    }
 
-    /* ============================================================
-       SÉLECTION MULTIPLE (SELECT MULTIPLE)
-    ============================================================ */
+    .info-banner p,
+    .alert-warning-custom p {
+        font-size: 0.88rem;
+        color: var(--c-text);
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .info-banner kbd,
+    .alert-warning-custom kbd {
+        background: var(--c-surface);
+        border: 1px solid var(--c-border-strong);
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 0.78rem;
+        color: var(--c-text-strong);
+        font-family: monospace;
+    }
+
     select[multiple] {
         width: 100%;
         min-height: 180px;
@@ -317,7 +366,6 @@
         background: var(--c-surface);
         color: var(--c-text-strong);
         font-size: 0.9rem;
-        font-family: 'Inter', sans-serif;
         transition: border-color var(--transition), box-shadow var(--transition);
         outline: none;
     }
@@ -331,21 +379,13 @@
             padding: 8px 12px;
             border-radius: 6px;
             margin-bottom: 2px;
-            transition: background 0.15s;
         }
 
-            select[multiple] option:hover {
-                background: var(--c-primary-soft);
-            }
-
             select[multiple] option:checked {
-                background: linear-gradient(0deg, var(--c-primary) 0%, var(--c-primary) 100%);
+                background: var(--c-primary);
                 color: #fff !important;
             }
 
-    /* ============================================================
-       COMPTEUR DE SÉLECTION
-    ============================================================ */
     .badge-count {
         display: inline-block;
         background: var(--c-primary);
@@ -357,16 +397,12 @@
         margin-left: 6px;
         min-width: 24px;
         text-align: center;
-        transition: background 0.2s;
     }
 
         .badge-count.has-selection {
             background: var(--c-teal);
         }
 
-    /* ============================================================
-       ASTUCE FORMULAIRE
-    ============================================================ */
     .form-hint {
         display: flex;
         align-items: center;
@@ -389,16 +425,12 @@
             font-family: monospace;
         }
 
-    /* ============================================================
-       RÉCAPITULATIF DES COMBINAISONS
-    ============================================================ */
     .recap-box {
         background: var(--c-teal-soft);
         border: 1.5px solid rgba(13, 148, 136, 0.3);
         border-radius: var(--radius);
         padding: 18px 20px;
         margin-top: 20px;
-        animation: slideIn 0.3s ease;
     }
 
     .recap-header {
@@ -409,10 +441,6 @@
         color: var(--c-teal);
         font-size: 0.95rem;
     }
-
-        .recap-header i {
-            font-size: 1.15rem;
-        }
 
     .recap-list {
         list-style: none;
@@ -441,21 +469,91 @@
                 font-size: 0.75rem;
             }
 
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    /* ============ Configuration cycle d'évaluation ============ */
+    .config-toggle-wrapper {
+        background: var(--c-accent-soft);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+        border-radius: var(--radius-sm);
+        padding: 16px 20px;
+        margin-bottom: 20px;
     }
 
-    /* ============================================================
-       FORM CONTROLS
-    ============================================================ */
+        .config-toggle-wrapper .form-check-label {
+            cursor: pointer;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .config-toggle-wrapper .form-check-input {
+            cursor: pointer;
+            width: 2.5em;
+            height: 1.4em;
+        }
+
+            .config-toggle-wrapper .form-check-input:checked {
+                background-color: var(--c-primary);
+                border-color: var(--c-primary);
+            }
+
+    .cycle-config-section {
+        background: var(--c-surface-soft);
+        border: 1px solid var(--c-border);
+        border-radius: var(--radius);
+        padding: 24px;
+        margin-bottom: 24px;
+        animation: slideIn 0.3s ease;
+    }
+
+    .preview-box {
+        background: var(--c-teal-soft);
+        border: 1.5px solid rgba(13, 148, 136, 0.3);
+        border-radius: var(--radius-sm);
+        padding: 16px 20px;
+        margin-top: 20px;
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        color: var(--c-teal);
+        font-size: 0.92rem;
+    }
+
+    .preview-content {
+        font-size: 0.85rem;
+        color: var(--c-text);
+        line-height: 1.7;
+    }
+
+        .preview-content .cycle-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
+
+            .preview-content .cycle-line strong {
+                color: var(--c-text-strong);
+                min-width: 100px;
+            }
+
+        .preview-content .badge-mini {
+            display: inline-block;
+            background: var(--c-surface);
+            border: 1px solid var(--c-border);
+            border-radius: var(--radius-xs);
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            color: var(--c-text-muted);
+            margin-right: 4px;
+        }
+
+    /* ============ Form controls ============ */
     .form-control,
     .form-select {
         background: var(--c-surface-soft);
@@ -474,22 +572,23 @@
             background: var(--c-surface);
         }
 
-    /* ============================================================
-       TABLEAU D'ÉVALUATIONS
-    ============================================================ */
     .eval-row:hover {
         background-color: var(--c-primary-soft);
         transition: background-color 0.2s ease;
     }
 
-    .eval-errors-row:empty,
-    .eval-errors-row td:empty {
-        display: none;
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    /* ============================================================
-       RESPONSIVE
-    ============================================================ */
     @media (max-width: 768px) {
         select[multiple] {
             min-height: 140px;
@@ -507,9 +606,8 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-
         // ============================================================
-        // CHAMPS DE SÉLECTION
+        // CHAMPS PRINCIPAUX
         // ============================================================
         const niveauSelect = document.getElementById('id_niveau');
         const classeSelect = document.getElementById('id_classe');
@@ -518,39 +616,33 @@
         const recapList = document.getElementById('recapList');
         const classeCount = document.getElementById('classeCount');
         const domaineCount = document.getElementById('domaineCount');
+        const isEdit = {{ is_edit|yesno:"true,false" }};
 
         // ============================================================
-        // CONVERSION EN SÉLECTION MULTIPLE
+        // SÉLECTION MULTIPLE
         // ============================================================
         if (classeSelect && !classeSelect.multiple) {
             classeSelect.setAttribute('multiple', 'multiple');
             classeSelect.setAttribute('size', '8');
-            // Adapter le name pour accepter plusieurs valeurs
-            classeSelect.setAttribute('name', 'classe');
         }
-
         if (domaineSelect && !domaineSelect.multiple) {
             domaineSelect.setAttribute('multiple', 'multiple');
             domaineSelect.setAttribute('size', '8');
-            domaineSelect.setAttribute('name', 'domaine');
         }
 
         // ============================================================
-        // MISE À JOUR DES CLASSES ET DOMAINES SELON LE NIVEAU
+        // MISE À JOUR CLASSES/DOMAINES SELON NIVEAU
         // ============================================================
         function updateClassesAndDomaines() {
             const niveauId = niveauSelect ? niveauSelect.value : null;
 
-            // Réinitialiser les classes
             if (classeSelect) {
-                // Sauvegarder les sélections actuelles
                 const selectedClasses = Array.from(classeSelect.selectedOptions).map(o => o.value);
-
                 classeSelect.innerHTML = '';
 
                 if (niveauId) {
                     fetch(`/api/classes-par-niveau/?niveau_id=${niveauId}`)
-                        .then(response => response.json())
+                        .then(r => r.json())
                         .then(data => {
                             data.forEach(classe => {
                                 const option = document.createElement('option');
@@ -564,22 +656,20 @@
                             updateCounters();
                             updateRecap();
                         })
-                        .catch(error => console.error('Erreur chargement classes:', error));
+                        .catch(err => console.error('Erreur classes:', err));
                 } else {
                     updateCounters();
                     updateRecap();
                 }
             }
 
-            // Réinitialiser les domaines
             if (domaineSelect) {
                 const selectedDomaines = Array.from(domaineSelect.selectedOptions).map(o => o.value);
-
                 domaineSelect.innerHTML = '';
 
                 if (niveauId) {
                     fetch(`/api/domaines-par-niveau/?niveau_id=${niveauId}`)
-                        .then(response => response.json())
+                        .then(r => r.json())
                         .then(data => {
                             data.forEach(domaine => {
                                 const option = document.createElement('option');
@@ -593,7 +683,7 @@
                             updateCounters();
                             updateRecap();
                         })
-                        .catch(error => console.error('Erreur chargement domaines:', error));
+                        .catch(err => console.error('Erreur domaines:', err));
                 } else {
                     updateCounters();
                     updateRecap();
@@ -602,7 +692,7 @@
         }
 
         // ============================================================
-        // COMPTEURS DE SÉLECTION
+        // COMPTEURS
         // ============================================================
         function updateCounters() {
             if (classeCount && classeSelect) {
@@ -610,7 +700,6 @@
                 classeCount.textContent = count;
                 classeCount.classList.toggle('has-selection', count > 0);
             }
-
             if (domaineCount && domaineSelect) {
                 const count = domaineSelect.selectedOptions.length;
                 domaineCount.textContent = count;
@@ -622,7 +711,7 @@
         // RÉCAPITULATIF DES COMBINAISONS
         // ============================================================
         function updateRecap() {
-            if (!recapBox || !recapList) return;
+            if (!recapBox || !recapList || isEdit) return;
 
             const classes = classeSelect ? Array.from(classeSelect.selectedOptions) : [];
             const domaines = domaineSelect ? Array.from(domaineSelect.selectedOptions) : [];
@@ -633,16 +722,12 @@
             }
 
             const combinations = [];
-            classes.forEach(classe => {
-                domaines.forEach(domaine => {
-                    combinations.push({
-                        classe: classe.textContent,
-                        domaine: domaine.textContent
-                    });
+            classes.forEach(c => {
+                domaines.forEach(d => {
+                    combinations.push({ classe: c.textContent, domaine: d.textContent });
                 });
             });
 
-            // Limiter l'affichage à 20 pour éviter de surcharger
             const displayLimit = 20;
             const total = combinations.length;
             const displayed = combinations.slice(0, displayLimit);
@@ -663,17 +748,13 @@
         // ============================================================
         // ÉVÉNEMENTS
         // ============================================================
-        if (niveauSelect) {
-            niveauSelect.addEventListener('change', updateClassesAndDomaines);
-        }
-
+        if (niveauSelect) niveauSelect.addEventListener('change', updateClassesAndDomaines);
         if (classeSelect) {
             classeSelect.addEventListener('change', function () {
                 updateCounters();
                 updateRecap();
             });
         }
-
         if (domaineSelect) {
             domaineSelect.addEventListener('change', function () {
                 updateCounters();
@@ -684,13 +765,78 @@
         // ============================================================
         // INITIALISATION
         // ============================================================
-        // Si un niveau est déjà sélectionné (édition), charger les données
         if (niveauSelect && niveauSelect.value) {
             updateClassesAndDomaines();
         } else {
             updateCounters();
             updateRecap();
         }
+
+        // ============================================================
+        // CONFIGURATION CYCLE D'ÉVALUATION (OPTIONNEL)
+        // ============================================================
+        const toggleCycleConfig = document.getElementById('toggleCycleConfig');
+        const cycleConfigSection = document.getElementById('cycleConfigSection');
+        const previewContent = document.getElementById('previewContent');
+
+        if (toggleCycleConfig && cycleConfigSection) {
+            toggleCycleConfig.addEventListener('change', function () {
+                cycleConfigSection.style.display = this.checked ? 'block' : 'none';
+                if (this.checked) updatePreview();
+            });
+        }
+
+        // Éléments de configuration
+        const typeCycleEl = document.getElementById('id_type_cycle');
+        const nombreCyclesEl = document.getElementById('id_nombre_cycles');
+        const periodesEl = document.getElementById('id_periodes_par_cycle');
+        const inclureExamenEl = document.getElementById('id_inclure_examen');
+        const pointsMaxEl = document.getElementById('id_points_max');
+
+        // Synchronisation type_cycle → nombre_cycles
+        if (typeCycleEl && nombreCyclesEl) {
+            typeCycleEl.addEventListener('change', function () {
+                if (this.value === 'trimestre') nombreCyclesEl.value = 3;
+                else if (this.value === 'semestre') nombreCyclesEl.value = 2;
+                updatePreview();
+            });
+        }
+
+        // Mise à jour de l'aperçu
+        function updatePreview() {
+            if (!previewContent) return;
+
+            const nb = parseInt(nombreCyclesEl?.value || 3);
+            const nbPer = parseInt(periodesEl?.value || 2);
+            const inclExam = inclureExamenEl?.checked ?? true;
+            const pts = parseInt(pointsMaxEl?.value || 20);
+
+            let html = '';
+            for (let c = 1; c <= nb; c++) {
+                let line = `<div class="cycle-line"><strong>Cycle ${c} :</strong>`;
+                for (let p = 1; p <= nbPer; p++) {
+                    line += `<span class="badge-mini">Période ${p} (${pts} pts)</span>`;
+                }
+                if (inclExam) {
+                    line += `<span class="badge-mini">Examen (${pts} pts)</span>`;
+                }
+                line += `</div>`;
+                html += line;
+            }
+
+            const totalEvals = nb * (nbPer + (inclExam ? 1 : 0));
+            html += `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--c-border);">
+                        <strong>${totalEvals}</strong> évaluation(s) par cours · <strong>${nb}</strong> cycle(s) · <strong>${nbPer}</strong> période(s) par cycle
+                     </div>`;
+
+            previewContent.innerHTML = html;
+        }
+
+        // Événements pour la mise à jour de l'aperçu
+        [nombreCyclesEl, periodesEl, inclureExamenEl, pointsMaxEl].forEach(el => {
+            if (el) el.addEventListener('input', updatePreview);
+            if (el) el.addEventListener('change', updatePreview);
+        });
     });
 </script>
 {% endblock %}
