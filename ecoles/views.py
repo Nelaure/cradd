@@ -1474,19 +1474,18 @@ def cours_create(request):
     Si plusieurs classes ET plusieurs domaines sont sélectionnés :
     → un cours est créé pour chaque combinaison (classe × domaine).
 
-    La configuration du cycle d'évaluation est OPTIONNELLE :
-    - Si le switch "Personnaliser" est activé → utilise les paramètres saisis.
-    - Sinon → utilise la configuration par défaut (trimestre, 3 cycles, 2 périodes, examen).
+    Configuration cycle OPTIONNELLE :
+    - Si le switch "Personnaliser" est activé (POST contient `config_active`),
+      utilise les paramètres saisis.
+    - Sinon → config par défaut (trimestre, 3 cycles, 2 périodes, examen ×2).
 
-    ⚠️ RÈGLE MÉTIER : L'examen vaut TOUJOURS le DOUBLE du points_max des évaluations normales.
-    Exemple : si points_max = 20 pour une période, l'examen vaudra 40 points.
+    ⚠️ RÈGLE MÉTIER : L'examen vaut TOUJOURS le DOUBLE du points_max.
     """
     user = request.user
     if not (user.est_administrateur() or user.est_agent()):
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
 
-    # L'agent ne peut créer QUE des références
     is_reference = True
     if user.est_administrateur():
         ref_param = request.GET.get('ref', '1')
@@ -1510,25 +1509,16 @@ def cours_create(request):
             coefficient = form.cleaned_data['coefficient']
             description = form.cleaned_data.get('description', '')
             niveau = form.cleaned_data['niveau']
-            classes = form.cleaned_data['classe']       # QuerySet de classes
-            domaines = form.cleaned_data['domaine']     # QuerySet de domaines
+            classes = form.cleaned_data['classe']
+            domaines = form.cleaned_data['domaine']
             ecole = None if is_reference else form.cleaned_data.get('ecole')
 
-            # ----- Récupérer la configuration du cycle (optionnelle) -----
-            config_data = None
-            if cycle_config_form.is_valid() and cycle_config_form.cleaned_data.get('type_cycle'):
-                config_data = {
-                    'type_cycle': cycle_config_form.cleaned_data.get('type_cycle', 'trimestre'),
-                    'nombre_cycles': cycle_config_form.cleaned_data.get('nombre_cycles') or 3,
-                    'periodes_par_cycle': cycle_config_form.cleaned_data.get('periodes_par_cycle') or 2,
-                    'inclure_examen': cycle_config_form.cleaned_data.get('inclure_examen', True),
-                    'points_max': cycle_config_form.cleaned_data.get('points_max') or 20,
-                }
+            # ----- Récupérer la config cycle (avec fallback sur initial) -----
+            config_data = cycle_config_form.get_config()
 
             created_cours = []
             errors = []
 
-            # ----- Création pour chaque combinaison classe × domaine -----
             for classe in classes:
                 for domaine in domaines:
                     # Générer un code unique
@@ -1558,15 +1548,14 @@ def cours_create(request):
                         )
 
                         if config_data:
-                            # Config personnalisée
+                            # ----- Config personnalisée -----
                             nb_cycles = config_data['nombre_cycles']
                             nb_periodes = config_data['periodes_par_cycle']
                             inclure_examen = config_data['inclure_examen']
                             pts_max = config_data['points_max']
-                            pts_max_examen = pts_max * 2  # ⚠️ L'examen vaut le DOUBLE
+                            pts_max_examen = pts_max * 2  # ⚠️ Examen = ×2
 
                             for cycle_num in range(1, nb_cycles + 1):
-                                # Périodes normales
                                 for periode_num in range(1, nb_periodes + 1):
                                     EvaluationConfig.objects.create(
                                         cycle_evaluation=cycle_eval,
@@ -1576,7 +1565,6 @@ def cours_create(request):
                                         points_max=pts_max,
                                         ordre=periode_num
                                     )
-                                # Examen (double des points)
                                 if inclure_examen:
                                     EvaluationConfig.objects.create(
                                         cycle_evaluation=cycle_eval,
@@ -1587,14 +1575,13 @@ def cours_create(request):
                                         ordre=nb_periodes + 1
                                     )
                         else:
-                            # Config par défaut (trimestre, 3 cycles, 2 périodes, examen ×2)
+                            # ----- Config par défaut -----
                             cycle_eval.creer_evaluations_par_defaut()
 
                         created_cours.append(cours)
                     except Exception as e:
                         errors.append(f"{classe.nom} × {domaine.nom} : {str(e)}")
 
-            # ----- Message de succès -----
             if created_cours:
                 if len(created_cours) == 1:
                     messages.success(request, f'Cours "{nom}" créé avec succès.')
@@ -1624,12 +1611,14 @@ def cours_edit(request, pk):
     """
     Modifier un cours existant.
 
-    IMPORTANT : Le mode édition ne concerne qu'UN SEUL cours (l'instance ciblée par pk).
-    Lorsque plusieurs classes/domaines sont sélectionnés, seul le PREMIER élément
-    de chaque liste sera utilisé pour modifier ce cours.
+    Comportement MULTI-SÉLECTION :
+    - Le cours ciblé (pk) est mis à jour avec la PREMIÈRE combinaison (classe × domaine).
+    - Les combinaisons SUPPLÉMENTAIRES créent de NOUVEAUX cours (avec copie du cycle).
+    - Le cycle d'évaluation du cours ciblé est éditable via le formset.
     """
     cours = get_object_or_404(Cours, pk=pk)
     user = request.user
+
     if user.est_parent() or user.est_ministre():
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
@@ -1661,32 +1650,99 @@ def cours_edit(request, pk):
         formset = EvaluationConfigFormSet(request.POST, instance=cycle_eval)
 
         if form.is_valid() and cycle_form.is_valid() and formset.is_valid():
-            # ----- Sauvegarder le cours (uniquement la 1ère classe/domaine sélectionné) -----
-            classes = form.cleaned_data.get('classe')
-            domaines = form.cleaned_data.get('domaine')
+            # ----- Récupérer les combinaisons -----
+            classes = list(form.cleaned_data.get('classe') or [])
+            domaines = list(form.cleaned_data.get('domaine') or [])
 
-            # Prendre le premier élément de chaque QuerySet pour l'assignation
-            if classes:
-                cours.classe = classes.first() if hasattr(classes, 'first') else classes[0]
-            if domaines:
-                cours.domaine = domaines.first() if hasattr(domaines, 'first') else domaines[0]
+            if not classes or not domaines:
+                messages.error(request, 'Veuillez sélectionner au moins une classe et un domaine.')
+                return render(request, 'ecoles/cours_form.html', {
+                    'form': form,
+                    'cycle_form': cycle_form,
+                    'formset': formset,
+                    'cours': cours,
+                    'title': 'Modifier un cours',
+                    'is_edit': True,
+                })
 
-            # Sauvegarder les autres champs
+            # ----- 1. Mettre à jour le cours ciblé avec la 1ère combinaison -----
+            first_classe = classes[0]
+            first_domaine = domaines[0]
+
             cours.nom = form.cleaned_data['nom']
             cours.code = form.cleaned_data['code']
             cours.coefficient = form.cleaned_data['coefficient']
             cours.description = form.cleaned_data.get('description', '')
             cours.niveau = form.cleaned_data['niveau']
+            cours.classe = first_classe
+            cours.domaine = first_domaine
             cours.ecole = None if is_reference else form.cleaned_data.get('ecole')
             cours.est_reference = is_reference
             cours.save()
 
-            # Sauvegarder le cycle d'évaluation
+            # Sauvegarder le cycle d'évaluation du cours ciblé
             cycle_form.save()
             formset.save()
             cycle_eval.nettoyer_evaluations()
 
-            messages.success(request, 'Cours modifié avec succès.')
+            # ----- 2. Créer des cours pour les combinaisons RESTANTES -----
+            created_count = 0
+            base_code = cours.code
+            existing_combos = {(first_classe.id, first_domaine.id)}
+
+            for classe in classes:
+                for domaine in domaines:
+                    if (classe.id, domaine.id) in existing_combos:
+                        continue
+
+                    # Générer un code unique
+                    code_candidat = base_code
+                    suffix = 1
+                    while Cours.objects.filter(code=code_candidat).exists():
+                        code_candidat = f"{base_code}_{suffix}"
+                        suffix += 1
+
+                    try:
+                        nouveau_cours = Cours.objects.create(
+                            nom=cours.nom,
+                            code=code_candidat,
+                            coefficient=cours.coefficient,
+                            description=cours.description,
+                            niveau=cours.niveau,
+                            classe=classe,
+                            domaine=domaine,
+                            ecole=cours.ecole,
+                            est_reference=cours.est_reference,
+                        )
+
+                        # Copier le cycle d'évaluation du cours ciblé
+                        nouveau_cycle = CycleEvaluation.objects.create(
+                            cours=nouveau_cours,
+                            type_cycle=cycle_eval.type_cycle
+                        )
+                        for config in cycle_eval.evaluations.all():
+                            EvaluationConfig.objects.create(
+                                cycle_evaluation=nouveau_cycle,
+                                cycle_num=config.cycle_num,
+                                periode_num=config.periode_num,
+                                type=config.type,
+                                points_max=config.points_max,
+                                ordre=config.ordre
+                            )
+
+                        created_count += 1
+                    except Exception as e:
+                        messages.warning(request, f"Erreur création {classe.nom} × {domaine.nom} : {str(e)}")
+
+            # ----- Messages -----
+            if created_count > 0:
+                messages.success(
+                    request,
+                    f'Cours "{cours.nom}" modifié + {created_count} nouveau(x) cours créé(s).'
+                )
+            else:
+                messages.success(request, 'Cours modifié avec succès.')
+
             return redirect('ecoles:cours_list')
     else:
         form = CoursForm(instance=cours, user=user, is_reference=is_reference)

@@ -83,9 +83,9 @@
                     <div class="alert-warning-custom">
                         <i class="fas fa-exclamation-triangle"></i>
                         <p>
-                            <strong>Mode édition</strong> : Seul le <strong>premier</strong> élément sélectionné
-                            dans chaque liste sera utilisé pour modifier ce cours existant.
-                            Pour créer plusieurs cours, utilisez plutôt <em>Créer un cours</em>.
+                            <strong>Mode édition</strong> : La <strong>première</strong> classe et le <strong>premier</strong>
+                            domaine sélectionnés mettront à jour ce cours. Les <strong>autres combinaisons</strong>
+                            créeront de <strong>nouveaux cours</strong> avec le même cycle d'évaluation.
                         </p>
                     </div>
                     {% else %}
@@ -142,6 +142,10 @@
                     <!-- ========== CONFIGURATION CYCLE D'ÉVALUATION (OPTIONNEL EN CRÉATION) ========== -->
                     {% if not is_edit and cycle_config_form %}
                     <hr class="my-4">
+
+                    <!-- ⚠️ Champ caché qui indique au serveur si le switch est activé -->
+                    {{ cycle_config_form.config_active }}
+
                     <div class="config-toggle-wrapper">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="toggleCycleConfig" role="switch">
@@ -790,12 +794,27 @@
         const cycleConfigSection = document.getElementById('cycleConfigSection');
         const previewContent = document.getElementById('previewContent');
         const previewExamenPts = document.getElementById('previewExamenPts');
+        const configActiveInput = document.getElementById('id_config_active');
 
         if (toggleCycleConfig && cycleConfigSection) {
             toggleCycleConfig.addEventListener('change', function () {
-                cycleConfigSection.style.display = this.checked ? 'block' : 'none';
-                if (this.checked) updatePreview();
+                const isChecked = this.checked;
+                cycleConfigSection.style.display = isChecked ? 'block' : 'none';
+
+                // ⚠️ Mettre à jour le champ caché envoyé au serveur
+                if (configActiveInput) {
+                    configActiveInput.value = isChecked ? '1' : '';
+                }
+
+                if (isChecked) updatePreview();
             });
+
+            // Initialisation au chargement (si le serveur a renvoyé '1')
+            if (configActiveInput && configActiveInput.value === '1') {
+                toggleCycleConfig.checked = true;
+                cycleConfigSection.style.display = 'block';
+                updatePreview();
+            }
         }
 
         // Éléments de configuration

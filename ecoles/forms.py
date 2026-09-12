@@ -691,8 +691,9 @@ class CoursForm(forms.ModelForm):
 class CycleEvaluationConfigForm(forms.Form):
     """
     Formulaire OPTIONNEL de configuration du cycle d'évaluation.
-    Utilisé lors de la création d'un cours pour personnaliser
-    le nombre de cycles, les périodes et examens.
+    - `config_active` : marqueur envoyé depuis le template quand le switch est activé.
+    - Si `config_active` est absent/vide → config par défaut appliquée.
+    - Si `config_active` = '1' → config personnalisée appliquée.
 
     ⚠️ RÈGLE MÉTIER : L'examen vaut le DOUBLE du points_max des évaluations normales.
     """
@@ -700,6 +701,12 @@ class CycleEvaluationConfigForm(forms.Form):
     CYCLE_TYPES = (
         ('trimestre', 'Trimestriel (3 cycles)'),
         ('semestre', 'Semestriel (2 cycles)'),
+    )
+
+    # ----- Marqueur activateur -----
+    config_active = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'id_config_active'})
     )
 
     type_cycle = forms.ChoiceField(
@@ -772,6 +779,27 @@ class CycleEvaluationConfigForm(forms.Form):
         self.helper = FormHelper()
         self.helper.form_method = 'post'
         self.helper.layout = Layout()
+
+    def is_active(self):
+        """Retourne True si le switch est activé."""
+        return bool(self.cleaned_data.get('config_active')) if self.is_valid() else False
+
+    def get_config(self):
+        """
+        Retourne un dictionnaire de configuration propre.
+        Utilise `initial` comme fallback si les champs sont vides.
+        """
+        if not self.is_valid() or not self.is_active():
+            return None
+
+        cd = self.cleaned_data
+        return {
+            'type_cycle': cd.get('type_cycle') or 'trimestre',
+            'nombre_cycles': cd.get('nombre_cycles') or 3,
+            'periodes_par_cycle': cd.get('periodes_par_cycle') or 2,
+            'inclure_examen': cd.get('inclure_examen', True),
+            'points_max': cd.get('points_max') or 20,
+        }
 
 
 # ===================== ANNÉE SCOLAIRE =====================
