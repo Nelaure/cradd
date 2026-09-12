@@ -310,11 +310,10 @@ def dashboard_view(request):
         })
         template = 'ecoles/dashboard_admin.html'
 
-    # ---------- MINISTRE (lecture seule, statistiques globales) ----------
+    # ---------- MINISTRE (lecture seule) ----------
     elif user.est_ministre():
         provinces = Province.objects.all().order_by('nom')
 
-        # Stats globales
         total_provinces = provinces.count()
         total_ecoles = Ecole.objects.count()
         total_eleves = Eleve.objects.count()
@@ -330,7 +329,6 @@ def dashboard_view(request):
         moyenne_generale_nationale = calculer_moyenne_generale(resultats_annuels_qs)
         taux_reussite_national = calculer_taux_reussite(resultats_annuels_qs)
 
-        # Tableau détaillé par province
         stats_par_province = []
         for province in provinces:
             ecoles_prov = Ecole.objects.filter(province=province)
@@ -369,13 +367,11 @@ def dashboard_view(request):
 
         stats_par_province = sorted(stats_par_province, key=lambda x: x['taux'], reverse=True)
 
-        # Données pour graphiques
         province_labels = [s['province'] for s in stats_par_province]
         province_eleves_data = [s['total_eleves'] for s in stats_par_province]
         province_taux_data = [s['taux'] for s in stats_par_province]
         province_moyennes_data = [s['moyenne'] for s in stats_par_province]
 
-        # Top 10 écoles du pays
         stats_par_ecole = []
         for ecole in Ecole.objects.all():
             res = resultats_annuels_qs.filter(eleve__ecole=ecole)
@@ -1383,7 +1379,6 @@ def cours_list(request):
         else:
             cours_qs = Cours.objects.none()
     elif user.est_agent() or user.est_inspecteur():
-        # L'agent voit tous les cours de référence + ceux de son école
         if user.ecole_affectation:
             cours_qs = Cours.objects.filter(
                 Q(est_reference=True) | Q(ecole=user.ecole_affectation, est_reference=False)
@@ -1405,7 +1400,7 @@ def cours_list(request):
     niveau_id = request.GET.get('niveau')
     classe_id = request.GET.get('classe')
     domaine_id = request.GET.get('domaine')
-    type_filter = request.GET.get('type')  # 'reference' ou 'instance'
+    type_filter = request.GET.get('type')
 
     if ecole_id:
         cours_qs = cours_qs.filter(ecole_id=ecole_id, est_reference=False)
@@ -1470,10 +1465,11 @@ def cours_list(request):
 @login_required
 def cours_create(request):
     """
-    Créer un cours.
+    Créer un ou plusieurs cours.
     - ADMIN : peut créer un cours de référence (is_reference=True)
     - AGENT  : peut créer UNIQUEMENT un cours de référence (is_reference=True)
-    - Autres : interdit
+    - Si plusieurs classes ET plusieurs domaines sont sélectionnés :
+      un cours est créé pour chaque combinaison (classe × domaine).
     """
     user = request.user
     if not (user.est_administrateur() or user.est_agent()):
@@ -1490,19 +1486,65 @@ def cours_create(request):
     if request.method == 'POST':
         form = CoursForm(request.POST, user=request.user, is_reference=is_reference)
         form.instance.est_reference = is_reference
-        if is_reference:
-            form.instance.ecole = None
+
         if form.is_valid():
-            cours = form.save(commit=False)
-            if is_reference:
-                cours.ecole = None
-            cours.save()
-            CycleEvaluation.objects.create(cours=cours, type_cycle='trimestre')
-            messages.success(request, f'Cours {cours.nom} créé avec succès.')
+            # ----- Récupérer les données -----
+            nom = form.cleaned_data['nom']
+            base_code = form.cleaned_data['code']
+            coefficient = form.cleaned_data['coefficient']
+            description = form.cleaned_data.get('description', '')
+            niveau = form.cleaned_data['niveau']
+            classes = form.cleaned_data['classe']       # QuerySet de classes
+            domaines = form.cleaned_data['domaine']     # QuerySet de domaines
+            ecole = None if is_reference else form.cleaned_data.get('ecole')
+
+            created_cours = []
+            errors = []
+
+            # ----- Création pour chaque combinaison classe × domaine -----
+            for classe in classes:
+                for domaine in domaines:
+                    # Générer un code unique
+                    code_candidat = base_code
+                    suffix = 1
+                    while Cours.objects.filter(code=code_candidat).exists():
+                        code_candidat = f"{base_code}_{suffix}"
+                        suffix += 1
+
+                    try:
+                        cours = Cours.objects.create(
+                            nom=nom,
+                            code=code_candidat,
+                            coefficient=coefficient,
+                            description=description,
+                            niveau=niveau,
+                            classe=classe,
+                            domaine=domaine,
+                            ecole=None if is_reference else ecole,
+                            est_reference=is_reference,
+                        )
+                        # Créer le cycle d'évaluation par défaut
+                        CycleEvaluation.objects.create(cours=cours, type_cycle='trimestre')
+                        created_cours.append(cours)
+                    except Exception as e:
+                        errors.append(f"{classe.nom} × {domaine.nom} : {str(e)}")
+
+            # ----- Message de succès -----
+            if created_cours:
+                if len(created_cours) == 1:
+                    messages.success(request, f'Cours "{nom}" créé avec succès.')
+                else:
+                    messages.success(request, f'{len(created_cours)} cours "{nom}" créés avec succès.')
+            if errors:
+                for err in errors:
+                    messages.warning(request, err)
+
             return redirect('ecoles:cours_list')
+
     else:
         form = CoursForm(user=request.user, is_reference=is_reference)
         form.instance.est_reference = is_reference
+
     title = 'Créer un cours de référence' if is_reference else 'Créer un cours'
     return render(request, 'ecoles/cours_form.html', {'form': form, 'title': title})
 
@@ -1540,6 +1582,9 @@ def cours_edit(request, pk):
         cycle_form = CycleEvaluationForm(request.POST, instance=cycle_eval)
         formset = EvaluationConfigFormSet(request.POST, instance=cycle_eval)
         if form.is_valid() and cycle_form.is_valid() and formset.is_valid():
+            # ----- Gestion multi-classes / multi-domaines en édition -----
+            # En édition, on ne peut modifier que le premier objet (le cours actuel).
+            # Pour éviter la complexité, on utilise uniquement la 1ère valeur sélectionnée.
             form.save()
             cycle_form.save()
             formset.save()
@@ -1836,13 +1881,11 @@ def resultat_create(request):
         messages.error(request, 'Vous n\'avez pas les droits pour saisir des résultats.')
         return redirect('ecoles:resultat_list')
 
-    # AGENT autorisé à saisir
     if not (user.est_administrateur() or user.est_agent() or user.est_inspecteur()
             or user.est_proved() or user.est_enseignant()):
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:resultat_list')
 
-    # Étape 1 : sélection
     if request.method == 'GET' and not (request.GET.get('eleve') and request.GET.get('cours') and request.GET.get('annee_scolaire')):
         selection_form = ResultatSelectionForm(user=request.user)
         return render(request, 'ecoles/resultat_form.html', {
@@ -1866,7 +1909,6 @@ def resultat_create(request):
         messages.error(request, 'Élément sélectionné invalide.')
         return redirect('ecoles:resultat_create')
 
-    # Vérifications des droits
     if user.est_enseignant():
         if not user.classe_affectation or eleve.classe != user.classe_affectation:
             messages.error(request, 'Vous ne pouvez saisir que pour votre classe.')

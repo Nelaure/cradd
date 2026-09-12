@@ -1,55 +1,177 @@
 {% extends "base.html" %}
 
 {% block title %}{{ title }} - Cradd{% endblock %}
-{% block page_heading %}{{ title }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10 col-lg-9">
+    <div class="col-md-11 col-lg-10">
         <div class="card-glass">
-            <div class="card-header bg-gradient-primary text-white">
-                <i class="fas fa-book me-2"></i> {{ title }}
+            <div class="card-header">
+                <i class="fas fa-book text-gold me-2"></i> {{ title }}
                 <span class="badge bg-light text-dark ms-2 float-end">{{ form.instance.code|default:"Nouveau" }}</span>
             </div>
             <div class="card-body">
-
                 <form method="post" id="coursForm" novalidate>
                     {% csrf_token %}
 
-                    <!-- ========== CHAMPS PRINCIPAUX ========== -->
-                    <div class="row g-4">
-                        {% for field in form %}
+                    <!-- ========== INFORMATIONS PRINCIPALES ========== -->
+                    <h5 class="mb-3" style="color: var(--c-primary);">
+                        <i class="fas fa-info-circle me-2"></i> Informations générales
+                    </h5>
+                    <div class="row g-3">
+                        <!-- Nom -->
                         <div class="col-md-6">
-                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
-                                <i class="fas fa-{% if field.name == 'nom' %}pencil-alt{% elif field.name == 'code' %}barcode{% elif field.name == 'coefficient' %}hashtag{% elif field.name == 'description' %}align-left{% elif field.name == 'niveau' %}layers{% elif field.name == 'classe' %}users{% elif field.name == 'domaine' %}tags{% elif field.name == 'ecole' %}school{% elif field.name == 'est_reference' %}star{% else %}circle{% endif %} me-1 text-gold"></i>
-                                {{ field.label }}
+                            <label for="{{ form.nom.id_for_label }}" class="form-label-custom">
+                                <i class="fas fa-pencil-alt me-1"></i> {{ form.nom.label }}
                             </label>
-                            {{ field }}
-                            {% if field.errors %}
+                            {{ form.nom }}
+                            {% if form.nom.errors %}
                             <div class="text-danger small mt-1">
-                                <i class="fas fa-exclamation-circle me-1"></i>{{ field.errors|striptags }}
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ form.nom.errors|striptags }}
                             </div>
                             {% endif %}
-                            {% if field.help_text %}
-                            <div class="form-text">{{ field.help_text }}</div>
+                        </div>
+
+                        <!-- Code -->
+                        <div class="col-md-6">
+                            <label for="{{ form.code.id_for_label }}" class="form-label-custom">
+                                <i class="fas fa-barcode me-1"></i> {{ form.code.label }}
+                            </label>
+                            {{ form.code }}
+                            {% if form.code.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ form.code.errors|striptags }}
+                            </div>
                             {% endif %}
                         </div>
-                        {% endfor %}
+
+                        <!-- Coefficient -->
+                        <div class="col-md-4">
+                            <label for="{{ form.coefficient.id_for_label }}" class="form-label-custom">
+                                <i class="fas fa-hashtag me-1"></i> {{ form.coefficient.label }}
+                            </label>
+                            {{ form.coefficient }}
+                            {% if form.coefficient.errors %}
+                            <div class="text-danger small mt-1">{{ form.coefficient.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Niveau -->
+                        <div class="col-md-4">
+                            <label for="{{ form.niveau.id_for_label }}" class="form-label-custom">
+                                <i class="fas fa-layer-group me-1"></i> {{ form.niveau.label }}
+                            </label>
+                            {{ form.niveau }}
+                            {% if form.niveau.errors %}
+                            <div class="text-danger small mt-1">{{ form.niveau.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- École -->
+                        <div class="col-md-4">
+                            <label for="{{ form.ecole.id_for_label }}" class="form-label-custom">
+                                <i class="fas fa-school me-1"></i> {{ form.ecole.label }}
+                            </label>
+                            {{ form.ecole }}
+                            {% if form.ecole.errors %}
+                            <div class="text-danger small mt-1">{{ form.ecole.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Description -->
+                        <div class="col-12">
+                            <label for="{{ form.description.id_for_label }}" class="form-label-custom">
+                                <i class="fas fa-align-left me-1"></i> {{ form.description.label }}
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Est référence (masqué si présent) -->
+                        {% if form.est_reference %}
+                        <div class="col-12">
+                            <div class="form-check">
+                                {{ form.est_reference }}
+                                <label class="form-check-label" for="{{ form.est_reference.id_for_label }}">
+                                    <i class="fas fa-star me-1 text-gold"></i> {{ form.est_reference.label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
 
-                    <hr class="my-4 border-gold opacity-50">
+                    <!-- ========== SÉLECTION MULTIPLE : CLASSES & DOMAINES ========== -->
+                    <hr class="my-4">
+                    <h5 class="mb-3" style="color: var(--c-primary);">
+                        <i class="fas fa-layer-group me-2"></i> Classes & Domaines concernés
+                    </h5>
+                    <div class="info-banner">
+                        <i class="fas fa-info-circle"></i>
+                        <p>
+                            Sélectionnez <strong>plusieurs classes</strong> et <strong>plusieurs domaines</strong>
+                            en maintenant <kbd>Ctrl</kbd> (Windows) ou <kbd>Cmd</kbd> (Mac).
+                            Un cours sera créé pour <strong>chaque combinaison</strong> classe × domaine.
+                        </p>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Classes (sélection multiple) -->
+                        <div class="col-md-6">
+                            <label for="{{ form.classe.id_for_label }}" class="form-label-custom">
+                                <i class="fas fa-users me-1"></i> {{ form.classe.label }}s
+                                <span class="badge-count" id="classeCount">0</span>
+                            </label>
+                            {{ form.classe }}
+                            {% if form.classe.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ form.classe.errors|striptags }}
+                            </div>
+                            {% endif %}
+                            <div class="form-hint">
+                                <i class="fas fa-hand-pointer"></i> Maintenez <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> pour sélectionner plusieurs classes
+                            </div>
+                        </div>
+
+                        <!-- Domaines (sélection multiple) -->
+                        <div class="col-md-6">
+                            <label for="{{ form.domaine.id_for_label }}" class="form-label-custom">
+                                <i class="fas fa-tags me-1"></i> {{ form.domaine.label }}s
+                                <span class="badge-count" id="domaineCount">0</span>
+                            </label>
+                            {{ form.domaine }}
+                            {% if form.domaine.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ form.domaine.errors|striptags }}
+                            </div>
+                            {% endif %}
+                            <div class="form-hint">
+                                <i class="fas fa-hand-pointer"></i> Maintenez <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> pour sélectionner plusieurs domaines
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Récapitulatif des combinaisons -->
+                    <div class="recap-box" id="recapBox" style="display: none;">
+                        <div class="recap-header">
+                            <i class="fas fa-list-check"></i>
+                            <strong>Aperçu des cours qui seront créés :</strong>
+                        </div>
+                        <ul class="recap-list" id="recapList"></ul>
+                    </div>
 
                     <!-- ========== CONFIGURATION DU CYCLE D'ÉVALUATION ========== -->
-                    <h5 class="mt-3 text-gold">
+                    {% if cycle_form %}
+                    <hr class="my-4">
+                    <h5 class="mb-3" style="color: var(--c-primary);">
                         <i class="fas fa-sync-alt me-2"></i> Configuration du cycle d'évaluation
                     </h5>
-                    {% if cycle_form %}
-                    <div class="row g-3 mt-2">
+                    <div class="row g-3">
                         {% for field in cycle_form %}
                         <div class="col-md-6">
-                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
-                                <i class="fas fa-{% if field.name == 'type_cycle' %}calendar-alt{% else %}circle{% endif %} me-1 text-gold"></i>
-                                {{ field.label }}
+                            <label for="{{ field.id_for_label }}" class="form-label-custom">
+                                <i class="fas fa-calendar-alt me-1"></i> {{ field.label }}
                             </label>
                             {{ field }}
                             {% if field.errors %}
@@ -62,13 +184,13 @@
 
                     <!-- ========== FORMSET DES ÉVALUATIONS ========== -->
                     {% if formset %}
-                    <h6 class="mt-4 fw-bold">
-                        <i class="fas fa-list-ul me-2 text-gold"></i> Détails des évaluations
+                    <h6 class="mt-4 fw-bold" style="color: var(--c-primary);">
+                        <i class="fas fa-list-ul me-2"></i> Détails des évaluations
                     </h6>
                     {{ formset.management_form }}
                     <div class="table-responsive mt-2">
-                        <table class="table table-hover table-bordered align-middle shadow-sm">
-                            <thead class="bg-gold-soft text-dark">
+                        <table class="table table-hover table-bordered align-middle">
+                            <thead style="background: var(--c-primary-soft);">
                                 <tr>
                                     <th><i class="fas fa-sync-alt me-1"></i> Cycle</th>
                                     <th><i class="fas fa-calendar-day me-1"></i> Période</th>
@@ -107,16 +229,16 @@
                         </table>
                     </div>
                     <small class="text-muted">
-                        <i class="fas fa-info-circle me-1"></i> Vous pouvez ajouter ou supprimer des évaluations à l'aide des cases à cocher.
+                        <i class="fas fa-info-circle me-1"></i> Ces évaluations seront appliquées à tous les cours créés.
                     </small>
                     {% endif %}
 
                     <!-- ========== BOUTONS ========== -->
                     <div class="d-flex gap-3 justify-content-end mt-4 flex-wrap">
-                        <a href="{% url 'ecoles:cours_list' %}" class="btn btn-outline-secondary btn-lg px-4">
+                        <a href="{% url 'ecoles:cours_list' %}" class="btn btn-outline-custom">
                             <i class="fas fa-times me-2"></i> Annuler
                         </a>
-                        <button type="submit" class="btn btn-primary-custom btn-lg px-5">
+                        <button type="submit" class="btn btn-primary-custom">
                             <i class="fas fa-save me-2"></i> Enregistrer
                         </button>
                     </div>
@@ -125,87 +247,201 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+
+{% block extra_css %}
 <style>
-    /* Styles personnalisés pour le formulaire */
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-primary-dark) 100%);
-        color: white;
-        border-radius: var(--radius) var(--radius) 0 0;
-    }
-
-    .bg-gold-soft {
-        background: rgba(201, 144, 58, 0.12);
-    }
-
-    .border-gold {
-        border-color: var(--c-accent) !important;
-    }
-
-    .text-gold {
-        color: var(--c-accent);
-    }
-
-    .eval-row:hover {
-        background-color: rgba(201, 144, 58, 0.06);
-        transition: background-color 0.2s ease;
-    }
-
-    .card-glass {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-        .card-glass:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--c-shadow-hover);
-        }
-
-    .form-control:focus, .form-select:focus {
-        border-color: var(--c-accent);
-        box-shadow: 0 0 0 0.25rem rgba(201, 144, 58, 0.25);
-    }
-
-    .btn-primary-custom {
-        background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-primary-light) 100%);
-        color: #fff;
-        border: none;
-        border-radius: 50px;
+    /* ============================================================
+       LABEL PERSONNALISÉ
+    ============================================================ */
+    .form-label-custom {
+        display: block;
         font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 6px 20px rgba(26, 94, 42, 0.25);
+        font-size: 0.88rem;
+        color: var(--c-text-strong);
+        margin-bottom: 8px;
     }
 
-        .btn-primary-custom:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 32px rgba(26, 94, 42, 0.35);
-            background: linear-gradient(135deg, var(--c-primary-dark) 0%, var(--c-primary) 100%);
-            color: #fff;
+        .form-label-custom i {
+            color: var(--c-primary);
+            font-size: 0.85rem;
         }
 
-    .btn-outline-secondary {
-        border-radius: 50px;
-        border: 2px solid var(--c-border);
-        color: var(--c-text);
-        background: transparent;
-        transition: all 0.3s ease;
+    /* ============================================================
+       BANDEAU D'INFORMATION
+    ============================================================ */
+    .info-banner {
+        display: flex;
+        gap: 12px;
+        background: var(--c-primary-soft);
+        border-left: 4px solid var(--c-primary);
+        border-radius: var(--radius-sm);
+        padding: 14px 18px;
+        margin-bottom: 20px;
     }
 
-        .btn-outline-secondary:hover {
-            background: var(--c-border);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+        .info-banner i {
+            color: var(--c-primary);
+            font-size: 1.1rem;
+            margin-top: 2px;
+            flex-shrink: 0;
         }
 
-    .form-check-input:checked {
-        background-color: var(--c-accent);
-        border-color: var(--c-accent);
-    }
-    /* Animation d'apparition des lignes du formset */
-    .eval-row {
-        animation: fadeInRow 0.3s ease;
+        .info-banner p {
+            font-size: 0.88rem;
+            color: var(--c-text);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .info-banner kbd {
+            background: var(--c-surface);
+            border: 1px solid var(--c-border-strong);
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 0.78rem;
+            color: var(--c-text-strong);
+            font-family: monospace;
+        }
+
+    /* ============================================================
+       SÉLECTION MULTIPLE (SELECT MULTIPLE)
+    ============================================================ */
+    select[multiple] {
+        width: 100%;
+        min-height: 180px;
+        padding: 8px;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--c-border);
+        background: var(--c-surface);
+        color: var(--c-text-strong);
+        font-size: 0.9rem;
+        font-family: 'Inter', sans-serif;
+        transition: border-color var(--transition), box-shadow var(--transition);
+        outline: none;
     }
 
-    @keyframes fadeInRow {
+        select[multiple]:focus {
+            border-color: var(--c-primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+        }
+
+        select[multiple] option {
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 2px;
+            transition: background 0.15s;
+        }
+
+            select[multiple] option:hover {
+                background: var(--c-primary-soft);
+            }
+
+            select[multiple] option:checked {
+                background: linear-gradient(0deg, var(--c-primary) 0%, var(--c-primary) 100%);
+                color: #fff !important;
+            }
+
+    /* ============================================================
+       COMPTEUR DE SÉLECTION
+    ============================================================ */
+    .badge-count {
+        display: inline-block;
+        background: var(--c-primary);
+        color: #fff;
+        padding: 2px 10px;
+        border-radius: var(--radius-full);
+        font-size: 0.72rem;
+        font-weight: 700;
+        margin-left: 6px;
+        min-width: 24px;
+        text-align: center;
+        transition: background 0.2s;
+    }
+
+        .badge-count.has-selection {
+            background: var(--c-teal);
+        }
+
+    /* ============================================================
+       ASTUCE FORMULAIRE
+    ============================================================ */
+    .form-hint {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.78rem;
+        color: var(--c-text-muted);
+        margin-top: 6px;
+    }
+
+        .form-hint i {
+            color: var(--c-accent);
+        }
+
+        .form-hint kbd {
+            background: var(--c-surface-soft);
+            border: 1px solid var(--c-border);
+            border-radius: 3px;
+            padding: 0 5px;
+            font-size: 0.72rem;
+            font-family: monospace;
+        }
+
+    /* ============================================================
+       RÉCAPITULATIF DES COMBINAISONS
+    ============================================================ */
+    .recap-box {
+        background: var(--c-teal-soft);
+        border: 1.5px solid rgba(13, 148, 136, 0.3);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        margin-top: 20px;
+        animation: slideIn 0.3s ease;
+    }
+
+    .recap-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        color: var(--c-teal);
+        font-size: 0.95rem;
+    }
+
+        .recap-header i {
+            font-size: 1.15rem;
+        }
+
+    .recap-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+        .recap-list li {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--c-surface);
+            border: 1px solid rgba(13, 148, 136, 0.3);
+            border-radius: var(--radius-full);
+            padding: 5px 14px;
+            font-size: 0.82rem;
+            color: var(--c-text-strong);
+            font-weight: 500;
+        }
+
+            .recap-list li i {
+                color: var(--c-teal);
+                font-size: 0.75rem;
+            }
+
+    @keyframes slideIn {
         from {
             opacity: 0;
             transform: translateY(-10px);
@@ -216,66 +452,245 @@
             transform: translateY(0);
         }
     }
+
+    /* ============================================================
+       FORM CONTROLS
+    ============================================================ */
+    .form-control,
+    .form-select {
+        background: var(--c-surface-soft);
+        border: 1.5px solid var(--c-border);
+        border-radius: var(--radius-sm);
+        padding: 10px 14px;
+        color: var(--c-text-strong);
+        font-size: 0.9rem;
+        transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--c-primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+            background: var(--c-surface);
+        }
+
+    /* ============================================================
+       TABLEAU D'ÉVALUATIONS
+    ============================================================ */
+    .eval-row:hover {
+        background-color: var(--c-primary-soft);
+        transition: background-color 0.2s ease;
+    }
+
+    .eval-errors-row:empty,
+    .eval-errors-row td:empty {
+        display: none;
+    }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 768px) {
+        select[multiple] {
+            min-height: 140px;
+        }
+
+        .recap-list li {
+            font-size: 0.78rem;
+            padding: 4px 10px;
+        }
+    }
 </style>
+{% endblock %}
+
 
 {% block extra_js %}
-{{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+
+        // ============================================================
+        // CHAMPS DE SÉLECTION
+        // ============================================================
         const niveauSelect = document.getElementById('id_niveau');
         const classeSelect = document.getElementById('id_classe');
         const domaineSelect = document.getElementById('id_domaine');
+        const recapBox = document.getElementById('recapBox');
+        const recapList = document.getElementById('recapList');
+        const classeCount = document.getElementById('classeCount');
+        const domaineCount = document.getElementById('domaineCount');
 
-        function updateFields() {
-            const niveauId = niveauSelect.value;
+        // ============================================================
+        // CONVERSION EN SÉLECTION MULTIPLE
+        // ============================================================
+        if (classeSelect && !classeSelect.multiple) {
+            classeSelect.setAttribute('multiple', 'multiple');
+            classeSelect.setAttribute('size', '8');
+            // Adapter le name pour accepter plusieurs valeurs
+            classeSelect.setAttribute('name', 'classe');
+        }
 
-            // Mise à jour des classes
-            classeSelect.innerHTML = '';
-            const emptyClasse = document.createElement('option');
-            emptyClasse.value = '';
-            emptyClasse.textContent = '-- Sélectionnez une classe --';
-            classeSelect.appendChild(emptyClasse);
+        if (domaineSelect && !domaineSelect.multiple) {
+            domaineSelect.setAttribute('multiple', 'multiple');
+            domaineSelect.setAttribute('size', '8');
+            domaineSelect.setAttribute('name', 'domaine');
+        }
 
-            if (niveauId) {
-                fetch(`/api/classes-par-niveau/?niveau_id=${niveauId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        data.forEach(classe => {
-                            const option = document.createElement('option');
-                            option.value = classe.id;
-                            option.textContent = classe.nom;
-                            classeSelect.appendChild(option);
-                        });
-                    })
-                    .catch(error => console.error('Erreur chargement classes:', error));
+        // ============================================================
+        // MISE À JOUR DES CLASSES ET DOMAINES SELON LE NIVEAU
+        // ============================================================
+        function updateClassesAndDomaines() {
+            const niveauId = niveauSelect ? niveauSelect.value : null;
 
-                // Mise à jour des domaines
+            // Réinitialiser les classes
+            if (classeSelect) {
+                // Sauvegarder les sélections actuelles
+                const selectedClasses = Array.from(classeSelect.selectedOptions).map(o => o.value);
+
+                classeSelect.innerHTML = '';
+
+                if (niveauId) {
+                    fetch(`/api/classes-par-niveau/?niveau_id=${niveauId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            data.forEach(classe => {
+                                const option = document.createElement('option');
+                                option.value = classe.id;
+                                option.textContent = classe.nom;
+                                if (selectedClasses.includes(String(classe.id))) {
+                                    option.selected = true;
+                                }
+                                classeSelect.appendChild(option);
+                            });
+                            updateCounters();
+                            updateRecap();
+                        })
+                        .catch(error => console.error('Erreur chargement classes:', error));
+                } else {
+                    updateCounters();
+                    updateRecap();
+                }
+            }
+
+            // Réinitialiser les domaines
+            if (domaineSelect) {
+                const selectedDomaines = Array.from(domaineSelect.selectedOptions).map(o => o.value);
+
                 domaineSelect.innerHTML = '';
-                const emptyDomaine = document.createElement('option');
-                emptyDomaine.value = '';
-                emptyDomaine.textContent = '-- Sélectionnez un domaine --';
-                domaineSelect.appendChild(emptyDomaine);
 
-                fetch(`/api/domaines-par-niveau/?niveau_id=${niveauId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        data.forEach(domaine => {
-                            const option = document.createElement('option');
-                            option.value = domaine.id;
-                            option.textContent = domaine.nom;
-                            domaineSelect.appendChild(option);
-                        });
-                    })
-                    .catch(error => console.error('Erreur chargement domaines:', error));
+                if (niveauId) {
+                    fetch(`/api/domaines-par-niveau/?niveau_id=${niveauId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            data.forEach(domaine => {
+                                const option = document.createElement('option');
+                                option.value = domaine.id;
+                                option.textContent = domaine.nom;
+                                if (selectedDomaines.includes(String(domaine.id))) {
+                                    option.selected = true;
+                                }
+                                domaineSelect.appendChild(option);
+                            });
+                            updateCounters();
+                            updateRecap();
+                        })
+                        .catch(error => console.error('Erreur chargement domaines:', error));
+                } else {
+                    updateCounters();
+                    updateRecap();
+                }
             }
         }
 
-        niveauSelect.addEventListener('change', updateFields);
-        // Si un niveau est déjà sélectionné (cas d'édition), mettre à jour au chargement
-        if (niveauSelect.value) {
-            updateFields();
+        // ============================================================
+        // COMPTEURS DE SÉLECTION
+        // ============================================================
+        function updateCounters() {
+            if (classeCount && classeSelect) {
+                const count = classeSelect.selectedOptions.length;
+                classeCount.textContent = count;
+                classeCount.classList.toggle('has-selection', count > 0);
+            }
+
+            if (domaineCount && domaineSelect) {
+                const count = domaineSelect.selectedOptions.length;
+                domaineCount.textContent = count;
+                domaineCount.classList.toggle('has-selection', count > 0);
+            }
+        }
+
+        // ============================================================
+        // RÉCAPITULATIF DES COMBINAISONS
+        // ============================================================
+        function updateRecap() {
+            if (!recapBox || !recapList) return;
+
+            const classes = classeSelect ? Array.from(classeSelect.selectedOptions) : [];
+            const domaines = domaineSelect ? Array.from(domaineSelect.selectedOptions) : [];
+
+            if (classes.length === 0 || domaines.length === 0) {
+                recapBox.style.display = 'none';
+                return;
+            }
+
+            const combinations = [];
+            classes.forEach(classe => {
+                domaines.forEach(domaine => {
+                    combinations.push({
+                        classe: classe.textContent,
+                        domaine: domaine.textContent
+                    });
+                });
+            });
+
+            // Limiter l'affichage à 20 pour éviter de surcharger
+            const displayLimit = 20;
+            const total = combinations.length;
+            const displayed = combinations.slice(0, displayLimit);
+
+            let html = '';
+            displayed.forEach(combo => {
+                html += `<li><i class="fas fa-check-circle"></i> ${combo.classe} <span style="color:var(--c-text-muted);">×</span> ${combo.domaine}</li>`;
+            });
+
+            if (total > displayLimit) {
+                html += `<li style="background: var(--c-primary-soft); border-color: var(--c-primary);"><i class="fas fa-plus-circle"></i> et ${total - displayLimit} autre(s)…</li>`;
+            }
+
+            recapList.innerHTML = html;
+            recapBox.style.display = 'block';
+        }
+
+        // ============================================================
+        // ÉVÉNEMENTS
+        // ============================================================
+        if (niveauSelect) {
+            niveauSelect.addEventListener('change', updateClassesAndDomaines);
+        }
+
+        if (classeSelect) {
+            classeSelect.addEventListener('change', function () {
+                updateCounters();
+                updateRecap();
+            });
+        }
+
+        if (domaineSelect) {
+            domaineSelect.addEventListener('change', function () {
+                updateCounters();
+                updateRecap();
+            });
+        }
+
+        // ============================================================
+        // INITIALISATION
+        // ============================================================
+        // Si un niveau est déjà sélectionné (édition), charger les données
+        if (niveauSelect && niveauSelect.value) {
+            updateClassesAndDomaines();
+        } else {
+            updateCounters();
+            updateRecap();
         }
     });
 </script>
-{% endblock %}
 {% endblock %}

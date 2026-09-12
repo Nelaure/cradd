@@ -1,4 +1,4 @@
-from django import forms
+﻿from django import forms
 from django.forms import inlineformset_factory
 from django.db.models import Min
 from crispy_forms.helper import FormHelper
@@ -90,7 +90,6 @@ class EcoleForm(forms.ModelForm):
 
         if self.user:
             if self.user.est_ministre():
-                # Ministre : tout en lecture seule
                 for field in self.fields.values():
                     field.disabled = True
             elif self.user.est_agent() or self.user.est_inspecteur() or self.user.est_proved():
@@ -511,18 +510,49 @@ class DomaineForm(forms.ModelForm):
         return cleaned_data
 
 
+# ===================== COURS FORM AVEC SÉLECTION MULTIPLE =====================
+
 class CoursForm(forms.ModelForm):
+    """
+    Formulaire de création/modification d'un cours.
+    - Permet la sélection MULTIPLE des classes et des domaines.
+    - En mode édition, les sélections actuelles sont pré-cochées.
+    - IMPORTANT : `classe` et `domaine` sont retirés de `Meta.fields`
+      pour empêcher Django d'assigner un QuerySet sur une ForeignKey.
+      La logique multi-cours est gérée dans la vue `cours_create`.
+    """
+
+    classe = forms.ModelMultipleChoiceField(
+        queryset=Classe.objects.none(),  # Redéfini dans __init__
+        required=True,
+        label="Classes",
+        widget=forms.SelectMultiple(attrs={
+            'class': 'form-select',
+            'size': '8',
+        })
+    )
+    domaine = forms.ModelMultipleChoiceField(
+        queryset=Domaine.objects.none(),
+        required=True,
+        label="Domaines",
+        widget=forms.SelectMultiple(attrs={
+            'class': 'form-select',
+            'size': '8',
+        })
+    )
+
     class Meta:
         model = Cours
-        fields = ['nom', 'code', 'coefficient', 'description', 'niveau', 'classe', 'domaine', 'ecole', 'est_reference']
+        # ⚠️ 'classe' et 'domaine' NE DOIVENT PAS être dans Meta.fields
+        # sinon Django essaie d'assigner un QuerySet à une ForeignKey → ValueError
+        fields = ['nom', 'code', 'coefficient', 'description', 'niveau',
+                  'ecole', 'est_reference']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom du cours'}),
             'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code unique'}),
             'coefficient': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '1'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Description'}),
             'niveau': forms.Select(attrs={'class': 'form-select'}),
-            'classe': forms.Select(attrs={'class': 'form-select'}),
-            'domaine': forms.Select(attrs={'class': 'form-select'}),
             'ecole': forms.Select(attrs={'class': 'form-select'}),
             'est_reference': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -533,6 +563,7 @@ class CoursForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if self.is_reference:
+            # ---------- MODE RÉFÉRENCE ----------
             self.fields['ecole'].queryset = Ecole.objects.none()
             self.fields['ecole'].widget = forms.HiddenInput()
             self.fields['ecole'].required = False
@@ -542,6 +573,7 @@ class CoursForm(forms.ModelForm):
             self.fields['classe'].queryset = Classe.objects.filter(est_reference=True, ecole__isnull=True)
             self.fields['domaine'].queryset = Domaine.objects.filter(est_reference=True, ecole__isnull=True)
         else:
+            # ---------- MODE INSTANCE ----------
             if self.user:
                 if self.user.est_ministre():
                     for field in self.fields.values():
@@ -551,7 +583,7 @@ class CoursForm(forms.ModelForm):
                         self.fields[field].disabled = True
                     if self.user.classe_affectation:
                         self.fields['classe'].queryset = Classe.objects.filter(id=self.user.classe_affectation.id)
-                        self.fields['classe'].initial = self.user.classe_affectation.id
+                        self.fields['classe'].initial = [self.user.classe_affectation.id]
                         self.fields['niveau'].queryset = Niveau.objects.filter(id=self.user.niveau_affectation.id) if self.user.niveau_affectation else Niveau.objects.none()
                         self.fields['domaine'].queryset = Domaine.objects.filter(ecole=self.user.ecole_affectation, est_reference=False)
                         self.fields['ecole'].queryset = Ecole.objects.filter(id=self.user.ecole_affectation.id)
@@ -587,10 +619,18 @@ class CoursForm(forms.ModelForm):
                         self.fields['classe'].queryset = Classe.objects.none()
                         self.fields['domaine'].queryset = Domaine.objects.none()
                 else:
+                    # Admin
                     self.fields['ecole'].queryset = Ecole.objects.all()
                     self.fields['niveau'].queryset = Niveau.objects.filter(est_reference=False)
                     self.fields['classe'].queryset = Classe.objects.filter(est_reference=False)
                     self.fields['domaine'].queryset = Domaine.objects.filter(est_reference=False)
+
+        # ---------- Pré-sélection en mode édition ----------
+        if self.instance.pk:
+            if self.instance.classe_id:
+                self.fields['classe'].initial = [self.instance.classe_id]
+            if self.instance.domaine_id:
+                self.fields['domaine'].initial = [self.instance.domaine_id]
 
         self.helper = FormHelper()
         self.helper.form_method = 'post'
@@ -603,12 +643,12 @@ class CoursForm(forms.ModelForm):
             Row(
                 Column('coefficient', css_class='form-group col-md-4'),
                 Column('niveau', css_class='form-group col-md-4'),
-                Column('classe', css_class='form-group col-md-4'),
+                Column('ecole', css_class='form-group col-md-4'),
                 css_class='row'
             ),
             Row(
+                Column('classe', css_class='form-group col-md-6'),
                 Column('domaine', css_class='form-group col-md-6'),
-                Column('ecole', css_class='form-group col-md-6'),
                 css_class='row'
             ),
             Row(
@@ -639,7 +679,7 @@ class CoursForm(forms.ModelForm):
                     raise forms.ValidationError("Vous devez être affecté à une école.")
             if self.user and self.user.est_enseignant():
                 if self.user.classe_affectation:
-                    cleaned_data['classe'] = self.user.classe_affectation
+                    cleaned_data['classe'] = Classe.objects.filter(id=self.user.classe_affectation.id)
                     cleaned_data['niveau'] = self.user.niveau_affectation
                     cleaned_data['ecole'] = self.user.ecole_affectation
                 else:
@@ -813,7 +853,6 @@ class ResultatSelectionForm(forms.Form):
 
         if self.user:
             if self.user.est_ministre():
-                # Ministre n'a pas accès à la saisie
                 self.fields['ecole'].queryset = Ecole.objects.none()
                 self.fields['niveau'].queryset = Niveau.objects.none()
                 self.fields['classe'].queryset = Classe.objects.none()
