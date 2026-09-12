@@ -311,7 +311,7 @@ def dashboard_view(request):
         })
         template = 'ecoles/dashboard_admin.html'
 
-    # ---------- MINISTRE (lecture seule) ----------
+    # ---------- MINISTRE ----------
     elif user.est_ministre():
         provinces = Province.objects.all().order_by('nom')
 
@@ -1477,6 +1477,9 @@ def cours_create(request):
     La configuration du cycle d'évaluation est OPTIONNELLE :
     - Si le switch "Personnaliser" est activé → utilise les paramètres saisis.
     - Sinon → utilise la configuration par défaut (trimestre, 3 cycles, 2 périodes, examen).
+
+    ⚠️ RÈGLE MÉTIER : L'examen vaut TOUJOURS le DOUBLE du points_max des évaluations normales.
+    Exemple : si points_max = 20 pour une période, l'examen vaudra 40 points.
     """
     user = request.user
     if not (user.est_administrateur() or user.est_agent()):
@@ -1560,8 +1563,10 @@ def cours_create(request):
                             nb_periodes = config_data['periodes_par_cycle']
                             inclure_examen = config_data['inclure_examen']
                             pts_max = config_data['points_max']
+                            pts_max_examen = pts_max * 2  # ⚠️ L'examen vaut le DOUBLE
 
                             for cycle_num in range(1, nb_cycles + 1):
+                                # Périodes normales
                                 for periode_num in range(1, nb_periodes + 1):
                                     EvaluationConfig.objects.create(
                                         cycle_evaluation=cycle_eval,
@@ -1571,17 +1576,18 @@ def cours_create(request):
                                         points_max=pts_max,
                                         ordre=periode_num
                                     )
+                                # Examen (double des points)
                                 if inclure_examen:
                                     EvaluationConfig.objects.create(
                                         cycle_evaluation=cycle_eval,
                                         cycle_num=cycle_num,
                                         periode_num=None,
                                         type='examen',
-                                        points_max=pts_max,
+                                        points_max=pts_max_examen,
                                         ordre=nb_periodes + 1
                                     )
                         else:
-                            # Config par défaut (trimestre, 3 cycles, 2 périodes, examen)
+                            # Config par défaut (trimestre, 3 cycles, 2 périodes, examen ×2)
                             cycle_eval.creer_evaluations_par_defaut()
 
                         created_cours.append(cours)

@@ -518,13 +518,11 @@ class CoursForm(forms.ModelForm):
     - Permet la sélection MULTIPLE des classes et des domaines.
     - `classe` et `domaine` sont exclus de `Meta.fields` pour éviter
       l'assignation d'un QuerySet sur une ForeignKey.
-    - La configuration du cycle d'évaluation est OPTIONNELLE :
-      elle est gérée séparément via `cycle_form` et `formset` dans la vue.
     - En mode édition, les classes/domaines sélectionnées sont pré-cochées.
     """
 
     classe = forms.ModelMultipleChoiceField(
-        queryset=Classe.objects.none(),  # Redéfini dans __init__
+        queryset=Classe.objects.none(),
         required=True,
         label="Classes",
         widget=forms.SelectMultiple(attrs={
@@ -545,7 +543,6 @@ class CoursForm(forms.ModelForm):
     class Meta:
         model = Cours
         # ⚠️ 'classe' et 'domaine' NE DOIVENT PAS être dans Meta.fields
-        # sinon Django essaie d'assigner un QuerySet à une ForeignKey → ValueError
         fields = ['nom', 'code', 'coefficient', 'description', 'niveau',
                   'ecole', 'est_reference']
         widgets = {
@@ -564,7 +561,6 @@ class CoursForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if self.is_reference:
-            # ---------- MODE RÉFÉRENCE ----------
             self.fields['ecole'].queryset = Ecole.objects.none()
             self.fields['ecole'].widget = forms.HiddenInput()
             self.fields['ecole'].required = False
@@ -574,7 +570,6 @@ class CoursForm(forms.ModelForm):
             self.fields['classe'].queryset = Classe.objects.filter(est_reference=True, ecole__isnull=True)
             self.fields['domaine'].queryset = Domaine.objects.filter(est_reference=True, ecole__isnull=True)
         else:
-            # ---------- MODE INSTANCE ----------
             if self.user:
                 if self.user.est_ministre():
                     for field in self.fields.values():
@@ -620,7 +615,6 @@ class CoursForm(forms.ModelForm):
                         self.fields['classe'].queryset = Classe.objects.none()
                         self.fields['domaine'].queryset = Domaine.objects.none()
                 else:
-                    # Admin
                     self.fields['ecole'].queryset = Ecole.objects.all()
                     self.fields['niveau'].queryset = Niveau.objects.filter(est_reference=False)
                     self.fields['classe'].queryset = Classe.objects.filter(est_reference=False)
@@ -628,7 +622,6 @@ class CoursForm(forms.ModelForm):
 
         # ---------- Pré-sélection en mode édition ----------
         if self.instance.pk:
-            # Récupérer les classes/domaines existants pour ce cours
             if self.instance.classe_id:
                 self.fields['classe'].initial = [self.instance.classe_id]
             if self.instance.domaine_id:
@@ -700,7 +693,10 @@ class CycleEvaluationConfigForm(forms.Form):
     Formulaire OPTIONNEL de configuration du cycle d'évaluation.
     Utilisé lors de la création d'un cours pour personnaliser
     le nombre de cycles, les périodes et examens.
+
+    ⚠️ RÈGLE MÉTIER : L'examen vaut le DOUBLE du points_max des évaluations normales.
     """
+
     CYCLE_TYPES = (
         ('trimestre', 'Trimestriel (3 cycles)'),
         ('semestre', 'Semestriel (2 cycles)'),
@@ -743,7 +739,7 @@ class CycleEvaluationConfigForm(forms.Form):
     inclure_examen = forms.BooleanField(
         initial=True,
         required=False,
-        label="Inclure un examen par cycle",
+        label="Inclure un examen par cycle (valeur ×2)",
         widget=forms.CheckboxInput(attrs={
             'class': 'form-check-input',
             'id': 'id_inclure_examen'
@@ -755,7 +751,8 @@ class CycleEvaluationConfigForm(forms.Form):
         max_value=100,
         initial=20,
         required=False,
-        label="Points max par évaluation",
+        label="Points max par période",
+        help_text="L'examen vaudra automatiquement le double de cette valeur.",
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'id': 'id_points_max',
@@ -886,8 +883,6 @@ EvaluationConfigFormSet = inlineformset_factory(
     min_num=0,
 )
 
-
-# ===================== RÉSULTATS =====================
 
 class ResultatSelectionForm(forms.Form):
     ecole = forms.ModelChoiceField(

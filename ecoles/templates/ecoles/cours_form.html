@@ -158,8 +158,8 @@
                             <i class="fas fa-info-circle"></i>
                             <p>
                                 Ces paramètres seront appliqués à <strong>tous les cours</strong> créés.
-                                Par défaut, chaque cours reçoit un cycle <em>trimestriel</em> avec
-                                <strong>3 cycles</strong>, <strong>2 périodes</strong> et <strong>1 examen</strong> par cycle.
+                                ⚠️ <strong>L'examen vaut automatiquement le DOUBLE des points par période.</strong>
+                                Ex : si périodes = 20 pts, l'examen vaudra <strong>40 pts</strong>.
                             </p>
                         </div>
                         <div class="row g-3">
@@ -186,6 +186,9 @@
                                     <i class="fas fa-star me-1"></i> {{ cycle_config_form.points_max.label }}
                                 </label>
                                 {{ cycle_config_form.points_max }}
+                                <div class="form-hint">
+                                    <i class="fas fa-info-circle"></i> L'examen vaudra <strong id="previewExamenPts">40</strong> pts (×2)
+                                </div>
                             </div>
                             <div class="col-md-6 d-flex align-items-end">
                                 <div class="form-check">
@@ -534,7 +537,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 4px 0;
+            padding: 6px 0;
+            flex-wrap: wrap;
         }
 
             .preview-content .cycle-line strong {
@@ -551,6 +555,13 @@
             font-size: 0.75rem;
             color: var(--c-text-muted);
             margin-right: 4px;
+        }
+
+        .preview-content .badge-examen {
+            background: var(--c-accent-soft);
+            border-color: var(--c-accent);
+            color: var(--c-accent-dark);
+            font-weight: 700;
         }
 
     /* ============ Form controls ============ */
@@ -778,6 +789,7 @@
         const toggleCycleConfig = document.getElementById('toggleCycleConfig');
         const cycleConfigSection = document.getElementById('cycleConfigSection');
         const previewContent = document.getElementById('previewContent');
+        const previewExamenPts = document.getElementById('previewExamenPts');
 
         if (toggleCycleConfig && cycleConfigSection) {
             toggleCycleConfig.addEventListener('change', function () {
@@ -810,6 +822,12 @@
             const nbPer = parseInt(periodesEl?.value || 2);
             const inclExam = inclureExamenEl?.checked ?? true;
             const pts = parseInt(pointsMaxEl?.value || 20);
+            const ptsExamen = pts * 2;  // ⚠️ Examen = ×2
+
+            // Mise à jour du hint
+            if (previewExamenPts) {
+                previewExamenPts.textContent = ptsExamen;
+            }
 
             let html = '';
             for (let c = 1; c <= nb; c++) {
@@ -818,7 +836,7 @@
                     line += `<span class="badge-mini">Période ${p} (${pts} pts)</span>`;
                 }
                 if (inclExam) {
-                    line += `<span class="badge-mini">Examen (${pts} pts)</span>`;
+                    line += `<span class="badge-mini badge-examen">Examen (${ptsExamen} pts)</span>`;
                 }
                 line += `</div>`;
                 html += line;
