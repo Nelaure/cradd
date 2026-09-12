@@ -28,7 +28,6 @@ class AuditLogMiddleware(MiddlewareMixin):
     - Journalise les visites (GET) pour tous les visiteurs (anonymes ou connectés) sur les pages importantes.
     """
 
-    # URLs à ignorer (pour éviter la pollution du journal)
     IGNORE_PATHS = [
         r'^/static/',
         r'^/media/',
@@ -40,7 +39,6 @@ class AuditLogMiddleware(MiddlewareMixin):
     ]
 
     def process_request(self, request):
-        # Cette méthode peut être utilisée pour d'autres traitements, mais nous laissons vide pour l'instant
         pass
 
     def process_response(self, request, response):
@@ -48,7 +46,6 @@ class AuditLogMiddleware(MiddlewareMixin):
         if request.method == 'POST' and request.user.is_authenticated:
             path = request.path
 
-            # Déterminer le type d'action
             action = None
             model_name = None
 
@@ -59,7 +56,6 @@ class AuditLogMiddleware(MiddlewareMixin):
             elif '/edit/' in path or '/modifier/' in path:
                 action = AuditLog.ActionType.UPDATE
 
-            # Déterminer le modèle
             if '/ecoles/' in path:
                 model_name = AuditLog.ModelName.ECOLE
             elif '/niveaux/' in path:
@@ -96,19 +92,14 @@ class AuditLogMiddleware(MiddlewareMixin):
         # --- 2. Journaliser les visites (GET) pour tous ---
         if request.method == 'GET' and response.status_code < 400:
             path = request.path
-            # Ignorer les chemins statiques et ceux définis
             for pattern in self.IGNORE_PATHS:
                 if re.match(pattern, path):
                     return response
 
-            # On enregistre pour toutes les pages, sauf les ressources statiques, pour avoir une vue complète des visiteurs.
-            # Option : limiter aux pages importantes pour réduire le volume.
-            # Ici on enregistre tout GET (hors IGNORE_PATHS).
             user = request.user if request.user.is_authenticated else None
             ip = get_client_ip(request)
             user_agent = request.META.get('HTTP_USER_AGENT', '')
 
-            # On peut ajouter un message contenant le chemin
             log_audit(
                 user=user,
                 action=AuditLog.ActionType.VIEW,

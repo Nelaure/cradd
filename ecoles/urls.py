@@ -33,18 +33,14 @@ urlpatterns = [
     path('niveaux/modifier/<int:pk>/', views.niveau_edit, name='niveau_edit'),
     path('niveaux/supprimer/<int:pk>/', views.niveau_delete, name='niveau_delete'),
     path('niveaux/affecter/<int:pk>/', views.niveau_affecter_ecole, name='niveau_affecter'),
+    path('niveaux/synchroniser/<int:pk>/', views.synchroniser_niveau, name='synchroniser_niveau'),
+    path('niveaux/sync-report/', views.sync_report, name='sync_report'),
 
-    # === NOUVEAUX : SECTIONS ===
+    # Sections
     path('sections/', views.section_list, name='section_list'),
     path('sections/creer/', views.section_create, name='section_create'),
     path('sections/modifier/<int:pk>/', views.section_edit, name='section_edit'),
     path('sections/supprimer/<int:pk>/', views.section_delete, name='section_delete'),
-
-    # === NOUVEAUX : OPTIONS ===
-    path('options/', views.option_list, name='option_list'),
-    path('options/creer/', views.option_create, name='option_create'),
-    path('options/modifier/<int:pk>/', views.option_edit, name='option_edit'),
-    path('options/supprimer/<int:pk>/', views.option_delete, name='option_delete'),
 
     # Classes
     path('classes/', views.classe_list, name='classe_list'),
@@ -94,5 +90,4 @@ urlpatterns = [
     path('api/domaines-par-niveau/', views.api_get_domaines_by_niveau, name='api_get_domaines_by_niveau'),
     path('api/eleves/', views.api_get_eleves, name='api_get_eleves'),
     path('api/cours/', views.api_get_cours, name='api_get_cours'),
-    path('api/options-par-section/', views.api_get_options_by_section, name='api_get_options_by_section'),
 ]

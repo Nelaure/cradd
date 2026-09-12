@@ -28,6 +28,18 @@ class SoftDeleteMixin(models.Model):
         return self.deleted_at is not None
 
 
+# ===================== FONCTION UTILITAIRE POUR GÉNÉRER UN CODE UNIQUE =====================
+def generer_code_unique(base_code):
+    if not base_code:
+        base_code = "COURS"
+    code = base_code
+    suffix = 1
+    while Cours.objects.filter(code=code).exists():
+        code = f"{base_code}_{suffix}"
+        suffix += 1
+    return code
+
+
 # ===================== PROVINCE =====================
 class Province(SoftDeleteMixin):
     nom = models.CharField(max_length=100, unique=True)
@@ -41,7 +53,7 @@ class Province(SoftDeleteMixin):
         return self.nom
 
 
-# ===================== SECTION ET OPTION =====================
+# ===================== SECTION =====================
 class Section(models.Model):
     nom = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True, null=True, blank=True)
@@ -53,21 +65,6 @@ class Section(models.Model):
 
     def __str__(self):
         return self.nom
-
-
-class Option(models.Model):
-    nom = models.CharField(max_length=100)
-    code = models.CharField(max_length=20, unique=True, null=True, blank=True)
-    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='options')
-    description = models.TextField(blank=True)
-    ordre = models.PositiveSmallIntegerField(default=0)
-
-    class Meta:
-        ordering = ['section__ordre', 'ordre', 'nom']
-        unique_together = ['nom', 'section']
-
-    def __str__(self):
-        return f"{self.nom} ({self.section.nom})"
 
 
 # ===================== ECOLE =====================
@@ -101,7 +98,7 @@ class Ecole(SoftDeleteMixin):
         return self.nom
 
 
-# ===================== NIVEAU (MODIFIÉ) =====================
+# ===================== NIVEAU =====================
 class Niveau(SoftDeleteMixin):
     nom = models.CharField(max_length=50)
     description = models.TextField(blank=True)
@@ -109,25 +106,21 @@ class Niveau(SoftDeleteMixin):
     ecole = models.ForeignKey(Ecole, on_delete=models.CASCADE, null=True, blank=True, related_name='niveaux')
     est_reference = models.BooleanField(default=False)
     section = models.ForeignKey(Section, on_delete=models.SET_NULL, null=True, blank=True, related_name='niveaux')
-    option = models.ForeignKey(Option, on_delete=models.SET_NULL, null=True, blank=True, related_name='niveaux')
 
     objects = SoftDeleteManager()
     all_objects = models.Manager()
 
     class Meta:
-        # CONTRAINTE MODIFIÉE : permet plusieurs instances du même nom si section/option diffèrent
-        unique_together = [['nom', 'ecole', 'section', 'option']]
+        unique_together = [['nom', 'ecole', 'section']]
         indexes = [
             models.Index(fields=['ecole', 'est_reference']),
-            models.Index(fields=['section', 'option']),
+            models.Index(fields=['section']),
         ]
 
     def __str__(self):
         base = f"{self.nom}"
         if self.section:
             base += f" - {self.section.nom}"
-        if self.option:
-            base += f" ({self.option.nom})"
         return base + (" (réf.)" if self.est_reference else "")
 
     def clean(self):
@@ -135,30 +128,32 @@ class Niveau(SoftDeleteMixin):
             raise ValidationError("Une référence ne peut pas être associée à une école.")
         if not self.est_reference and self.ecole is None:
             raise ValidationError("Une instance doit être associée à une école.")
-        if self.option and self.section and self.option.section != self.section:
-            raise ValidationError("L'option choisie ne correspond pas à la section sélectionnée.")
+        if self.est_reference and self.ecole is None and self.section is not None:
+            existing = Niveau.objects.filter(
+                est_reference=True,
+                ecole__isnull=True,
+                nom=self.nom,
+                section=self.section
+            ).exclude(pk=self.pk).exists()
+            if existing:
+                raise ValidationError(
+                    f"Un niveau de référence avec le nom '{self.nom}' et la section '{self.section.nom}' existe déjà."
+                )
 
-    def affecter_a_ecole(self, ecole, section=None, option=None):
-        """
-        Crée une copie (instance) du niveau de référence dans l'école donnée.
-        Si section et/ou option sont fournis, ils remplacent ceux du niveau de référence.
-        """
+    def affecter_a_ecole(self, ecole, section=None):
         if not self.est_reference or self.ecole is not None:
             raise ValueError("Seul un niveau de référence peut être affecté à une école.")
-        # Vérification d'existence basée sur la combinaison (nom, ecole, section, option)
+
         section_a_utiliser = section if section is not None else self.section
-        option_a_utiliser = option if option is not None else self.option
 
         if Niveau.objects.filter(
             nom=self.nom,
             ecole=ecole,
             section=section_a_utiliser,
-            option=option_a_utiliser,
             est_reference=False
         ).exists():
             raise ValidationError(
-                f"Le niveau '{self.nom}' avec la section '{section_a_utiliser.nom if section_a_utiliser else '-'}' "
-                f"et l'option '{option_a_utiliser.nom if option_a_utiliser else '-'}' existe déjà dans cette école."
+                f"Le niveau '{self.nom}' avec la section '{section_a_utiliser.nom if section_a_utiliser else '-'}' existe déjà dans cette école."
             )
 
         nouveau_niveau = Niveau.objects.create(
@@ -167,8 +162,7 @@ class Niveau(SoftDeleteMixin):
             ordre=self.ordre,
             ecole=ecole,
             est_reference=False,
-            section=section_a_utiliser,
-            option=option_a_utiliser
+            section=section_a_utiliser
         )
 
         classes_ref = Classe.objects.filter(niveau=self, ecole=None, est_reference=True)
@@ -235,6 +229,252 @@ class Niveau(SoftDeleteMixin):
                     points_max=config_ref.points_max,
                     ordre=config_ref.ordre
                 )
+
+    def synchroniser_vers_ecoles(self, **kwargs):
+        """
+        Synchronise ce niveau de référence vers toutes ses instances (écoles).
+        Retourne un rapport détaillé avec succès, erreurs, mises à jour,
+        et compte des doublons nettoyés.
+
+        Paramètres optionnels :
+            force_delete_notes (bool) : si True, supprime les évaluations orphelines
+                                        même si des notes existent (perte de données).
+        """
+        force_delete = kwargs.get('force_delete_notes', False)
+
+        if not self.est_reference or self.ecole is not None:
+            return {
+                'success': False,
+                'message': "Seul un niveau de référence peut être synchronisé."
+            }
+
+        rapport = {
+            'success': True,
+            'niveau_ref': str(self),
+            'instances_traitees': 0,
+            'classes_ajoutees': 0,
+            'classes_modifiees': 0,
+            'cours_ajoutes': 0,
+            'cours_modifies': 0,
+            'evaluations_ajoutees': 0,
+            'evaluations_modifiees': 0,
+            'evaluations_supprimees': 0,
+            'evaluations_bloquees': 0,
+            'doublons_nettoyes': 0,
+            'erreurs': [],
+            'details_ecoles': []
+        }
+
+        instances = Niveau.objects.filter(
+            est_reference=False,
+            ecole__isnull=False,
+            nom=self.nom,
+            section=self.section
+        )
+
+        for niveau_instance in instances:
+            ecole = niveau_instance.ecole
+            details_ecole = {
+                'ecole': ecole.nom,
+                'classes_traitees': 0,
+                'classes_ajoutees': 0,
+                'classes_modifiees': 0,
+                'cours_ajoutes': 0,
+                'cours_modifies': 0,
+                'evaluations_ajoutees': 0,
+                'evaluations_modifiees': 0,
+                'evaluations_supprimees': 0,
+                'erreurs': []
+            }
+
+            classes_ref = Classe.objects.filter(niveau=self, ecole=None, est_reference=True)
+            for classe_ref in classes_ref:
+                classe_instance, created = Classe.objects.get_or_create(
+                    nom=classe_ref.nom,
+                    niveau=niveau_instance,
+                    ecole=ecole,
+                    defaults={
+                        'description': classe_ref.description,
+                        'ordre': classe_ref.ordre,
+                        'est_reference': False
+                    }
+                )
+                if created:
+                    details_ecole['classes_ajoutees'] += 1
+                    rapport['classes_ajoutees'] += 1
+                else:
+                    modifie = False
+                    if classe_instance.description != classe_ref.description:
+                        classe_instance.description = classe_ref.description
+                        modifie = True
+                    if classe_instance.ordre != classe_ref.ordre:
+                        classe_instance.ordre = classe_ref.ordre
+                        modifie = True
+                    if modifie:
+                        classe_instance.save()
+                        details_ecole['classes_modifiees'] += 1
+                        rapport['classes_modifiees'] += 1
+
+                details_ecole['classes_traitees'] += 1
+
+                # 2. Mapping des domaines
+                cours_ref_queryset = Cours.objects.filter(classe=classe_ref, ecole=None, est_reference=True)
+                domaines_ref_ids = cours_ref_queryset.values_list('domaine_id', flat=True).distinct()
+
+                domaine_map = {}
+                for domaine_ref_id in domaines_ref_ids:
+                    domaine_ref = Domaine.objects.get(pk=domaine_ref_id)
+                    domaine_instance, _ = Domaine.objects.get_or_create(
+                        nom=domaine_ref.nom,
+                        ecole=ecole,
+                        defaults={
+                            'description': domaine_ref.description,
+                            'est_reference': False
+                        }
+                    )
+                    domaine_map[domaine_ref_id] = domaine_instance
+
+                # 3. Synchroniser les cours
+                for cours_ref in cours_ref_queryset:
+                    domaine_instance = domaine_map[cours_ref.domaine_id]
+
+                    cours_existant = Cours.objects.filter(
+                        nom=cours_ref.nom,
+                        niveau=niveau_instance,
+                        classe=classe_instance,
+                        domaine=domaine_instance,
+                        ecole=ecole,
+                        est_reference=False
+                    ).first()
+
+                    if cours_existant:
+                        modifie = False
+                        if cours_existant.coefficient != cours_ref.coefficient:
+                            cours_existant.coefficient = cours_ref.coefficient
+                            modifie = True
+                        if cours_existant.description != cours_ref.description:
+                            cours_existant.description = cours_ref.description
+                            modifie = True
+                        if modifie:
+                            cours_existant.save()
+                            details_ecole['cours_modifies'] += 1
+                            rapport['cours_modifies'] += 1
+                        cours_instance = cours_existant
+                    else:
+                        base_code = cours_ref.code
+                        code_candidat = base_code
+                        suffix = 1
+                        while Cours.objects.filter(code=code_candidat).exists():
+                            code_candidat = f"{base_code}_{suffix}"
+                            suffix += 1
+
+                        cours_instance = Cours.objects.create(
+                            nom=cours_ref.nom,
+                            code=code_candidat,
+                            coefficient=cours_ref.coefficient,
+                            description=cours_ref.description,
+                            niveau=niveau_instance,
+                            classe=classe_instance,
+                            domaine=domaine_instance,
+                            ecole=ecole,
+                            est_reference=False
+                        )
+                        details_ecole['cours_ajoutes'] += 1
+                        rapport['cours_ajoutes'] += 1
+
+                    # 4. Cycle d'évaluation
+                    cycle_ref, _ = CycleEvaluation.objects.get_or_create(cours=cours_ref)
+                    if not cycle_ref.evaluations.exists():
+                        cycle_ref.creer_evaluations_par_defaut()
+
+                    cycle_instance, cycle_created = CycleEvaluation.objects.get_or_create(
+                        cours=cours_instance,
+                        defaults={'type_cycle': cycle_ref.type_cycle}
+                    )
+                    if not cycle_created and cycle_instance.type_cycle != cycle_ref.type_cycle:
+                        cycle_instance.type_cycle = cycle_ref.type_cycle
+                        cycle_instance.save()
+
+                    # 5. Nettoyer les doublons existants (préventif)
+                    doublons_supprimes = cycle_instance.nettoyer_evaluations()
+                    rapport['doublons_nettoyes'] += doublons_supprimes
+
+                    # 6. DIFF des configurations d'évaluation
+                    configs_ref = { (c.cycle_num, c.periode_num, c.type): c for c in cycle_ref.evaluations.all() }
+                    configs_inst = { (c.cycle_num, c.periode_num, c.type): c for c in cycle_instance.evaluations.all() }
+
+                    # 6a. Supprimer les configurations orphelines (dans inst mais pas dans ref)
+                    for key, config_inst in list(configs_inst.items()):
+                        if key not in configs_ref:
+                            has_notes = EvaluationResultat.objects.filter(evaluation_config=config_inst).exists()
+                            if has_notes:
+                                if force_delete:
+                                    # Supprimer les notes ET la config
+                                    EvaluationResultat.objects.filter(evaluation_config=config_inst).delete()
+                                    config_inst.delete()
+                                    details_ecole['evaluations_supprimees'] += 1
+                                    rapport['evaluations_supprimees'] += 1
+                                else:
+                                    # Comportement normal : bloquer
+                                    details_ecole['erreurs'].append(
+                                        f"Configuration orpheline pour le cours '{cours_ref.nom}' (cycle {config_inst.cycle_num}, {config_inst.get_type_display()}) : "
+                                        f"des notes existent, suppression impossible."
+                                    )
+                                    rapport['evaluations_bloquees'] += 1
+                            else:
+                                config_inst.delete()
+                                details_ecole['evaluations_supprimees'] += 1
+                                rapport['evaluations_supprimees'] += 1
+
+                    # 6b. Ajouter ou mettre à jour les configurations de référence
+                    for key, config_ref in configs_ref.items():
+                        if key in configs_inst:
+                            config_inst = configs_inst[key]
+                            # Mise à jour points_max et ordre
+                            if config_ref.points_max != config_inst.points_max:
+                                notes = EvaluationResultat.objects.filter(evaluation_config=config_inst)
+                                if notes.filter(points_obtenus__gt=config_ref.points_max).exists():
+                                    details_ecole['erreurs'].append(
+                                        f"Évaluation {config_ref.get_type_display()} du cours '{cours_ref.nom}' (cycle {config_ref.cycle_num}) : "
+                                        f"impossible de réduire points_max à {config_ref.points_max} car des notes dépassent."
+                                    )
+                                    rapport['evaluations_bloquees'] += 1
+                                else:
+                                    config_inst.points_max = config_ref.points_max
+                                    config_inst.ordre = config_ref.ordre
+                                    config_inst.save()
+                                    details_ecole['evaluations_modifiees'] += 1
+                                    rapport['evaluations_modifiees'] += 1
+                            elif config_inst.ordre != config_ref.ordre:
+                                config_inst.ordre = config_ref.ordre
+                                config_inst.save()
+                                details_ecole['evaluations_modifiees'] += 1
+                                rapport['evaluations_modifiees'] += 1
+                        else:
+                            # Ajout d'une nouvelle configuration
+                            EvaluationConfig.objects.create(
+                                cycle_evaluation=cycle_instance,
+                                cycle_num=config_ref.cycle_num,
+                                periode_num=config_ref.periode_num,
+                                type=config_ref.type,
+                                points_max=config_ref.points_max,
+                                ordre=config_ref.ordre
+                            )
+                            details_ecole['evaluations_ajoutees'] += 1
+                            rapport['evaluations_ajoutees'] += 1
+
+            # Fin de la boucle des classes
+            rapport['details_ecoles'].append(details_ecole)
+            rapport['instances_traitees'] += 1
+
+        if rapport['evaluations_bloquees'] > 0:
+            rapport['success'] = False
+            rapport['message'] = f"Des conflits de notes ont empêché certaines mises à jour. Voir détails."
+
+        if rapport['doublons_nettoyes'] > 0:
+            rapport['message'] = rapport.get('message', '') + f" {rapport['doublons_nettoyes']} doublon(s) d'évaluations nettoyé(s)."
+
+        return rapport
 
 
 # ===================== CLASSE =====================
@@ -376,6 +616,35 @@ class CycleEvaluation(models.Model):
                 type='examen',
                 defaults={'points_max': 20, 'ordre': 3}
             )
+
+    def nettoyer_evaluations(self):
+        """
+        Supprime les doublons d'évaluations pour ce cycle.
+        Retourne le nombre de configurations supprimées.
+        """
+        nb_cycles = self.get_nombre_cycles()
+        configs = self.evaluations.filter(cycle_num__lte=nb_cycles).order_by('cycle_num', 'ordre')
+        unique = {}
+        deleted_count = 0
+        for config in configs:
+            if config.type == 'periode' and config.periode_num is None:
+                config.delete()
+                deleted_count += 1
+                continue
+            if config.type not in ['periode', 'examen']:
+                config.delete()
+                deleted_count += 1
+                continue
+            key = (config.cycle_num, config.periode_num, config.type)
+            if key in unique:
+                config.delete()
+                deleted_count += 1
+            else:
+                unique[key] = config
+        # Si aucune config valide, recréer par défaut
+        if not self.evaluations.exists():
+            self.creer_evaluations_par_defaut()
+        return deleted_count
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

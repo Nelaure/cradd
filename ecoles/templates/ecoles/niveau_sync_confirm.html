@@ -1,0 +1,95 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Confirmation de synchronisation - Cradd{% endblock %}
+{% block page_heading %}Synchroniser le niveau « {{ niveau.nom }} »{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card-glass">
+        <div class="card-header bg-primary text-white">
+            <i class="fas fa-sync-alt me-2"></i> Synchronisation du niveau de référence
+        </div>
+        <div class="card-body">
+            <p>
+                Vous êtes sur le point de synchroniser le niveau de référence <strong>{{ niveau.nom }}</strong>
+                vers toutes les écoles qui en possèdent une instance.
+            </p>
+
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Attention :</strong> Cette opération va :
+                <ul class="mb-0 mt-2">
+                    <li>Ajouter les nouvelles classes, cours et évaluations</li>
+                    <li>Mettre à jour les coefficients, descriptions et configurations existantes</li>
+                    <li>Supprimer les évaluations qui n'existent plus dans la référence <strong>si elles n'ont pas de notes</strong></li>
+                    <li>Bloquer la suppression si des notes sont attachées (sauf si vous cochez l'option ci-dessous)</li>
+                </ul>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="force_delete" id="forceDelete">
+                    <label class="form-check-label" for="forceDelete">
+                        <strong>Forcer la suppression</strong> des évaluations orphelines même si des notes existent
+                        <span class="text-danger">(⚠️ les notes seront définitivement perdues)</span>
+                    </label>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-warning btn-lg">
+                        <i class="fas fa-sync-alt me-2"></i> Lancer la synchronisation
+                    </button>
+                    <a href="{% url 'ecoles:niveau_list' %}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-times me-2"></i> Annuler
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-glass {
+        background: var(--c-surface, #ffffff);
+        border-radius: var(--radius, 16px);
+        border: 1px solid var(--c-border, rgba(26,94,42,0.10));
+        box-shadow: var(--c-shadow, 0 8px 30px rgba(0,0,0,0.05));
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+        .card-glass .card-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--c-border);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .card-glass .card-body {
+            padding: 24px;
+        }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #f0ad4e, #ec971f);
+        border: none;
+        color: #fff;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 20px rgba(240, 173, 78, 0.25);
+    }
+
+        .btn-warning:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 32px rgba(240, 173, 78, 0.35);
+            color: #fff;
+        }
+
+    .form-check-input:checked {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+</style>
+{% endblock %}

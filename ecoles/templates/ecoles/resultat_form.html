@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Saisie des résultats - Cradd{% endblock %}
+{% block title %}Saisie des résultats - CRADD{% endblock %}
 {% block page_heading %}Saisie des résultats{% endblock %}
 
 {% block content %}
@@ -11,6 +12,7 @@
                 <i class="fas fa-pen text-gold me-2"></i> Saisie des résultats
             </div>
             <div class="card-body">
+
                 {% if not form %}
                 <!-- ===== MODE SÉLECTION ===== -->
                 <form method="get" id="selectionForm" novalidate>
@@ -22,8 +24,10 @@
                             {% if field.errors %}
                             <div class="text-danger small">{{ field.errors|striptags }}</div>
                             {% endif %}
-                            {% if field.name == 'cours' and field.errors %}
-                            <div class="invalid-feedback d-block">Veuillez sélectionner un cours.</div>
+                            {% if field.name == 'niveau' %}
+                            <div id="section_display" class="form-text mt-1">
+                                <i class="fas fa-tag text-gold me-1"></i> Section : <span id="section_name">-</span>
+                            </div>
                             {% endif %}
                         </div>
                         {% endfor %}
@@ -34,8 +38,10 @@
                         </div>
                     </div>
                 </form>
+
                 {% else %}
                 <!-- ===== MODE SAISIE ===== -->
+                <!-- Informations de l'élève et du cours -->
                 <div class="mb-4">
                     <div class="row g-3">
                         <div class="col-md-4">
@@ -61,7 +67,19 @@
                     </div>
                 </div>
 
-                <!-- Tableau récapitulatif des notes existantes -->
+                <!-- Messages (nettoyage, synchronisation, etc.) -->
+                {% if messages %}
+                {% for message in messages %}
+                {% if message.tags == 'warning' or message.tags == 'info' %}
+                <div class="alert alert-{{ message.tags }} bg-gold-soft border-0">
+                    <i class="fas fa-{% if message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} text-gold me-2"></i>
+                    {{ message }}
+                </div>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+
+                <!-- Résultats déjà saisis -->
                 {% if resultats_existants %}
                 <div class="mb-4">
                     <h6 class="border-bottom pb-2 text-gold">
@@ -101,14 +119,14 @@
                     <!-- Totaux par cycle -->
                     {% if resultats_par_cycle %}
                     <div class="mt-2 d-flex flex-wrap gap-2">
-                        {% for cycle, liste in resultats_par_cycle.items %}
+                        {% for cycle_num, liste in resultats_par_cycle.items %}
                         {% with total_obtenu=0 total_possible=0 %}
                         {% for r in liste %}
                         {% with total_obtenu=total_obtenu|add:r.points_obtenus total_possible=total_possible|add:r.evaluation_config.points_max %}
                         {% endwith %}
                         {% endfor %}
                         <span class="badge bg-gold-soft text-gold p-2">
-                            Cycle {{ cycle }} :
+                            Cycle {{ cycle_num }} :
                             {% if total_possible > 0 %}
                             {{ total_obtenu|floatformat:1 }} / {{ total_possible }}
                             ({{ total_obtenu|divisibleby:total_possible|floatformat:1 }}%)
@@ -129,36 +147,50 @@
                 </div>
                 {% endif %}
 
-                <!-- Formulaire de saisie/modification -->
+                <!-- Formulaire de saisie -->
                 <form method="post" novalidate>
                     {% csrf_token %}
 
-                    <div class="row g-3">
-                        {% for field in form %}
-                        {% if field.name != '__error__' %}
-                        <div class="col-md-6">
-                            <label for="{{ field.id_for_label }}" class="form-label">
-                                {{ field.label }}
-                                {% if field.help_text %}
-                                <small class="text-muted">({{ field.help_text }})</small>
+                    {% if form.fields %}
+                    <!-- Regroupement par cycle_num -->
+                    {% regroup form.visible_fields by field.cycle_num as fields_by_cycle %}
+                    {% for cycle_group in fields_by_cycle %}
+                    {% if cycle_group.grouper is not None %}
+                    <div class="cycle-block mb-4">
+                        <h6 class="text-gold border-bottom pb-1">
+                            <i class="fas fa-sync-alt me-1"></i> Cycle {{ cycle_group.grouper }}
+                        </h6>
+                        <div class="row g-3">
+                            {% for field in cycle_group.list %}
+                            <div class="col-md-4">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                    {% if field.field.points_max %}
+                                    <small class="text-muted">(max {{ field.field.points_max }})</small>
+                                    {% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.errors %}
+                                <div class="text-danger small">{{ field.errors|striptags }}</div>
                                 {% endif %}
-                            </label>
-                            {{ field }}
-                            {% if field.errors %}
-                            <div class="text-danger small">{{ field.errors|striptags }}</div>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                        {% empty %}
-                        <div class="col-12">
-                            <div class="alert alert-warning bg-gold-soft border-0">
-                                <i class="fas fa-exclamation-triangle text-gold me-2"></i>
-                                Aucune évaluation configurée pour ce cours.
-                                Veuillez configurer le cycle d'évaluation dans la modification du cours.
                             </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
+                    {% endif %}
+                    {% empty %}
+                    <div class="alert alert-warning bg-gold-soft border-0">
+                        <i class="fas fa-exclamation-triangle text-gold me-2"></i>
+                        Aucune évaluation configurée pour ce cours.
+                        Veuillez configurer le cycle d'évaluation dans la modification du cours.
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="alert alert-warning bg-gold-soft border-0">
+                        <i class="fas fa-exclamation-triangle text-gold me-2"></i>
+                        Aucun champ d'évaluation disponible.
+                    </div>
+                    {% endif %}
 
                     <div class="d-flex gap-2 justify-content-end mt-4">
                         <a href="{% url 'ecoles:resultat_list' %}" class="btn btn-secondary">Annuler</a>
@@ -167,16 +199,40 @@
                         </button>
                     </div>
                 </form>
-                {% endif %}
+
+                {% endif %} {# fin if not form #}
+
             </div>
         </div>
     </div>
 </div>
 
-<!-- Scripts de mise à jour dynamique (inchangés) -->
+<!-- ===================== SCRIPTS POUR LES FILTRES DYNAMIQUES ===================== -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Fonction pour mettre à jour les options d'un select via AJAX
+        // ---------- AFFICHAGE DE LA SECTION DU NIVEAU ----------
+        const niveauSelect = document.getElementById('id_niveau');
+        const sectionSpan = document.getElementById('section_name');
+        if (niveauSelect && sectionSpan) {
+            function updateSection() {
+                const selected = niveauSelect.options[niveauSelect.selectedIndex];
+                if (selected && selected.value) {
+                    const text = selected.text;
+                    const parts = text.split(' - ');
+                    if (parts.length > 1) {
+                        sectionSpan.textContent = parts[1];
+                    } else {
+                        sectionSpan.textContent = 'Aucune section';
+                    }
+                } else {
+                    sectionSpan.textContent = '-';
+                }
+            }
+            niveauSelect.addEventListener('change', updateSection);
+            updateSection();
+        }
+
+        // ---------- FONCTIONS AJAX POUR LES FILTRES DYNAMIQUES ----------
         function updateSelect(url, parentId, targetSelect, paramName) {
             const value = parentId.value;
             if (!value) {
@@ -197,7 +253,6 @@
                 .catch(error => console.error('Erreur AJAX:', error));
         }
 
-        // Fonction pour mettre à jour les cours en fonction du niveau et de la classe
         function updateCours() {
             const niveauSelect = document.getElementById('id_niveau');
             const classeSelect = document.getElementById('id_classe');
@@ -234,41 +289,31 @@
 
         // Récupération des éléments
         const ecoleSelect = document.getElementById('id_ecole');
-        const niveauSelect = document.getElementById('id_niveau');
         const classeSelect = document.getElementById('id_classe');
         const eleveSelect = document.getElementById('id_eleve');
         const coursSelect = document.getElementById('id_cours');
 
-        // Rendre le champ cours requis
-        if (coursSelect) {
-            coursSelect.setAttribute('required', 'required');
-        }
+        if (coursSelect) coursSelect.setAttribute('required', 'required');
 
-        // Événement sur le changement d'école
         if (ecoleSelect) {
             ecoleSelect.addEventListener('change', function () {
-                // Réinitialiser les selects dépendants
                 if (niveauSelect) niveauSelect.innerHTML = '<option value="">---------</option>';
                 if (classeSelect) classeSelect.innerHTML = '<option value="">---------</option>';
                 if (eleveSelect) eleveSelect.innerHTML = '<option value="">---------</option>';
                 if (coursSelect) coursSelect.innerHTML = '<option value="">---------</option>';
-
-                // Mettre à jour les niveaux et classes pour cette école
                 if (niveauSelect) updateSelect('{% url "ecoles:api_get_niveaux" %}', this, niveauSelect, 'ecole_id');
                 if (classeSelect) updateSelect('{% url "ecoles:api_get_classes" %}', this, classeSelect, 'ecole_id');
+                if (sectionSpan) sectionSpan.textContent = '-';
             });
         }
 
-        // Événement sur le changement de niveau
         if (niveauSelect) {
             niveauSelect.addEventListener('change', function () {
                 const ecoleId = ecoleSelect ? ecoleSelect.value : '';
                 if (this.value) {
                     let url = '{% url "ecoles:api_get_classes" %}';
                     let params = `niveau_id=${this.value}`;
-                    if (ecoleId) {
-                        params += `&ecole_id=${ecoleId}`;
-                    }
+                    if (ecoleId) params += `&ecole_id=${ecoleId}`;
                     fetch(`${url}?${params}`)
                         .then(response => response.json())
                         .then(data => {
@@ -285,17 +330,13 @@
                 } else {
                     if (classeSelect) classeSelect.innerHTML = '<option value="">---------</option>';
                 }
-                // Réinitialiser les élèves
                 if (eleveSelect) eleveSelect.innerHTML = '<option value="">---------</option>';
-                // Mettre à jour les cours
                 updateCours();
             });
         }
 
-        // Événement sur le changement de classe
         if (classeSelect) {
             classeSelect.addEventListener('change', function () {
-                // Mettre à jour les élèves
                 const value = this.value;
                 if (!value) {
                     if (eleveSelect) eleveSelect.innerHTML = '<option value="">---------</option>';
@@ -315,17 +356,12 @@
                             });
                         }
                     });
-                // Mettre à jour les cours en fonction du niveau et de la classe
                 updateCours();
             });
         }
 
-        // Initialisation : mettre à jour les cours si des valeurs sont déjà sélectionnées
-        if (niveauSelect || classeSelect) {
-            updateCours();
-        }
+        if (niveauSelect || classeSelect) updateCours();
 
-        // Validation avant soumission pour s'assurer que le cours est sélectionné
         const form = document.getElementById('selectionForm');
         if (form) {
             form.addEventListener('submit', function (e) {
@@ -341,4 +377,95 @@
         }
     });
 </script>
+
+<!-- ===================== STYLES ===================== -->
+<style>
+    .bg-gold-soft {
+        background: rgba(201, 144, 58, 0.12);
+    }
+
+    .text-gold {
+        color: var(--c-accent, #c9903a);
+    }
+
+    .card-glass {
+        background: var(--c-surface, #ffffff);
+        border-radius: var(--radius, 16px);
+        border: 1px solid var(--c-border, rgba(26,94,42,0.10));
+        box-shadow: var(--c-shadow, 0 8px 30px rgba(0,0,0,0.05));
+        transition: all 0.3s ease;
+    }
+
+        .card-glass:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--c-shadow-hover, 0 16px 48px rgba(0,0,0,0.12));
+        }
+
+    .card-header {
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--c-border);
+        background: transparent;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--c-text);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--c-accent);
+        box-shadow: 0 0 0 0.25rem rgba(201, 144, 58, 0.25);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-primary-light) 100%);
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 20px rgba(26, 94, 42, 0.25);
+        padding: 10px 28px;
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 32px rgba(26, 94, 42, 0.35);
+            background: linear-gradient(135deg, var(--c-primary-dark) 0%, var(--c-primary) 100%);
+            color: #fff;
+        }
+
+    .btn-secondary {
+        border-radius: 50px;
+        border: 2px solid var(--c-border);
+        color: var(--c-text);
+        background: transparent;
+        transition: all 0.3s ease;
+        padding: 10px 28px;
+    }
+
+        .btn-secondary:hover {
+            background: var(--c-border);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+        }
+
+    #section_display {
+        font-size: 0.9rem;
+        color: var(--c-text-muted);
+    }
+
+    #section_name {
+        font-weight: 600;
+        color: var(--c-accent);
+    }
+
+    .cycle-block {
+        background: rgba(0,0,0,0.02);
+        padding: 12px;
+        border-radius: 8px;
+        border-left: 3px solid var(--c-accent);
+    }
+</style>
 {% endblock %}

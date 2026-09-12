@@ -3,130 +3,204 @@
 
 {% block title %}Connexion · CRADDasbl{% endblock %}
 
-{% block page_title %}Connexion{% endblock %}
-{% block page_subtitle %}Accédez à votre espace personnel{% endblock %}
-
-{% block breadcrumb %}Connexion{% endblock %}
-
 {% block content %}
-<div class="row justify-content-center align-items-start" style="min-height: calc(100vh - 120px); padding-top: 80px; padding-bottom: 40px;">
-    <div class="col-md-6 col-lg-5 col-xl-4">
-        <!-- Carte améliorée -->
-        <div class="card-glass" style="padding: 0; overflow: hidden;">
-            <!-- En-tête -->
-            <div class="card-header text-center pt-4 pb-0" style="border-bottom: none;">
-                <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
-                    <div class="rounded-circle" style="background: rgba(26, 94, 42, 0.08); width: 72px; height: 72px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-globe-africa fa-2x" style="color: var(--c-primary);"></i>
+<div class="login-page-wrapper">
+    <div class="row justify-content-center w-100 mx-0">
+        <div class="col-md-6 col-lg-5 col-xl-4">
+            <div class="card-glass login-card">
+                <!-- En-tête avec LOGO -->
+                <div class="card-header text-center pt-4 pb-0" style="border-bottom: none; flex-direction: column;">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <img src="{% static 'images/logo.png' %}" alt="Logo CRADD" class="login-logo" />
                     </div>
+                    <h4 class="fw-bold mb-0" style="color: var(--c-text-strong);">Bienvenue</h4>
+                    <p class="text-muted small mb-0" style="color: var(--c-text-muted) !important;">Connectez-vous pour continuer</p>
                 </div>
-                <h4 class="fw-bold mb-0" style="color: var(--c-text);">Bienvenue</h4>
-                <p class="text-muted small">Connectez-vous pour continuer</p>
-            </div>
 
-            <!-- Corps -->
-            <div class="card-body p-4 p-md-5 pt-3">
-                {% if form.non_field_errors or error %}
-                <div class="alert alert-danger alert-dismissible fade show rounded-3 d-flex align-items-center gap-2" role="alert" style="font-size: 0.9rem; border: none; background: #fce4e4; color: #b33c3c; border-left: 4px solid #b91c1c;">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span>
-                        {% if form.non_field_errors %}
-                        {{ form.non_field_errors|first }}
-                        {% else %}
-                        {{ error }}
-                        {% endif %}
-                    </span>
-                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                <!-- Corps -->
+                <div class="card-body p-4 p-md-5 pt-3">
+                    {% if form.non_field_errors or error %}
+                    <div class="alert alert-danger alert-dismissible fade show rounded-3 d-flex align-items-center gap-2" role="alert">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>
+                            {% if form.non_field_errors %}
+                            {{ form.non_field_errors|first }}
+                            {% else %}
+                            {{ error }}
+                            {% endif %}
+                        </span>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'accounts:login' %}" novalidate autocomplete="off">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+
+                        <!-- Nom d'utilisateur -->
+                        <div class="mb-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control form-control-custom {% if form.username.errors %}is-invalid{% endif %}"
+                                       id="username" name="username" value="{{ username|default:'' }}"
+                                       placeholder="Nom d'utilisateur" required autofocus>
+                                <label for="username"><i class="fas fa-user me-2"></i>Nom d'utilisateur</label>
+                                {% if form.username.errors %}
+                                <div class="invalid-feedback">{{ form.username.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Mot de passe -->
+                        <div class="mb-3">
+                            <div class="form-floating position-relative">
+                                <input type="password" class="form-control form-control-custom {% if form.password.errors %}is-invalid{% endif %}"
+                                       id="password" name="password" placeholder="Mot de passe" required>
+                                <label for="password"><i class="fas fa-lock me-2"></i>Mot de passe</label>
+                                <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
+                                        id="togglePassword" tabindex="-1" aria-label="Afficher le mot de passe">
+                                    <i class="fas fa-eye-slash text-muted" id="eyeIcon"></i>
+                                </button>
+                                {% if form.password.errors %}
+                                <div class="invalid-feedback">{{ form.password.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Lien mot de passe oublié -->
+                        <div class="d-flex justify-content-end mb-4">
+                            <a href="{% url 'accounts:password_reset_request' %}" class="text-decoration-none small fw-medium login-link">
+                                <i class="fas fa-key me-1"></i>Mot de passe oublié ?
+                            </a>
+                        </div>
+
+                        <!-- Bouton connexion -->
+                        <button type="submit" class="btn btn-primary-custom w-100 py-3 login-submit-btn">
+                            <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+                        </button>
+
+                        <!-- Retour accueil -->
+                        <div class="text-center mt-4">
+                            <span class="text-muted small">Vous n'avez pas de compte ?</span>
+                            <a href="{% url 'ecoles:index' %}" class="text-decoration-none small fw-semibold ms-1 login-link">
+                                Retour à l'accueil
+                            </a>
+                        </div>
+                    </form>
                 </div>
-                {% endif %}
-
-                <form method="post" action="{% url 'accounts:login' %}" novalidate autocomplete="off">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
-
-                    <!-- Nom d'utilisateur -->
-                    <div class="mb-4">
-                        <div class="form-floating">
-                            <input type="text" class="form-control form-control-custom {% if form.username.errors %}is-invalid{% endif %}"
-                                   id="username" name="username" value="{{ username|default:'' }}"
-                                   placeholder="Nom d'utilisateur" required autofocus>
-                            <label for="username" class="text-muted"><i class="fas fa-user me-2"></i>Nom d'utilisateur</label>
-                            {% if form.username.errors %}
-                            <div class="invalid-feedback">{{ form.username.errors|striptags }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Mot de passe -->
-                    <div class="mb-3">
-                        <div class="form-floating position-relative">
-                            <input type="password" class="form-control form-control-custom {% if form.password.errors %}is-invalid{% endif %}"
-                                   id="password" name="password" placeholder="Mot de passe" required>
-                            <label for="password" class="text-muted"><i class="fas fa-lock me-2"></i>Mot de passe</label>
-                            <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
-                                    id="togglePassword" tabindex="-1" aria-label="Afficher le mot de passe">
-                                <i class="fas fa-eye-slash text-muted" id="eyeIcon"></i>
-                            </button>
-                            {% if form.password.errors %}
-                            <div class="invalid-feedback">{{ form.password.errors|striptags }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Lien mot de passe oublié -->
-                    <div class="d-flex justify-content-end mb-4">
-                        <a href="{% url 'accounts:password_reset_request' %}" class="text-decoration-none small fw-medium" style="color: var(--c-primary);">
-                            <i class="fas fa-key me-1"></i>Mot de passe oublié ?
-                        </a>
-                    </div>
-
-                    <!-- Bouton connexion -->
-                    <button type="submit" class="btn btn-primary-custom w-100 py-3" style="font-size: 1rem; letter-spacing: 0.5px; border-radius: 50px;">
-                        <i class="fas fa-sign-in-alt me-2"></i>Se connecter
-                    </button>
-
-                    <!-- Retour accueil -->
-                    <div class="text-center mt-4">
-                        <span class="text-muted small">Vous n'avez pas de compte ?</span>
-                        <a href="{% url 'ecoles:index' %}" class="text-decoration-none small fw-semibold ms-1" style="color: var(--c-primary);">
-                            Retour à l'accueil
-                        </a>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_css %}
 <style>
+    /* ============================================================
+       LOGO dans la carte de login
+    ============================================================ */
+    .login-logo {
+        height: 80px;
+        width: auto;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+        filter: drop-shadow(0 4px 12px rgba(37, 99, 235, 0.15));
+    }
+
+    /* ============================================================
+       CARTE DE LOGIN
+    ============================================================ */
+    .login-card {
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid var(--c-border);
+    }
+
+    /* ============================================================
+       FORMULAIRES FLOTTANTS
+    ============================================================ */
     .form-floating > .form-control-custom:focus ~ label,
     .form-floating > .form-control-custom:not(:placeholder-shown) ~ label {
         color: var(--c-primary) !important;
-        opacity: 0.8;
+        opacity: 0.9;
     }
 
     .form-floating > .form-control-custom:focus {
         border-color: var(--c-primary);
-        box-shadow: 0 0 0 4px rgba(26, 94, 42, 0.10);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
     }
 
-    .btn-primary-custom {
-        transition: all 0.3s ease;
+    .form-floating label {
+        color: var(--c-text-muted);
+        font-size: 0.9rem;
     }
 
-        .btn-primary-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(26, 94, 42, 0.30);
+        .form-floating label i {
+            width: 1.2rem;
+            color: var(--c-text-light);
         }
 
-    .alert-danger {
-        border-left: 4px solid #b91c1c;
+    /* ============================================================
+       BOUTON CONNEXION
+    ============================================================ */
+    .login-submit-btn {
+        font-size: 1rem;
+        letter-spacing: 0.5px;
+        border-radius: 50px;
     }
 
-    .form-floating label i {
-        width: 1.2rem;
+    /* ============================================================
+       LIENS
+    ============================================================ */
+    .login-link {
+        color: var(--c-primary);
+        transition: color var(--transition-fast);
     }
+
+        .login-link:hover {
+            color: var(--c-primary-dark);
+        }
+
+    /* ============================================================
+       ALERTE
+    ============================================================ */
+    .alert-danger {
+        border-left: 4px solid #b91c1c;
+        background: #fef2f2;
+        color: #991b1b;
+        border-color: #fecaca;
+        font-size: 0.9rem;
+    }
+
+    [data-bs-theme="dark"] .alert-danger {
+        background: rgba(153, 27, 27, 0.15);
+        color: #fca5a5;
+        border-color: rgba(153, 27, 27, 0.4);
+    }
+
+    /* ============================================================
+       FORM CONTROL CUSTOM
+    ============================================================ */
+    .form-control-custom {
+        background: var(--c-surface-soft);
+        border: 1px solid var(--c-border);
+        border-radius: var(--radius-sm);
+        color: var(--c-text-strong);
+        transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+
+        .form-control-custom:focus {
+            background: var(--c-surface);
+            border-color: var(--c-primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+            color: var(--c-text-strong);
+        }
+
+        .form-control-custom::placeholder {
+            color: transparent;
+        }
 </style>
+{% endblock %}
 
 {% block extra_js %}
 <script>
@@ -145,6 +219,4 @@
         }
     });
 </script>
-{% endblock extra_js %}
-
-{% endblock content %}
+{% endblock %}

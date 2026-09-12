@@ -9,6 +9,7 @@ urlpatterns = [
     path('<int:pk>/', views.eleve_detail, name='eleve_detail'),
     path('<int:pk>/edit/', views.eleve_edit, name='eleve_edit'),
     path('<int:pk>/delete/', views.eleve_delete, name='eleve_delete'),
+    path('<int:pk>/reinscrire/', views.eleve_reinscrire, name='eleve_reinscrire'),  # NOUVEAU
     path('bulletins/create/', views.bulletin_create, name='bulletin_create'),
     path('bulletins/<int:pk>/delete/', views.bulletin_delete, name='bulletin_delete'),
     path('toggle-masquage/', views.toggle_masquage, name='toggle_masquage'),

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Synchronisation du cours - Cradd{% endblock %}
+{% block page_heading %}Synchronisation du cours « {{ cours_ref.nom }} »{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card-glass">
+        <div class="card-header">
+            <i class="fas fa-sync-alt text-gold me-2"></i> Synchronisation du cours référence
+            <span class="badge bg-primary ms-2">{{ total_instances }} instance(s) trouvée(s)</span>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">
+                Ce cours de référence est utilisé dans <strong>{{ total_instances }}</strong> école(s).
+                Vous pouvez synchroniser les modifications (coefficient, cycle, points max) avec les cours instances.
+            </p>
+
+            {% if differences %}
+            <form method="post" id="syncForm">
+                {% csrf_token %}
+                <input type="hidden" name="apply_sync" value="1">
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-gold-soft">
+                            <tr>
+                                <th style="width:30px;">
+                                    <input type="checkbox" id="selectAll" checked>
+                                </th>
+                                <th>École / Classe</th>
+                                <th>Champ</th>
+                                <th>Ancienne valeur</th>
+                                <th>Nouvelle valeur</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for instance_data in differences %}
+                            {% for diff in instance_data.differences %}
+                            <tr class="{% if not diff.peut_sync %}table-warning{% endif %}">
+                                <td>
+                                    {% if diff.peut_sync %}
+                                    <input type="checkbox" name="sync_items"
+                                           value="{{ instance_data.instance.id }}_{{ diff.config_ref_id|default:'' }}_{{ diff.config_inst_id|default:'' }}_{{ diff.champ }}"
+                                           checked>
+                                    {% else %}
+                                    <span class="text-muted"><i class="fas fa-lock"></i></span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ instance_data.ecole_nom }}</strong><br>
+                                    <small class="text-muted">{{ instance_data.classe_nom }}</small>
+                                </td>
+                                <td>
+                                    {% if diff.champ == 'coefficient' %}
+                                    Coefficient
+                                    {% elif diff.champ == 'type_cycle' %}
+                                    Type de cycle
+                                    {% elif diff.champ|startswith:'points_max_' %}
+                                    {{ diff.label }}
+                                    {% elif diff.champ|startswith:'config_manquante_' %}
+                                    {{ diff.label }}
+                                    {% elif diff.champ|startswith:'config_supplementaire_' %}
+                                    {{ diff.label }}
+                                    {% else %}
+                                    {{ diff.champ }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ diff.ancienne_valeur }}</td>
+                                <td><strong class="text-success">{{ diff.nouvelle_valeur }}</strong></td>
+                                <td>
+                                    {% if diff.peut_sync %}
+                                    <span class="badge bg-success">Synchronisable</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        Conflit (notes existantes)
+                                    </span>
+                                    {% endif %}
+                                    {% if diff.has_notes %}
+                                    <br><small class="text-danger">Des notes ont été saisies pour cette évaluation.</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex gap-3 justify-content-end mt-4">
+                    <a href="{% url 'ecoles:cours_edit' cours_ref.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                    <button type="submit" class="btn btn-primary-custom" id="syncBtn">
+                        <i class="fas fa-sync-alt"></i> Appliquer la synchronisation
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                Aucune différence détectée. Tous les cours instances sont déjà synchronisés.
+            </div>
+            <div class="d-flex gap-3 mt-4">
+                <a href="{% url 'ecoles:cours_edit' cours_ref.id %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sélection/désélection de tous les éléments
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('input[name="sync_items"]');
+
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+
+        // Mise à jour du select all quand on coche/décoche individuellement
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                const allChecked = Array.from(checkboxes).every(c => c.checked);
+                selectAll.checked = allChecked;
+            });
+        });
+
+        // Confirmation avant application
+        document.getElementById('syncBtn').addEventListener('click', function(e) {
+            const checked = document.querySelectorAll('input[name="sync_items"]:checked');
+            if (checked.length === 0) {
+                e.preventDefault();
+                alert('Veuillez sélectionner au moins un élément à synchroniser.');
+                return false;
+            }
+            if (!confirm(`Voulez-vous vraiment appliquer la synchronisation sur ${checked.length} élément(s) ?`)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    });
+</script>
+
+{% endblock %}

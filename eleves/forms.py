@@ -47,13 +47,11 @@ class EleveForm(forms.ModelForm):
                         self.fields['classe'].initial = user.classe_affectation.id
                         self.fields['classe'].disabled = True
                 else:
-                    # Pas d'école -> pas de choix
                     self.fields['ecole'].queryset = Ecole.objects.none()
                     self.fields['niveau'].queryset = Niveau.objects.none()
                     self.fields['classe'].queryset = Classe.objects.none()
 
             elif user.est_agent() or user.est_inspecteur():
-                # Agent/Inspecteur : école figée, niveau/classe libres dans son école
                 if user.ecole_affectation:
                     self.fields['ecole'].queryset = Ecole.objects.filter(id=user.ecole_affectation.id)
                     self.fields['ecole'].initial = user.ecole_affectation.id
@@ -94,7 +92,6 @@ class EleveForm(forms.ModelForm):
         ecole = cleaned_data.get('ecole')
         niveau = cleaned_data.get('niveau')
         classe = cleaned_data.get('classe')
-        # Vérifications de cohérence
         if classe and niveau and classe.niveau != niveau:
             self.add_error('classe', "La classe sélectionnée ne correspond pas au niveau choisi.")
         if classe and ecole and classe.ecole != ecole:

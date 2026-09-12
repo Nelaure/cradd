@@ -113,7 +113,6 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Dossier pour les fichiers statiques (CSS, JS, images)
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
@@ -122,16 +121,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # ---------- CLOUDINARY ----------
-# Configuration simplifiée via CLOUDINARY_URL
-# Si la variable d'environnement est définie, cloudinary.config() la lit automatiquement
 cloudinary.config()
 
-# Vérification optionnelle (pour le debug)
 if not DEBUG and not os.getenv('CLOUDINARY_URL'):
     import logging
     logging.warning("⚠️  CLOUDINARY_URL non définie en production ! Les uploads d'images échoueront.")
 
-# En production, utiliser Cloudinary ; en développement, le système de fichiers local
 if not DEBUG:
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 else:

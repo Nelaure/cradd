@@ -11,6 +11,14 @@
                 <i class="fas fa-user-plus text-gold me-2"></i> {{ title }}
             </div>
             <div class="card-body">
+                {% if is_reinscription %}
+                <div class="alert alert-info border-0 bg-info bg-opacity-10">
+                    <i class="fas fa-info-circle text-info me-2"></i>
+                    Vous êtes en train de réinscrire <strong>{{ eleve.get_nom_complet }}</strong> pour une nouvelle année scolaire.
+                    L'ancien parcours sera automatiquement fermé et un nouveau sera créé.
+                </div>
+                {% endif %}
+
                 <form method="post" enctype="multipart/form-data" novalidate>
                     {% csrf_token %}
 
@@ -32,7 +40,7 @@
                     <div class="d-flex gap-2 justify-content-end mt-4">
                         <a href="{% url 'eleves:eleve_list' %}" class="btn btn-secondary">Annuler</a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Enregistrer
+                            <i class="fas fa-save"></i> {% if submit_text %}{{ submit_text }}{% else %}Enregistrer{% endif %}
                         </button>
                     </div>
                 </form>

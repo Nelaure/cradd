@@ -2,15 +2,17 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 
+
 class Utilisateur(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = 'ADMIN', 'Administrateur'
+        MINISTRE = 'MINISTRE', 'Ministre'
         INSPECTEUR = 'INSPECTEUR', 'Inspecteur'
         AGENT = 'AGENT', 'Agent'
         ENSEIGNANT = 'ENSEIGNANT', 'Enseignant'
         PARENT = 'PARENT', 'Parent'
         PROVED = 'PROVED', 'Directeur Provincial'
-        EDITOR = 'EDITOR', 'Éditeur'   # Nouveau rôle
+        EDITOR = 'EDITOR', 'Éditeur'
 
     nom = models.CharField(max_length=100)
     postnom = models.CharField(max_length=100, blank=True)
@@ -50,7 +52,7 @@ class Utilisateur(AbstractUser):
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
     est_actif = models.BooleanField(default=True)
-    
+
     reset_code = models.CharField(max_length=6, null=True, blank=True)
     reset_code_created_at = models.DateTimeField(null=True, blank=True)
     reset_code_used = models.BooleanField(default=False)
@@ -64,14 +66,40 @@ class Utilisateur(AbstractUser):
     def get_full_name(self):
         return f"{self.nom} {self.postnom} {self.prenom}".strip()
 
-    def est_administrateur(self): return self.role == self.Role.ADMIN
-    def est_inspecteur(self): return self.role == self.Role.INSPECTEUR
-    def est_agent(self): return self.role == self.Role.AGENT
-    def est_enseignant(self): return self.role == self.Role.ENSEIGNANT
-    def est_parent(self): return self.role == self.Role.PARENT
-    def est_proved(self): return self.role == self.Role.PROVED
-    def est_editeur(self): return self.role == self.Role.EDITOR   # Nouvelle méthode
-    
+    # ---- Rôles ----
+    def est_administrateur(self):
+        return self.role == self.Role.ADMIN
+
+    def est_ministre(self):
+        return self.role == self.Role.MINISTRE
+
+    def est_inspecteur(self):
+        return self.role == self.Role.INSPECTEUR
+
+    def est_agent(self):
+        return self.role == self.Role.AGENT
+
+    def est_enseignant(self):
+        return self.role == self.Role.ENSEIGNANT
+
+    def est_parent(self):
+        return self.role == self.Role.PARENT
+
+    def est_proved(self):
+        return self.role == self.Role.PROVED
+
+    def est_editeur(self):
+        return self.role == self.Role.EDITOR
+
+    # ---- Lecture seule ? ----
+    def est_lecture_seule(self):
+        """
+        Rôles qui ne peuvent rien créer/modifier/supprimer :
+        - Ministre : vue statistique globale
+        """
+        return self.role == self.Role.MINISTRE
+
+    # ---- Reset password ----
     def generate_reset_code(self):
         import random
         self.reset_code = ''.join(str(random.randint(0, 9)) for _ in range(6))
@@ -79,7 +107,7 @@ class Utilisateur(AbstractUser):
         self.reset_code_used = False
         self.save()
         return self.reset_code
-    
+
     def verify_reset_code(self, code):
         if self.reset_code_used:
             return False
@@ -105,7 +133,7 @@ class AuditLog(models.Model):
         PASSWORD_RESET = 'PASSWORD_RESET', 'Réinitialisation mot de passe'
         PASSWORD_CHANGE = 'PASSWORD_CHANGE', 'Changement mot de passe'
         LOGIN_FAILED = 'LOGIN_FAILED', 'Échec de connexion'
-    
+
     class ModelName(models.TextChoices):
         UTILISATEUR = 'Utilisateur', 'Utilisateur'
         ECOLE = 'Ecole', 'École'
@@ -118,7 +146,7 @@ class AuditLog(models.Model):
         EVALUATION = 'EvaluationResultat', 'Résultat d\'évaluation'
         BULLETIN = 'Bulletin', 'Bulletin'
         ANNEE_SCOLAIRE = 'AnneeScolaire', 'Année scolaire'
-    
+
     utilisateur = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True, related_name='audit_logs')
     action = models.CharField(max_length=20, choices=ActionType.choices)
     model_name = models.CharField(max_length=50, choices=ModelName.choices, blank=True, null=True)
@@ -130,7 +158,7 @@ class AuditLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     success = models.BooleanField(default=True)
     message = models.TextField(blank=True, null=True)
-    
+
     class Meta:
         ordering = ['-timestamp']
         indexes = [
@@ -138,6 +166,6 @@ class AuditLog(models.Model):
             models.Index(fields=['action', 'timestamp']),
             models.Index(fields=['model_name', 'object_id']),
         ]
-    
+
     def __str__(self):
         return f"{self.get_action_display()} - {self.utilisateur} - {self.timestamp.strftime('%d/%m/%Y %H:%M')}"

@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import Utilisateur
 from ecoles.models import Ecole, Niveau, Classe, Province
 
+
 class UtilisateurCreationForm(UserCreationForm):
     class Meta:
         model = Utilisateur
@@ -23,7 +24,16 @@ class UtilisateurCreationForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         self.request_user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        # Filtrer les choix en fonction du rôle de l'utilisateur connecté
+
+        # Le Ministre n'a jamais le droit de créer des utilisateurs (contrôlé par la vue),
+        # mais on garde la logique défensive.
+        if self.request_user and self.request_user.est_ministre():
+            self.fields['ecole_affectation'].queryset = Ecole.objects.none()
+            self.fields['province_affectation'].queryset = Province.objects.none()
+            self.fields['niveau_affectation'].queryset = Niveau.objects.none()
+            self.fields['classe_affectation'].queryset = Classe.objects.none()
+            return
+
         if self.request_user:
             if self.request_user.est_proved():
                 province = self.request_user.province_affectation
@@ -89,7 +99,13 @@ class UtilisateurChangeForm(UserChangeForm):
     def __init__(self, *args, **kwargs):
         self.request_user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        # Mêmes filtres que pour la création
+
+        if self.request_user and self.request_user.est_ministre():
+            # Ministre : tout en lecture seule
+            for field in self.fields.values():
+                field.disabled = True
+            return
+
         if self.request_user:
             if self.request_user.est_proved():
                 province = self.request_user.province_affectation

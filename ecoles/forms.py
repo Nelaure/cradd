@@ -1,14 +1,16 @@
 from django import forms
 from django.forms import inlineformset_factory
+from django.db.models import Min
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Column, Field, Fieldset, Div, HTML, Submit
 from .models import (
     Ecole, Niveau, Classe, Domaine, Cours, AnneeScolaire,
     CycleEvaluation, EvaluationConfig, EvaluationResultat, Province,
-    Section, Option
+    Section
 )
 from eleves.models import Eleve
 from accounts.models import Utilisateur
+
 
 # ===================== FORMULAIRES AVEC FILTRAGE PAR RÔLE =====================
 
@@ -80,17 +82,18 @@ class EcoleForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        # Personnalisation de l'affichage des choix de niveaux de référence
         def label_from_instance(obj):
             nom = obj.nom
             section = obj.section.nom if obj.section else "Sans section"
-            option = obj.option.nom if obj.option else "Sans option"
-            return f"{nom} ({section} - {option})"
+            return f"{nom} ({section})"
         self.fields['niveaux_reference'].label_from_instance = label_from_instance
 
-        # Gestion de la province désactivée selon le rôle
         if self.user:
-            if self.user.est_agent() or self.user.est_inspecteur() or self.user.est_proved():
+            if self.user.est_ministre():
+                # Ministre : tout en lecture seule
+                for field in self.fields.values():
+                    field.disabled = True
+            elif self.user.est_agent() or self.user.est_inspecteur() or self.user.est_proved():
                 self.fields['province'].disabled = True
                 if self.user.est_proved() and self.user.province_affectation:
                     self.fields['province'].initial = self.user.province_affectation.id
@@ -99,7 +102,6 @@ class EcoleForm(forms.ModelForm):
                     self.fields['province'].initial = self.user.ecole_affectation.province.id
                     self.fields['province'].queryset = Province.objects.filter(id=self.user.ecole_affectation.province.id)
 
-        # Configuration de crispy forms
         self.helper = FormHelper()
         self.helper.form_method = 'post'
         self.helper.layout = Layout(
@@ -146,7 +148,7 @@ class EcoleForm(forms.ModelForm):
                 HTML("""
                     <div class="form-text text-muted">
                         <i class="fas fa-info-circle"></i> Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs niveaux.
-                        Chaque niveau sera copié avec sa section et son option définies dans la référence.
+                        Chaque niveau sera copié avec sa section définie dans la référence.
                     </div>
                 """),
             ),
@@ -174,16 +176,10 @@ class NiveauForm(forms.ModelForm):
         label="Section",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
-    option = forms.ModelChoiceField(
-        queryset=Option.objects.none(),
-        required=False,
-        label="Option",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
 
     class Meta:
         model = Niveau
-        fields = ['nom', 'description', 'ordre', 'ecole', 'est_reference', 'section', 'option']
+        fields = ['nom', 'description', 'ordre', 'ecole', 'est_reference', 'section']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Primaire, Secondaire...'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Description'}),
@@ -197,20 +193,6 @@ class NiveauForm(forms.ModelForm):
         self.is_reference = kwargs.pop('is_reference', False)
         super().__init__(*args, **kwargs)
 
-        section_id = None
-        if self.data and 'section' in self.data:
-            try:
-                section_id = int(self.data.get('section'))
-            except (TypeError, ValueError):
-                pass
-        if section_id is None and self.instance and self.instance.pk and self.instance.section:
-            section_id = self.instance.section_id
-
-        if section_id:
-            self.fields['option'].queryset = Option.objects.filter(section_id=section_id)
-        else:
-            self.fields['option'].queryset = Option.objects.none()
-
         if self.is_reference:
             self.fields['ecole'].queryset = Ecole.objects.none()
             self.fields['ecole'].widget = forms.HiddenInput()
@@ -219,7 +201,10 @@ class NiveauForm(forms.ModelForm):
             self.fields['est_reference'].disabled = True
         else:
             if self.user:
-                if self.user.est_enseignant():
+                if self.user.est_ministre():
+                    for field in self.fields.values():
+                        field.disabled = True
+                elif self.user.est_enseignant():
                     for field in self.fields:
                         self.fields[field].disabled = True
                 elif self.user.est_agent() or self.user.est_inspecteur():
@@ -256,8 +241,7 @@ class NiveauForm(forms.ModelForm):
                 css_class='row'
             ),
             Row(
-                Column('section', css_class='form-group col-md-6'),
-                Column('option', css_class='form-group col-md-6'),
+                Column('section', css_class='form-group col-12'),
                 css_class='row'
             ),
             Row(
@@ -273,10 +257,6 @@ class NiveauForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        section = cleaned_data.get('section')
-        option = cleaned_data.get('option')
-        if option and section and option.section != section:
-            raise forms.ValidationError("L'option choisie ne correspond pas à la section sélectionnée.")
         if self.is_reference:
             cleaned_data['ecole'] = None
             cleaned_data['est_reference'] = True
@@ -293,6 +273,22 @@ class NiveauForm(forms.ModelForm):
                         raise forms.ValidationError("L'école choisie n'appartient pas à votre province.")
                 else:
                     raise forms.ValidationError("Vous n'êtes pas affecté à une province.")
+
+        if self.is_reference:
+            nom = cleaned_data.get('nom')
+            section = cleaned_data.get('section')
+            if nom and section:
+                existing = Niveau.objects.filter(
+                    est_reference=True,
+                    ecole__isnull=True,
+                    nom=nom,
+                    section=section
+                ).exclude(pk=self.instance.pk).exists()
+                if existing:
+                    raise forms.ValidationError(
+                        f"Un niveau de référence avec le nom '{nom}' et la section '{section.nom}' existe déjà."
+                    )
+
         return cleaned_data
 
 
@@ -323,7 +319,10 @@ class ClasseForm(forms.ModelForm):
             self.fields['niveau'].queryset = Niveau.objects.filter(est_reference=True, ecole__isnull=True)
         else:
             if self.user:
-                if self.user.est_enseignant():
+                if self.user.est_ministre():
+                    for field in self.fields.values():
+                        field.disabled = True
+                elif self.user.est_enseignant():
                     for field in self.fields:
                         self.fields[field].disabled = True
                 elif self.user.est_agent() or self.user.est_inspecteur():
@@ -426,7 +425,10 @@ class DomaineForm(forms.ModelForm):
             self.fields['classes'].queryset = Classe.objects.filter(est_reference=True, ecole__isnull=True)
         else:
             if self.user:
-                if self.user.est_enseignant():
+                if self.user.est_ministre():
+                    for field in self.fields.values():
+                        field.disabled = True
+                elif self.user.est_enseignant():
                     for field in self.fields:
                         self.fields[field].disabled = True
                 elif self.user.est_agent() or self.user.est_inspecteur():
@@ -541,7 +543,10 @@ class CoursForm(forms.ModelForm):
             self.fields['domaine'].queryset = Domaine.objects.filter(est_reference=True, ecole__isnull=True)
         else:
             if self.user:
-                if self.user.est_enseignant():
+                if self.user.est_ministre():
+                    for field in self.fields.values():
+                        field.disabled = True
+                elif self.user.est_enseignant():
                     for field in self.fields:
                         self.fields[field].disabled = True
                     if self.user.classe_affectation:
@@ -724,10 +729,30 @@ class EvaluationConfigForm(forms.ModelForm):
         }
 
 
+class EvaluationConfigFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        seen = set()
+        for form in self.forms:
+            if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                cycle_num = form.cleaned_data.get('cycle_num')
+                periode_num = form.cleaned_data.get('periode_num')
+                eval_type = form.cleaned_data.get('type')
+                if cycle_num and eval_type:
+                    key = (cycle_num, periode_num, eval_type)
+                    if key in seen:
+                        raise forms.ValidationError(
+                            f"Doublon détecté : Cycle {cycle_num}, {eval_type} "
+                            f"{f'Période {periode_num}' if eval_type == 'periode' else ''} apparaît plusieurs fois."
+                        )
+                    seen.add(key)
+
+
 EvaluationConfigFormSet = inlineformset_factory(
     CycleEvaluation,
     EvaluationConfig,
     form=EvaluationConfigForm,
+    formset=EvaluationConfigFormSet,
     extra=1,
     can_delete=True,
     min_num=0,
@@ -760,7 +785,7 @@ class ResultatSelectionForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     cours = forms.ModelChoiceField(
-        queryset=Cours.objects.filter(est_reference=False),
+        queryset=Cours.objects.none(),
         required=False,
         label="Cours",
         widget=forms.Select(attrs={'class': 'form-select'})
@@ -775,8 +800,26 @@ class ResultatSelectionForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+
+        def cours_label(obj):
+            return f"{obj.nom} ({obj.classe.nom})"
+
+        self.fields['cours'].label_from_instance = cours_label
+
+        base_qs = Cours.objects.filter(est_reference=False)
+        distinct_ids = base_qs.values('nom', 'classe').annotate(min_id=Min('id')).values_list('min_id', flat=True)
+        distinct_cours_qs = Cours.objects.filter(id__in=distinct_ids).order_by('nom', 'classe')
+        self.fields['cours'].queryset = distinct_cours_qs
+
         if self.user:
-            if self.user.est_enseignant():
+            if self.user.est_ministre():
+                # Ministre n'a pas accès à la saisie
+                self.fields['ecole'].queryset = Ecole.objects.none()
+                self.fields['niveau'].queryset = Niveau.objects.none()
+                self.fields['classe'].queryset = Classe.objects.none()
+                self.fields['eleve'].queryset = Eleve.objects.none()
+                self.fields['cours'].queryset = distinct_cours_qs.none()
+            elif self.user.est_enseignant():
                 if self.user.ecole_affectation:
                     self.fields['ecole'].queryset = Ecole.objects.filter(id=self.user.ecole_affectation.id)
                     self.fields['ecole'].initial = self.user.ecole_affectation.id
@@ -790,10 +833,10 @@ class ResultatSelectionForm(forms.Form):
                     self.fields['classe'].initial = self.user.classe_affectation.id
                     self.fields['classe'].disabled = True
                     self.fields['eleve'].queryset = Eleve.objects.filter(classe=self.user.classe_affectation)
-                    self.fields['cours'].queryset = Cours.objects.filter(classe=self.user.classe_affectation, est_reference=False)
+                    self.fields['cours'].queryset = distinct_cours_qs.filter(classe=self.user.classe_affectation)
                 else:
                     self.fields['eleve'].queryset = Eleve.objects.none()
-                    self.fields['cours'].queryset = Cours.objects.none()
+                    self.fields['cours'].queryset = distinct_cours_qs.none()
             elif self.user.est_agent() or self.user.est_inspecteur():
                 if self.user.ecole_affectation:
                     self.fields['ecole'].queryset = Ecole.objects.filter(id=self.user.ecole_affectation.id)
@@ -801,13 +844,13 @@ class ResultatSelectionForm(forms.Form):
                     self.fields['ecole'].disabled = True
                     self.fields['niveau'].queryset = Niveau.objects.filter(ecole=self.user.ecole_affectation, est_reference=False)
                     self.fields['classe'].queryset = Classe.objects.filter(ecole=self.user.ecole_affectation, est_reference=False)
-                    self.fields['cours'].queryset = Cours.objects.filter(ecole=self.user.ecole_affectation, est_reference=False)
                     self.fields['eleve'].queryset = Eleve.objects.filter(ecole=self.user.ecole_affectation)
+                    self.fields['cours'].queryset = distinct_cours_qs.filter(ecole=self.user.ecole_affectation)
                 else:
                     self.fields['ecole'].queryset = Ecole.objects.none()
                     self.fields['niveau'].queryset = Niveau.objects.none()
                     self.fields['classe'].queryset = Classe.objects.none()
-                    self.fields['cours'].queryset = Cours.objects.none()
+                    self.fields['cours'].queryset = distinct_cours_qs.none()
                     self.fields['eleve'].queryset = Eleve.objects.none()
             elif self.user.est_proved():
                 if self.user.province_affectation:
@@ -816,19 +859,19 @@ class ResultatSelectionForm(forms.Form):
                     self.fields['ecole'].initial = None
                     self.fields['niveau'].queryset = Niveau.objects.filter(ecole__in=ecoles, est_reference=False)
                     self.fields['classe'].queryset = Classe.objects.filter(ecole__in=ecoles, est_reference=False)
-                    self.fields['cours'].queryset = Cours.objects.filter(ecole__in=ecoles, est_reference=False)
                     self.fields['eleve'].queryset = Eleve.objects.filter(ecole__in=ecoles)
+                    self.fields['cours'].queryset = distinct_cours_qs.filter(ecole__in=ecoles)
                 else:
                     self.fields['ecole'].queryset = Ecole.objects.none()
                     self.fields['niveau'].queryset = Niveau.objects.none()
                     self.fields['classe'].queryset = Classe.objects.none()
-                    self.fields['cours'].queryset = Cours.objects.none()
+                    self.fields['cours'].queryset = distinct_cours_qs.none()
                     self.fields['eleve'].queryset = Eleve.objects.none()
             else:
                 self.fields['ecole'].queryset = Ecole.objects.all()
                 self.fields['niveau'].queryset = Niveau.objects.filter(est_reference=False)
                 self.fields['classe'].queryset = Classe.objects.filter(est_reference=False)
-                self.fields['cours'].queryset = Cours.objects.filter(est_reference=False)
+                self.fields['cours'].queryset = distinct_cours_qs
                 self.fields['eleve'].queryset = Eleve.objects.all()
                 self.fields['annee_scolaire'].queryset = AnneeScolaire.objects.all()
 
@@ -858,60 +901,62 @@ class ResultatSelectionForm(forms.Form):
 
 
 class EvaluationResultatForm(forms.Form):
-    def __init__(self, eleve, cours, annee_scolaire, user=None, *args, **kwargs):
+    def __init__(self, eleve, cours, annee_scolaire, user=None, configs=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.eleve = eleve
         self.cours = cours
         self.annee_scolaire = annee_scolaire
         self.user = user
 
-        cycle_eval = CycleEvaluation.objects.filter(cours=cours).first()
-        if cycle_eval:
-            configs = cycle_eval.evaluations.all().order_by('cycle_num', 'ordre')
-            for config in configs:
-                field_name = f"eval_{config.id}"
-                try:
-                    resultat = EvaluationResultat.objects.get(
-                        eleve=eleve,
-                        cours=cours,
-                        annee_scolaire=annee_scolaire,
-                        evaluation_config=config
-                    )
-                    initial = resultat.points_obtenus
-                except EvaluationResultat.DoesNotExist:
-                    initial = None
+        if configs is None:
+            cycle_eval = CycleEvaluation.objects.filter(cours=cours).first()
+            if cycle_eval:
+                configs = cycle_eval.evaluations.filter(cycle_num__lte=cycle_eval.get_nombre_cycles()).order_by('cycle_num', 'ordre')
+            else:
+                configs = []
 
-                self.fields[field_name] = forms.DecimalField(
-                    max_digits=5,
-                    decimal_places=2,
-                    min_value=0,
-                    max_value=config.points_max,
-                    required=False,
-                    label=f"Cycle {config.cycle_num} - {config.get_type_display()}",
-                    initial=initial,
-                    widget=forms.NumberInput(attrs={
-                        'class': 'form-control',
-                        'step': '0.01',
-                        'placeholder': f"0 - {config.points_max}"
-                    })
+        for config in configs:
+            field_name = f"eval_{config.id}"
+            try:
+                resultat = EvaluationResultat.objects.get(
+                    eleve=eleve,
+                    cours=cours,
+                    annee_scolaire=annee_scolaire,
+                    evaluation_config=config
                 )
-                self.fields[field_name].config_id = config.id
+                initial = resultat.points_obtenus
+            except EvaluationResultat.DoesNotExist:
+                initial = None
+
+            label = f"Cycle {config.cycle_num} - "
+            if config.type == 'periode':
+                label += f"Période {config.periode_num}"
+            else:
+                label += "Examen"
+
+            self.fields[field_name] = forms.DecimalField(
+                max_digits=5,
+                decimal_places=2,
+                min_value=0,
+                max_value=config.points_max,
+                required=False,
+                label=label,
+                initial=initial,
+                widget=forms.NumberInput(attrs={
+                    'class': 'form-control',
+                    'step': '0.01',
+                    'placeholder': f"0 - {config.points_max}"
+                })
+            )
+            self.fields[field_name].config_id = config.id
+            self.fields[field_name].cycle_num = config.cycle_num
+            self.fields[field_name].periode_num = config.periode_num
+            self.fields[field_name].eval_type = config.type
+            self.fields[field_name].points_max = config.points_max
 
         self.helper = FormHelper()
         self.helper.form_method = 'post'
-        layout_fields = []
-        for field_name in self.fields:
-            layout_fields.append(Field(field_name, css_class='form-group col-md-4'))
-        layout_fields.append(
-            Div(
-                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
-                HTML('<a href="{% url "ecoles:resultat_list" %}" class="btn btn-secondary">Annuler</a>'),
-                css_class='d-flex gap-2 justify-content-end mt-4'
-            )
-        )
-        self.helper.layout = Layout(
-            Row(*layout_fields, css_class='row'),
-        )
+        self.helper.layout = Layout()
 
     def save(self):
         saved_count = 0
@@ -1010,45 +1055,6 @@ class SectionForm(forms.ModelForm):
             Div(
                 Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
                 HTML('<a href="{% url "ecoles:section_list" %}" class="btn btn-secondary">Annuler</a>'),
-                css_class='d-flex gap-2 justify-content-end mt-4'
-            )
-        )
-
-
-class OptionForm(forms.ModelForm):
-    class Meta:
-        model = Option
-        fields = ['nom', 'code', 'section', 'description', 'ordre']
-        widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Latin-Philosophie'}),
-            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code unique'}),
-            'section': forms.Select(attrs={'class': 'form-select'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Description'}),
-            'ordre': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_method = 'post'
-        self.helper.layout = Layout(
-            Row(
-                Column('nom', css_class='form-group col-md-6'),
-                Column('code', css_class='form-group col-md-6'),
-                css_class='row'
-            ),
-            Row(
-                Column('section', css_class='form-group col-md-6'),
-                Column('ordre', css_class='form-group col-md-6'),
-                css_class='row'
-            ),
-            Row(
-                Column('description', css_class='form-group col-12'),
-                css_class='row'
-            ),
-            Div(
-                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
-                HTML('<a href="{% url "ecoles:option_list" %}" class="btn btn-secondary">Annuler</a>'),
                 css_class='d-flex gap-2 justify-content-end mt-4'
             )
         )

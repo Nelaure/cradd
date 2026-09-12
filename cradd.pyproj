@@ -41,6 +41,15 @@
     <Compile Include="accounts\urls.py" />
     <Compile Include="accounts\views.py" />
     <Compile Include="accounts\__init__.py" />
+    <Compile Include="actualites\admin.py" />
+    <Compile Include="actualites\apps.py" />
+    <Compile Include="actualites\forms.py" />
+    <Compile Include="actualites\migrations\__init__.py" />
+    <Compile Include="actualites\models.py" />
+    <Compile Include="actualites\tests.py" />
+    <Compile Include="actualites\urls.py" />
+    <Compile Include="actualites\views.py" />
+    <Compile Include="actualites\__init__.py" />
     <Compile Include="app\forms.py" />
     <Compile Include="app\models.py" />
     <Compile Include="app\tests.py" />
@@ -79,6 +88,10 @@
     <Folder Include="accounts\migrations\" />
     <Folder Include="accounts\templates\" />
     <Folder Include="accounts\templates\accounts\" />
+    <Folder Include="actualites\" />
+    <Folder Include="actualites\migrations\" />
+    <Folder Include="actualites\templates\" />
+    <Folder Include="actualites\templates\actualites\" />
     <Folder Include="app\" />
     <Folder Include="app\migrations\" />
     <Folder Include="app\static\" />
@@ -97,6 +110,7 @@
     <Folder Include="eleves\migrations\" />
     <Folder Include="eleves\templates\" />
     <Folder Include="eleves\templates\eleves\" />
+    <Folder Include="media\" />
     <Folder Include="NewFolder1\" />
   </ItemGroup>
   <ItemGroup>
@@ -105,11 +119,30 @@
     <Content Include="accounts\templates\accounts\index.html" />
     <Content Include="accounts\templates\accounts\password_reset_request.html" />
     <Content Include="accounts\templates\accounts\password_reset_verify.html" />
+    <Content Include="actualites\templates\actualites\article_confirm_delete.html" />
+    <Content Include="actualites\templates\actualites\article_confirm_hard_delete.html" />
+    <Content Include="actualites\templates\actualites\article_detail_public.html" />
+    <Content Include="actualites\templates\actualites\article_form.html" />
+    <Content Include="actualites\templates\actualites\article_list.html" />
+    <Content Include="actualites\templates\actualites\article_list_public.html" />
+    <Content Include="actualites\templates\actualites\article_trash_list.html" />
+    <Content Include="actualites\templates\actualites\base_actualites.html" />
+    <Content Include="actualites\templates\actualites\categorie_confirm_delete.html" />
+    <Content Include="actualites\templates\actualites\categorie_form.html" />
+    <Content Include="actualites\templates\actualites\categorie_list.html" />
+    <Content Include="actualites\templates\actualites\dashboard.html" />
+    <Content Include="actualites\templates\actualites\index.html" />
+    <Content Include="actualites\templates\actualites\trash_confirm_empty.html" />
+    <Content Include="ecoles\templates\ecoles\classe_duplicate.html" />
     <Content Include="ecoles\templates\ecoles\index.html" />
     <Content Include="ecoles\templates\ecoles\province_confirm_delete.html" />
     <Content Include="ecoles\templates\ecoles\province_form.html" />
     <Content Include="ecoles\templates\ecoles\province_list.html" />
+    <Content Include="ecoles\templates\ecoles\section_confirm_delete.html" />
+    <Content Include="ecoles\templates\ecoles\section_form.html" />
+    <Content Include="ecoles\templates\ecoles\section_list.html" />
     <Content Include="eleves\templates\eleves\index.html" />
+    <Content Include="media\qui-sommes‑nous.jpg" />
     <Content Include="requirements.txt" />
     <Content Include="db.sqlite3" />
     <Content Include="app\static\app\content\bootstrap.css" />

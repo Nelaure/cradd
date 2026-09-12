@@ -1,31 +1,842 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
-{% block title %}CRADD · En cours de développement{% endblock %}
+{% block title %}CRADDasbl · Centre de Recherche et d'Action pour le Développement Durable{% endblock %}
 
 {% block content %}
-<div class="container py-5 my-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6 text-center">
-            <div class="card card-glass p-5">
-                <div class="mb-4">
-                    <i class="fas fa-code fa-4x text-primary-custom"></i>
-                </div>
-                <h1 class="fw-bold mb-3">En cours de développement</h1>
-                <p class="lead text-muted">
-                    Notre site est actuellement en construction. Nous travaillons pour vous offrir une expérience optimale.
+
+<!-- ============================================================
+     HERO
+============================================================ -->
+<section class="hero" id="accueil">
+    <div class="hero-background">
+        <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=90" alt="Paysage de développement durable" />
+    </div>
+    <div class="hero-overlay"></div>
+    <canvas class="hero-canvas" id="heroCanvas"></canvas>
+
+    <div class="container">
+        <div class="hero-content">
+            <div class="hero-text">
+                <span class="badge"><i class="fas fa-leaf"></i> Développement durable</span>
+                <h1><span>LE MONDE</span> ENTRE VOS MAINS</h1>
+                <p class="slogan">
+                    « Que les communautés vivent dans des conditions acceptables par l’auto‑prise en charge
+                    permettant de concrétiser <strong>LE MONDE ENTRE VOS MAINS</strong> »
                 </p>
-                <p class="text-muted">
-                    Revenez bientôt pour découvrir nos actions et actualités.
+                <p class="mission-statement">
+                    Chaque enfant congolais mérite une éducation de qualité et un environnement préservé.
+                    Ensemble, faisons de l’éducation le moteur du développement durable.
                 </p>
-                <hr class="my-4">
-                <div class="d-flex justify-content-center gap-3">
-                    <a href="mailto:contact@craddasbl.org" class="btn btn-primary-custom">
-                        <i class="fas fa-envelope me-2"></i>Nous contacter
+                <div class="hero-cta-group">
+                    <a href="#actions" class="hero-cta">
+                        Découvrir nos actions <i class="fas fa-arrow-right"></i>
                     </a>
+                    <a href="#dons" class="hero-cta hero-cta-outline">
+                        <i class="fas fa-heart"></i> Faire un don
+                    </a>
+                </div>
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stat-item">
+                    <span class="number" data-count="15000">0</span>
+                    <span class="label">Élèves soutenus</span>
+                </div>
+                <div class="hero-stat-item">
+                    <span class="number" data-count="120">0</span>
+                    <span class="label">Écoles partenaires</span>
+                </div>
+                <div class="hero-stat-item">
+                    <span class="number" data-count="8">0</span>
+                    <span class="label">Provinces couvertes</span>
+                </div>
+                <div class="hero-stat-item">
+                    <span class="number" data-count="92">0</span>
+                    <span class="label">% de réussite</span>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
+
+<!-- ============================================================
+     À PROPOS
+============================================================ -->
+<section class="section-padding section-alt-1" id="a-propos">
+    <div class="container">
+        <div class="mission-grid">
+            <div class="mission-text">
+                <h2>Qui <span>sommes‑nous</span></h2>
+                <p>
+                    Le <strong>Centre de Recherche et d’Actions pour le Développement Durable</strong> (CRADD) est une ONG congolaise créée en <strong>2016</strong>.
+                    Nous promouvons la recherche multidisciplinaire et menons des actions novatrices pour le développement intégré des communautés urbaines et rurales,
+                    en particulier dans la région des Grands Lacs et au-delà.
+                </p>
+                <blockquote class="blockquote">
+                    <p class="mb-0"><em>« Que les communautés vivent dans des conditions acceptables par l’auto‑prise en charge permettant de concrétiser <strong>LE MONDE ENTRE VOS MAINS</strong> »</em></p>
+                </blockquote>
+                <ul class="mission-list mt-3">
+                    <li><i class="fas fa-check"></i> Recherche multidisciplinaire</li>
+                    <li><i class="fas fa-check"></i> Actions communautaires durables</li>
+                    <li><i class="fas fa-check"></i> Autonomisation des populations</li>
+                </ul>
+            </div>
+            <div class="mission-image">
+                <img src="{% static 'images/qui-sommes-nous.jpg' %}" alt="Équipe CRADD" />
+                <div class="floating-badge">
+                    <i class="fas fa-hand-holding-heart"></i>
+                    <span>+92% de réussite</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     NOS ACTIONS
+============================================================ -->
+<section class="section-padding section-alt-2" id="actions">
+    <div class="container">
+        <div class="section-title">
+            <h2>Nos <span>actions</span></h2>
+            <p>Domaines d’intervention et activités concrètes</p>
+            <div class="line"></div>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="icon"><i class="fas fa-flask"></i></div>
+                <h4>Recherche</h4>
+                <p>Promouvoir la recherche multidisciplinaire pour le développement intégré des communautés.</p>
+                <ul class="list-unstyled mt-3 service-list">
+                    <li><i class="fas fa-check-circle"></i> Études de terrain</li>
+                    <li><i class="fas fa-check-circle"></i> Publications scientifiques</li>
+                    <li><i class="fas fa-check-circle"></i> Recherche-action participative</li>
+                </ul>
+                <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="service-card">
+                <div class="icon"><i class="fas fa-users-cog"></i></div>
+                <h4>Actions communautaires</h4>
+                <p>Programmes concrets pour répondre aux besoins des populations (santé, éducation, environnement).</p>
+                <ul class="list-unstyled mt-3 service-list">
+                    <li><i class="fas fa-check-circle"></i> Formation en AGR pour les femmes</li>
+                    <li><i class="fas fa-check-circle"></i> Focus groupes et consultations</li>
+                    <li><i class="fas fa-check-circle"></i> Production de champignons</li>
+                </ul>
+                <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="service-card">
+                <div class="icon"><i class="fas fa-people-arrows"></i></div>
+                <h4>Éducation & Sensibilisation</h4>
+                <p>Interventions dans les écoles, universités et instituts pour promouvoir la santé, le leadership et la paix.</p>
+                <ul class="list-unstyled mt-3 service-list">
+                    <li><i class="fas fa-check-circle"></i> Sensibilisation VIH/Sida, Ebola, Covid-19</li>
+                    <li><i class="fas fa-check-circle"></i> Lutte contre les violences sexuelles</li>
+                    <li><i class="fas fa-check-circle"></i> Formation au leadership civique</li>
+                </ul>
+                <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     TÉMOIGNAGES
+============================================================ -->
+<section class="section-padding section-alt-1" id="temoignages">
+    <div class="container">
+        <div class="section-title">
+            <h2>Ils <span>témoignent</span></h2>
+            <p>Les voix de ceux qui ont bénéficié de nos actions</p>
+            <div class="line"></div>
+        </div>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
+                <p>"Grâce au CRADD, mon fils a pu reprendre l'école après deux ans d'interruption. Aujourd'hui, il est parmi les meilleurs et participe aux clubs d'écologie."</p>
+                <div class="author">
+                    <div class="avatar">MM</div>
+                    <div class="info">
+                        <div class="name">Marie Mbuyi</div>
+                        <div class="role">Mère d'élève, Kinshasa</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
+                <p>"Les formations en éducation environnementale ont transformé notre approche. Les élèves sont plus engagés et conscients des enjeux."</p>
+                <div class="author">
+                    <div class="avatar">PK</div>
+                    <div class="info">
+                        <div class="name">Paul Kabasele</div>
+                        <div class="role">Enseignant, Lubumbashi</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
+                <p>"Le soutien psychosocial et les activités de reboisement ont permis à des enfants de surmonter les traumatismes et de retrouver l'espoir."</p>
+                <div class="author">
+                    <div class="avatar">JM</div>
+                    <div class="info">
+                        <div class="name">Jean Mukendi</div>
+                        <div class="role">Directeur d'école, Goma</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     ACTUALITÉS
+============================================================ -->
+<section class="section-padding section-alt-2" id="actualites">
+    <div class="container">
+        <div class="section-title">
+            <h2>Nos <span>actualités</span></h2>
+            <p>Restez informés de nos actions et projets</p>
+            <div class="line"></div>
+        </div>
+        <div class="blog-grid">
+            {% if articles %}
+            {% for article in articles %}
+            <div class="blog-card">
+                <div class="img">
+                    {% if article.image %}
+                    <img src="{{ article.image.url }}" alt="{{ article.titre }}" />
+                    {% else %}
+                    <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80" alt="Image par défaut" />
+                    {% endif %}
+                    <span class="date">{{ article.date_publication|date:"d M Y" }}</span>
+                </div>
+                <div class="content">
+                    <span class="tag">{{ article.categorie.nom|default:"Actualité" }}</span>
+                    <h4>{{ article.titre|truncatechars:60 }}</h4>
+                    <p>{{ article.contenu|striptags|safe|truncatechars:150 }}</p>
+                    <a href="{% url 'actualites:article_detail' article.slug %}" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="col-12 text-center py-5">
+                <p class="empty-state">Aucune actualité disponible pour le moment.</p>
+            </div>
+            {% endif %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="{% url 'actualites:article_list' %}" class="btn btn-primary-custom">
+                Voir toutes les actualités <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     DONS – Numéro unique +243 898 660 364
+============================================================ -->
+<section class="donation-section" id="dons">
+    <div class="container">
+        <div class="section-title section-title-light">
+            <h2>Faire un <span>don</span></h2>
+            <p>Votre générosité transforme des vies et bâtit un avenir meilleur</p>
+            <div class="line"></div>
+        </div>
+
+        <div class="donation-grid">
+            <div class="donation-text">
+                <span class="badge-donation">
+                    <i class="fas fa-heart"></i> Soutenez notre mission
+                </span>
+                <h3>Chaque don compte</h3>
+                <p>
+                    Chaque contribution, quelle que soit sa taille, nous aide à financer
+                    nos programmes éducatifs, nos actions communautaires et nos projets de
+                    recherche pour un développement durable en RDC.
+                </p>
+                <ul class="donation-benefits">
+                    <li><i class="fas fa-check-circle"></i> Scolarisation d'enfants défavorisés</li>
+                    <li><i class="fas fa-check-circle"></i> Formation des enseignants et encadreurs</li>
+                    <li><i class="fas fa-check-circle"></i> Reboisement et protection de l'environnement</li>
+                    <li><i class="fas fa-check-circle"></i> Soutien psychosocial aux victimes</li>
+                    <li><i class="fas fa-check-circle"></i> Recherche-action pour le développement</li>
+                </ul>
+            </div>
+
+            <div class="donation-card">
+                <h3><i class="fas fa-hand-holding-usd"></i> Coordonnées pour vos dons</h3>
+                <p class="subtitle">Effectuez votre don via le canal ci-dessous</p>
+
+                <div class="donation-channel">
+                    <div class="donation-channel-header">
+                        <div class="channel-icon mobile-money">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div>
+                            <h4>Mobile Money</h4>
+                            <span class="channel-tag">Rapide & sécurisé</span>
+                        </div>
+                    </div>
+                    <div class="donation-channel-body">
+                        <div class="donation-info-row">
+                            <span class="label"><i class="fas fa-phone"></i> Numéro à créditer</span>
+                            <div class="value-group">
+                                <span class="value" id="donation-number">+243 898 660 364</span>
+                                <button class="btn-copy" onclick="copyToClipboard('donation-number')" title="Copier">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="donation-info-row">
+                            <span class="label"><i class="fas fa-user"></i> Bénéficiaire</span>
+                            <span class="value">CRADD asbl</span>
+                        </div>
+                        <div class="donation-info-row">
+                            <span class="label"><i class="fas fa-comment"></i> Référence</span>
+                            <span class="value">Don – [Votre nom]</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="donation-note">
+                    <i class="fas fa-info-circle"></i>
+                    <p>
+                        Après votre don, envoyez-nous une copie du reçu à
+                        <a href="mailto:dons@craddasbl.org">dons@craddasbl.org</a>
+                        ou via WhatsApp au <strong>+243 898 660 364</strong> pour recevoir votre attestation.
+                    </p>
+                </div>
+
+                <div class="donation-secure">
+                    <i class="fas fa-shield-alt"></i>
+                    Toutes les transactions sont vérifiées manuellement par notre équipe
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     PARTENAIRES
+============================================================ -->
+<section class="section-padding section-alt-1" id="partenaires">
+    <div class="container">
+        <div class="section-title">
+            <h2>Nos <span>partenaires</span></h2>
+            <p>Des organisations engagées à nos côtés</p>
+            <div class="line"></div>
+        </div>
+        <div class="partners-grid">
+            <div class="partner-item"><i class="fas fa-hospital-alt"></i> MINISANTE/DPS</div>
+            <div class="partner-item"><i class="fas fa-hand-holding-heart"></i> ONUSIDA</div>
+            <div class="partner-item"><i class="fas fa-users"></i> PNMLS</div>
+            <div class="partner-item"><i class="fas fa-graduation-cap"></i> EPSP</div>
+            <div class="partner-item"><i class="fas fa-female"></i> 50MAWS</div>
+            <div class="partner-item"><i class="fas fa-globe"></i> OMS</div>
+            <div class="partner-item"><i class="fas fa-balance-scale"></i> ASPLC</div>
+            <div class="partner-item"><i class="fas fa-hand-holding-usd"></i> UCOP+</div>
+            <div class="partner-item"><i class="fas fa-shield-alt"></i> MONUSCO</div>
+            <div class="partner-item"><i class="fas fa-female"></i> UNFPA</div>
+            <div class="partner-item"><i class="fas fa-landmark"></i> MINISTERE DU PLAN</div>
+            <div class="partner-item"><i class="fas fa-university"></i> UNESCO</div>
+            <div class="partner-item"><i class="fas fa-globe-africa"></i> RET</div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     NEWSLETTER
+============================================================ -->
+<section class="newsletter-section" id="newsletter">
+    <div class="container">
+        <h2>Restez informé</h2>
+        <p>Recevez nos actualités et les rapports de nos actions éducatives et environnementales</p>
+        <form class="newsletter-form" id="newsletterForm" onsubmit="return false;">
+            <input type="email" placeholder="Votre adresse email" required />
+            <button type="button"><i class="fas fa-paper-plane"></i> S'inscrire</button>
+        </form>
+    </div>
+</section>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       FONDS DE SECTIONS ALTERNÉS
+    ============================================================ */
+    .section-alt-1 {
+        background: var(--c-primary-soft);
+    }
+
+    .section-alt-2 {
+        background: var(--c-surface);
+    }
+
+    [data-bs-theme="dark"] .section-alt-1 {
+        background: var(--c-surface-soft);
+    }
+
+    [data-bs-theme="dark"] .section-alt-2 {
+        background: var(--c-surface);
+    }
+
+    /* ============================================================
+       LISTES DE SERVICES
+    ============================================================ */
+    .service-list {
+        font-size: 0.88rem;
+        color: var(--c-text-muted);
+        padding-left: 0;
+    }
+
+        .service-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+            .service-list li i {
+                color: var(--c-teal);
+                font-size: 0.9rem;
+                margin-top: 3px;
+                flex-shrink: 0;
+            }
+
+    .empty-state {
+        color: var(--c-text-muted);
+        font-size: 0.95rem;
+    }
+
+    /* ============================================================
+       SECTION DONS
+    ============================================================ */
+    .donation-section {
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 55%, #0d9488 100%);
+        padding: 88px 0;
+        color: #ffffff;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .donation-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1600&q=80') center/cover no-repeat;
+            opacity: 0.06;
+            z-index: 0;
+        }
+
+        .donation-section .container {
+            position: relative;
+            z-index: 2;
+        }
+
+    .section-title-light {
+        color: #ffffff;
+    }
+
+        .section-title-light h2 {
+            color: #ffffff;
+        }
+
+            .section-title-light h2 span {
+                color: #fcd34d;
+            }
+
+        .section-title-light p {
+            color: rgba(255, 255, 255, 0.88);
+        }
+
+        .section-title-light .line {
+            background: #fcd34d;
+        }
+
+    .donation-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.15fr;
+        gap: 50px;
+        align-items: start;
+    }
+
+    .donation-text h3 {
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: #ffffff;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+    }
+
+    .donation-text p {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.8;
+        margin-bottom: 24px;
+    }
+
+    .badge-donation {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(45, 212, 191, 0.15);
+        padding: 8px 20px;
+        border-radius: var(--radius-full);
+        font-size: 0.85rem;
+        color: #5eead4;
+        margin-bottom: 20px;
+        border: 1px solid rgba(45, 212, 191, 0.35);
+        font-weight: 600;
+    }
+
+    .donation-benefits {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 0;
+    }
+
+        .donation-benefits li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+            .donation-benefits li i {
+                color: #5eead4;
+                font-size: 1.05rem;
+                flex-shrink: 0;
+            }
+
+    .donation-card {
+        background: rgba(255, 255, 255, 0.10);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.20);
+        border-radius: var(--radius-lg);
+        padding: 36px 32px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    }
+
+        .donation-card > h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+            .donation-card > h3 i {
+                color: #5eead4;
+            }
+
+        .donation-card .subtitle {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 24px;
+        }
+
+    .donation-channel {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius);
+        padding: 20px 20px 16px;
+        margin-bottom: 18px;
+    }
+
+    .donation-channel-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 16px;
+        padding-bottom: 14px;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.18);
+    }
+
+    .channel-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+
+        .channel-icon.mobile-money {
+            background: linear-gradient(135deg, #0d9488, #14b8a6);
+            color: #ffffff;
+        }
+
+    .donation-channel-header h4 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin: 0;
+        color: #ffffff;
+    }
+
+    .channel-tag {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.65);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .donation-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 0;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+        .donation-info-row .label {
+            font-size: 0.84rem;
+            color: rgba(255, 255, 255, 0.75);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .donation-info-row .label i {
+                color: #5eead4;
+                font-size: 0.85rem;
+                width: 16px;
+                text-align: center;
+            }
+
+        .donation-info-row .value-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .donation-info-row .value {
+            font-size: 0.94rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.3px;
+            font-family: 'Inter', monospace;
+        }
+
+    .btn-copy {
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.20);
+        color: #ffffff;
+        width: 30px;
+        height: 30px;
+        border-radius: var(--radius-xs);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        transition: all var(--transition);
+        flex-shrink: 0;
+    }
+
+        .btn-copy:hover {
+            background: #5eead4;
+            border-color: #5eead4;
+            color: #0f172a;
+            transform: scale(1.08);
+        }
+
+        .btn-copy.copied {
+            background: #10b981;
+            border-color: #10b981;
+            color: #ffffff;
+        }
+
+    .donation-note {
+        display: flex;
+        gap: 12px;
+        background: rgba(45, 212, 191, 0.10);
+        border: 1px solid rgba(45, 212, 191, 0.30);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        margin-top: 8px;
+    }
+
+        .donation-note i {
+            color: #5eead4;
+            font-size: 1.1rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .donation-note p {
+            font-size: 0.84rem;
+            color: rgba(255, 255, 255, 0.92);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .donation-note a {
+            color: #5eead4;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(94, 234, 212, 0.4);
+        }
+
+            .donation-note a:hover {
+                color: #99f6e4;
+                border-bottom-color: #99f6e4;
+            }
+
+        .donation-note strong {
+            color: #ffffff;
+        }
+
+    .donation-secure {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+        font-size: 0.78rem;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+    }
+
+        .donation-secure i {
+            color: #5eead4;
+        }
+
+    @media (max-width: 992px) {
+        .donation-grid {
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+
+        .donation-text h3 {
+            font-size: 1.6rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .donation-card {
+            padding: 24px 18px;
+        }
+
+        .donation-channel {
+            padding: 16px 14px 12px;
+        }
+
+        .donation-info-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+            .donation-info-row .value-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+        .donation-text h3 {
+            font-size: 1.4rem;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    function copyToClipboard(elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const text = el.textContent.trim();
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showCopyFeedback(elementId);
+            }).catch(() => {
+                fallbackCopy(text, elementId);
+            });
+        } else {
+            fallbackCopy(text, elementId);
+        }
+    }
+
+    function fallbackCopy(text, elementId) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showCopyFeedback(elementId);
+        } catch (err) {
+            alert('Impossible de copier. Veuillez copier manuellement : ' + text);
+        }
+        document.body.removeChild(textarea);
+    }
+
+    function showCopyFeedback(elementId) {
+        const valueEl = document.getElementById(elementId);
+        if (!valueEl) return;
+        const btn = valueEl.parentElement.querySelector('.btn-copy');
+        if (!btn) return;
+
+        const originalHTML = btn.innerHTML;
+        btn.classList.add('copied');
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        showDonationToast('Copié : ' + valueEl.textContent.trim());
+
+        setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.innerHTML = originalHTML;
+        }, 2000);
+    }
+
+    function showDonationToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #0d9488, #14b8a6);
+            color: #fff;
+            padding: 14px 22px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 8px 24px rgba(13, 148, 136, 0.4);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        `;
+        toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        });
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 2500);
+    }
+</script>
 {% endblock %}

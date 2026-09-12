@@ -12,6 +12,7 @@
                 <span class="badge bg-light text-dark ms-2 float-end">{{ form.instance.code|default:"Nouveau" }}</span>
             </div>
             <div class="card-body">
+
                 <form method="post" id="coursForm" novalidate>
                     {% csrf_token %}
 
@@ -111,7 +112,7 @@
                     {% endif %}
 
                     <!-- ========== BOUTONS ========== -->
-                    <div class="d-flex gap-3 justify-content-end mt-4">
+                    <div class="d-flex gap-3 justify-content-end mt-4 flex-wrap">
                         <a href="{% url 'ecoles:cours_list' %}" class="btn btn-outline-secondary btn-lg px-4">
                             <i class="fas fa-times me-2"></i> Annuler
                         </a>

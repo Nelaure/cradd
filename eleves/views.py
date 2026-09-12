@@ -192,6 +192,95 @@ def eleve_edit(request, pk):
     return render(request, 'eleves/eleve_form.html', {'form': form, 'title': 'Modifier un élève'})
 
 
+# ===================== RÉINSCRIPTION D'ÉLÈVE =====================
+@login_required
+def eleve_reinscrire(request, pk):
+    eleve = get_object_or_404(Eleve, pk=pk)
+    user = request.user
+
+    # Vérification des droits (identique à eleve_edit)
+    if user.est_parent():
+        if eleve not in user.eleves_associes.all():
+            messages.error(request, 'Accès non autorisé.')
+            return redirect('eleves:eleve_list')
+    elif user.est_enseignant():
+        if eleve.classe != user.classe_affectation:
+            messages.error(request, 'Accès non autorisé.')
+            return redirect('eleves:eleve_list')
+    elif user.est_agent() and eleve.ecole != user.ecole_affectation:
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('eleves:eleve_list')
+    elif user.est_proved() and (eleve.ecole.province != user.province_affectation):
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('eleves:eleve_list')
+    elif not (user.est_administrateur() or user.est_inspecteur()):
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('eleves:eleve_list')
+
+    if request.method == 'POST':
+        form = EleveForm(request.POST, request.FILES, instance=eleve, user=user)
+        if form.is_valid():
+            eleve = form.save(commit=False)
+            # Contraintes de rôle
+            if user.est_enseignant():
+                eleve.ecole = user.ecole_affectation
+                eleve.classe = user.classe_affectation
+                eleve.niveau = user.niveau_affectation
+            elif user.est_agent() or user.est_inspecteur():
+                eleve.ecole = user.ecole_affectation
+            eleve.save()
+
+            # ---- Gestion du parcours ----
+
+            # 1. Fermer l'ancien parcours actif
+            old_parcours = ParcoursEleve.objects.filter(eleve=eleve, est_actuel=True).first()
+            if old_parcours:
+                old_parcours.est_actuel = False
+                old_parcours.date_fin = old_parcours.annee_scolaire.date_fin or timezone.now().date()
+                old_parcours.save()
+
+            # 2. Vérifier si un parcours existe déjà pour la nouvelle année
+            new_parcours, created = ParcoursEleve.objects.get_or_create(
+                eleve=eleve,
+                annee_scolaire=eleve.annee_scolaire,
+                defaults={
+                    'ecole': eleve.ecole,
+                    'niveau': eleve.niveau,
+                    'classe': eleve.classe,
+                    'date_debut': timezone.now().date(),
+                    'est_actuel': True
+                }
+            )
+            if not created:
+                # Mise à jour des informations si le parcours existe déjà
+                new_parcours.ecole = eleve.ecole
+                new_parcours.niveau = eleve.niveau
+                new_parcours.classe = eleve.classe
+                new_parcours.est_actuel = True
+                new_parcours.date_debut = timezone.now().date()
+                new_parcours.save()
+
+            messages.success(request, f'Réinscription de {eleve.get_nom_complet()} effectuée avec succès.')
+            return redirect('eleves:eleve_detail', pk=eleve.pk)
+    else:
+        form = EleveForm(instance=eleve, user=user)
+        # Suggestion de l'année suivante (si disponible)
+        current_year = eleve.annee_scolaire
+        if current_year:
+            next_year = AnneeScolaire.objects.filter(annee__gt=current_year.annee).order_by('annee').first()
+            if next_year:
+                form.fields['annee_scolaire'].initial = next_year
+
+    context = {
+        'form': form,
+        'title': f'Réinscrire {eleve.get_nom_complet()}',
+        'is_reinscription': True,
+        'submit_text': 'Réinscrire',
+        'eleve': eleve,
+    }
+    return render(request, 'eleves/eleve_form.html', context)
+
+
 # ===================== DÉTAIL D'ÉLÈVE =====================
 @login_required
 def eleve_detail(request, pk):
@@ -228,9 +317,20 @@ def eleve_detail(request, pk):
         parcours = parcours_list.filter(annee_scolaire=annee).first()
         cours_list = []
         if parcours and parcours.classe:
-            cours_list = parcours.classe.cours.all()
+            # --- Regroupement par nom pour éviter les doublons ---
+            cours_bruts = parcours.classe.cours.all()
+            cours_uniques = {}
+            for c in cours_bruts:
+                if c.nom not in cours_uniques:
+                    cours_uniques[c.nom] = c
+            cours_list = list(cours_uniques.values())
         elif annee == eleve.annee_scolaire and eleve.classe:
-            cours_list = eleve.classe.cours.all()
+            cours_bruts = eleve.classe.cours.all()
+            cours_uniques = {}
+            for c in cours_bruts:
+                if c.nom not in cours_uniques:
+                    cours_uniques[c.nom] = c
+            cours_list = list(cours_uniques.values())
 
         resultats_par_cours = {}
 
@@ -241,12 +341,14 @@ def eleve_detail(request, pk):
                 cycle_eval = CycleEvaluation.objects.create(cours=cours, type_cycle='trimestre')
                 cycle_eval.creer_evaluations_par_defaut()
 
-            eval_configs = cycle_eval.evaluations.all().order_by('cycle_num', 'ordre')
-            evaluations = []
-            masques_par_cycle = {}  # pour le bouton de visibilité du cycle entier
-            masques_colonnes = {}    # pour les boutons de colonne (période/examen)
+            # --- FILTRE : ne garder que les évaluations valides pour ce type de cycle ---
+            nb_cycles = cycle_eval.get_nombre_cycles()
+            eval_configs = cycle_eval.evaluations.filter(cycle_num__lte=nb_cycles).order_by('cycle_num', 'ordre')
 
-            # Récupérer les masquages de colonnes pour ce cours/année/élève
+            evaluations = []
+            masques_par_cycle = {}
+            masques_colonnes = {}
+
             for mc in MasquageColonne.objects.filter(
                 eleve=eleve,
                 annee_scolaire=annee,
@@ -281,18 +383,15 @@ def eleve_detail(request, pk):
                 cycle = config.cycle_num
                 points_max = config.points_max
 
-                # Mettre à jour masques_par_cycle pour le bouton (enseignant)
                 if cycle not in masques_par_cycle:
                     masques_par_cycle[cycle] = masque_eval
                 else:
                     if masque_eval:
                         masques_par_cycle[cycle] = True
 
-                # Vérifier le masquage de colonne
                 colonne_key = f"{cycle}_{config.type}_{config.periode_num if config.periode_num is not None else 'None'}"
                 colonne_masque = masques_colonnes.get(colonne_key, False)
 
-                # Pour le parent : on masque la colonne si colonne_masque est True
                 if user_is_parent and colonne_masque:
                     est_masque_pour_parent = True
                     points_obtenus = None
@@ -321,7 +420,6 @@ def eleve_detail(request, pk):
                     'totaux_cycle': {}
                 }
 
-        # Construction des masques de colonnes globaux pour cette année
         masques_colonnes_globaux = {}
         for cours_data in resultats_par_cours.values():
             for key, value in cours_data.get('masques_colonnes', {}).items():
@@ -331,7 +429,6 @@ def eleve_detail(request, pk):
                     if value:
                         masques_colonnes_globaux[key] = True
 
-        # Calcul des cycles et périodes
         cycles_set = set()
         periodes_map = {}
         for cours_data in resultats_par_cours.values():
@@ -340,14 +437,14 @@ def eleve_detail(request, pk):
                 cycles_set.add(cycle)
                 if cycle not in periodes_map:
                     periodes_map[cycle] = set()
-                if eval['type'] == 'periode' and eval['periode'] is not None:
+                # --- FILTRE DES PÉRIODES : ne garder que les périodes 1 et 2 ---
+                if eval['type'] == 'periode' and eval['periode'] is not None and eval['periode'] <= 2:
                     periodes_map[cycle].add(eval['periode'])
 
         cycles_info = []
         for cycle_num in sorted(cycles_set):
             periodes = sorted(periodes_map.get(cycle_num, []))
 
-            # Vérifier si le cycle est entièrement masqué pour le parent (via masquage individuel)
             cycle_masque_parent = False
             if user_is_parent:
                 all_masque = True
@@ -360,15 +457,16 @@ def eleve_detail(request, pk):
                         break
                 cycle_masque_parent = all_masque
 
-            # Ajouter les totaux par matière pour ce cycle
             for cours_id, cours_data in resultats_par_cours.items():
                 total_obtenu = 0
                 total_possible = 0
                 for eval in cours_data['evaluations']:
                     if eval['cycle'] == cycle_num:
-                        total_possible += eval['points_max']
-                        if not eval['est_masque_pour_parent'] and eval['points_obtenus'] is not None:
-                            total_obtenu += eval['points_obtenus']
+                        # On inclut les examens et les périodes 1 et 2 (si période non nulle)
+                        if eval['type'] == 'examen' or (eval['periode'] is not None and eval['periode'] <= 2):
+                            total_possible += eval['points_max']
+                            if not eval['est_masque_pour_parent'] and eval['points_obtenus'] is not None:
+                                total_obtenu += eval['points_obtenus']
                 if user_is_parent and cycle_masque_parent:
                     cours_data['totaux_cycle'] = {
                         'total_obtenu': None,
@@ -384,9 +482,7 @@ def eleve_detail(request, pk):
                         'masque': False
                     }
 
-            # Totaux globaux du cycle, avec masquage par colonne
             totals = []
-            # Pour chaque période
             for periode in periodes:
                 total_obtenu = 0
                 total_possible = 0
@@ -421,7 +517,6 @@ def eleve_detail(request, pk):
                         'colonne_masquee': False
                     })
 
-            # Examen
             total_obtenu = 0
             total_possible = 0
             colonne_masquee = False
@@ -462,7 +557,6 @@ def eleve_detail(request, pk):
                 'masque_parent': user_is_parent and cycle_masque_parent
             })
 
-        # Résultat annuel
         resultat_annuel = ResultatAnnuel.objects.filter(eleve=eleve, annee_scolaire=annee).first()
         annuel_data = {
             'pourcentage_general': float(resultat_annuel.pourcentage_general) if resultat_annuel else None,
@@ -530,6 +624,11 @@ def toggle_masquage(request):
     if not cycle_eval:
         return JsonResponse({'success': False, 'error': 'Aucune évaluation configurée pour ce cours'}, status=404)
 
+    # Vérifier que le cycle_num est valide pour ce cours
+    nb_cycles = cycle_eval.get_nombre_cycles()
+    if cycle_num > nb_cycles:
+        return JsonResponse({'success': False, 'error': 'Cycle invalide pour ce cours'}, status=400)
+
     configs = cycle_eval.evaluations.filter(cycle_num=cycle_num)
     if not configs.exists():
         return JsonResponse({'success': False, 'error': 'Aucune évaluation trouvée pour ce cycle'}, status=404)
@@ -566,8 +665,8 @@ def toggle_colonne_masquage(request):
     eleve_id = request.GET.get('eleve_id')
     annee_id = request.GET.get('annee_id')
     cycle_num = request.GET.get('cycle_num')
-    type_col = request.GET.get('type')  # 'periode' ou 'examen'
-    periode_num = request.GET.get('periode_num')  # peut être 'None'
+    type_col = request.GET.get('type')
+    periode_num = request.GET.get('periode_num')
 
     if not all([eleve_id, annee_id, cycle_num, type_col]):
         return JsonResponse({'success': False, 'error': 'Paramètres manquants'}, status=400)
@@ -596,7 +695,6 @@ def toggle_colonne_masquage(request):
     elif not (user.est_administrateur() or user.est_enseignant() or user.est_agent()):
         return JsonResponse({'success': False, 'error': 'Accès non autorisé'}, status=403)
 
-    # Récupérer tous les cours de l'élève pour cette année
     parcours = ParcoursEleve.objects.filter(eleve=eleve, annee_scolaire=annee).first()
     if parcours and parcours.classe:
         cours_list = parcours.classe.cours.all()
@@ -612,6 +710,15 @@ def toggle_colonne_masquage(request):
     modified = 0
     new_status = None
     for cours in cours_list:
+        # Vérifier que le cycle_num est valide pour ce cours
+        try:
+            cycle_eval = cours.cycle_evaluation
+            nb_cycles = cycle_eval.get_nombre_cycles()
+            if cycle_num > nb_cycles:
+                continue
+        except CycleEvaluation.DoesNotExist:
+            continue
+
         masquage, created = MasquageColonne.objects.get_or_create(
             eleve=eleve,
             annee_scolaire=annee,
@@ -626,6 +733,9 @@ def toggle_colonne_masquage(request):
             masquage.save()
         modified += 1
         new_status = masquage.masque
+
+    if modified == 0:
+        return JsonResponse({'success': False, 'error': 'Aucun cours valide trouvé pour ce cycle'}, status=404)
 
     return JsonResponse({
         'success': True,
