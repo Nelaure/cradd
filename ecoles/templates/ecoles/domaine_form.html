@@ -1,0 +1,544 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - CRADD{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+{% block page_subtitle %}Formulaire de saisie pour les domaines{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'ecoles:domaine_list' %}">Domaines</a>
+    <span class="sep">/</span>
+    <span>{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-8">
+        <div class="wp-card">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-tags" style="color:var(--wp-primary);"></i>
+                    {{ title }}
+                </h3>
+            </div>
+
+            <div class="wp-card-body">
+                <form method="post" id="domaineForm" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="wp-toast error" style="position:static; margin-bottom:16px;">
+                            <span class="wp-toast-icon"><i class="fas fa-exclamation-circle"></i></span>
+                            <div class="wp-toast-body">
+                                <div class="wp-toast-title">Erreur</div>
+                                <div class="wp-toast-message">
+                                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="col-12">
+                            <label for="{{ field.id_for_label }}" class="wp-form-label">
+                                {% if field.name == 'nom' %}<i class="fas fa-tag"></i>
+                                {% elif field.name == 'description' %}<i class="fas fa-align-left"></i>
+                                {% elif field.name == 'ecole' %}<i class="fas fa-school"></i>
+                                {% elif field.name == 'est_reference' %}<i class="fas fa-star"></i>
+                                {% elif field.name == 'niveaux' %}<i class="fas fa-layer-group"></i>
+                                {% elif field.name == 'classes' %}<i class="fas fa-users"></i>
+                                {% else %}<i class="fas fa-tag"></i>
+                                {% endif %}
+                                {{ field.label }}
+                                {% if field.field.required %}<span style="color:var(--wp-danger);">*</span>{% endif %}
+                            </label>
+
+                            {% if field.name == 'est_reference' %}
+                                <div class="wp-check" style="margin-top:6px;">
+                                    {{ field }}
+                                    <label for="{{ field.id_for_label }}" style="font-weight:500;">
+                                        Définir comme domaine de référence (modèle)
+                                    </label>
+                                </div>
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
+
+                            {% if field.errors %}
+                                <div class="wp-form-error">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                                <div class="wp-form-help">
+                                    <i class="fas fa-info-circle"></i>
+                                    {{ field.help_text }}
+                                </div>
+                            {% endif %}
+
+                            {# Info supplémentaire pour le champ niveaux #}
+                            {% if field.name == 'niveaux' %}
+                            <div class="wp-form-help" style="margin-top:6px;">
+                                <i class="fas fa-info-circle"></i>
+                                Maintenez <kbd>Ctrl</kbd> (ou <kbd>Cmd</kbd>) pour sélectionner plusieurs niveaux.
+                                Les classes proposées ci-dessous seront filtrées selon ces niveaux.
+                            </div>
+                            {% endif %}
+
+                            {# Info supplémentaire pour le champ classes #}
+                            {% if field.name == 'classes' %}
+                            <div class="wp-form-help" style="margin-top:6px; flex-direction:column; align-items:flex-start; gap:6px;">
+                                <span id="classesHint">
+                                    <i class="fas fa-info-circle"></i>
+                                    Sélectionnez d'abord un ou plusieurs niveaux pour filtrer les classes.
+                                </span>
+                                <span>
+                                    <span class="wp-badge wp-badge-primary" id="classesCountBadge" style="font-weight:700;">0</span>
+                                    classe(s) disponible(s).
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="wp-form-actions" style="justify-content:flex-end;">
+                        <a href="{% url 'ecoles:domaine_list' %}" class="wp-btn secondary">
+                            <i class="fas fa-times"></i> Annuler
+                        </a>
+                        <button type="submit" class="wp-btn">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .wp-card-body input[type="text"],
+    .wp-card-body input[type="date"],
+    .wp-card-body input[type="email"],
+    .wp-card-body input[type="number"],
+    .wp-card-body input[type="tel"],
+    .wp-card-body input[type="password"],
+    .wp-card-body select,
+    .wp-card-body textarea {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-family: inherit;
+        color: var(--wp-text);
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius-sm);
+        outline: none;
+        transition: all var(--wp-transition);
+        line-height: 1.5;
+    }
+
+    .wp-card-body input:focus,
+    .wp-card-body select:focus,
+    .wp-card-body textarea:focus {
+        border-color: var(--wp-primary);
+        box-shadow: 0 0 0 3px var(--wp-primary-soft);
+    }
+
+    .wp-card-body select[multiple] {
+        min-height: 140px;
+        padding: 8px;
+    }
+
+    .wp-card-body select[multiple] option {
+        padding: 6px 10px;
+        border-radius: 4px;
+        margin-bottom: 2px;
+    }
+
+    .wp-card-body select[multiple] option:checked {
+        background: var(--wp-primary);
+        color: #fff !important;
+    }
+
+    .wp-card-body input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--wp-primary);
+        cursor: pointer;
+    }
+
+    .wp-card-body textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    /* ============================================================
+       Select multiple — Classes
+    ============================================================ */
+    #id_classes {
+        min-height: 220px;
+    }
+
+    #id_classes:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: var(--wp-surface-alt);
+    }
+
+    .wp-form-help kbd {
+        background: var(--wp-surface-alt);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 3px;
+        padding: 0 5px;
+        font-size: 10.5px;
+        font-family: monospace;
+    }
+
+    /* Animation de chargement */
+    .classes-loading {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--wp-primary);
+        font-size: 11.5px;
+        font-weight: 500;
+    }
+
+    .classes-loading::after {
+        content: '';
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--wp-primary-soft);
+        border-top-color: var(--wp-primary);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* ============================================================
+       Select2 — Ajustements spécifiques
+    ============================================================ */
+    .select2-container--bootstrap-5 .select2-selection--multiple {
+        min-height: 100px;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+        background-color: var(--wp-primary);
+        border-color: var(--wp-primary);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 3px 8px;
+        margin: 3px;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+        color: #fff;
+        margin-right: 4px;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
+        color: var(--wp-danger);
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    (function () {
+        'use strict';
+
+        // ============================================================
+        // INITIALISATION APRÈS LE CHARGEMENT COMPLET (Select2 inclus)
+        // ============================================================
+        function initDomaineForm() {
+            console.log('[Domaine] === Initialisation ===');
+
+            const niveauSelect = document.getElementById('id_niveaux');
+            const classeSelect = document.getElementById('id_classes');
+            const classesCountBadge = document.getElementById('classesCountBadge');
+            const classesHint = document.getElementById('classesHint');
+
+            if (!niveauSelect) {
+                console.error('[Domaine] ❌ #id_niveaux introuvable');
+                return;
+            }
+            if (!classeSelect) {
+                console.error('[Domaine] ❌ #id_classes introuvable');
+                return;
+            }
+
+            console.log('[Domaine] ✅ Selects trouvés');
+
+            // ============================================================
+            // DÉTECTION SELECT2
+            // ============================================================
+            const hasJQuery = typeof jQuery !== 'undefined';
+            const hasSelect2Fn = hasJQuery && typeof jQuery.fn.select2 !== 'undefined';
+
+            function isSelect2Active(el) {
+                if (!hasSelect2Fn) return false;
+                return jQuery(el).hasClass('select2-hidden-accessible');
+            }
+
+            console.log('[Domaine] Select2 niveau:', isSelect2Active(niveauSelect));
+            console.log('[Domaine] Select2 classe:', isSelect2Active(classeSelect));
+
+            // ============================================================
+            // MODE RÉFÉRENCE
+            // ============================================================
+            const isReference = {% if is_reference_form %}true{% elif form.is_reference %}true{% else %}false{% endif %};
+            console.log('[Domaine] Mode référence :', isReference);
+
+            // ============================================================
+            // FONCTION : Récupérer les IDs de niveaux sélectionnés
+            // ============================================================
+            function getSelectedNiveauIds() {
+                if (isSelect2Active(niveauSelect)) {
+                    const val = jQuery(niveauSelect).val();
+                    return Array.isArray(val) ? val : (val ? [val] : []);
+                }
+                return Array.from(niveauSelect.selectedOptions)
+                    .map(function (o) { return o.value; })
+                    .filter(function (v) { return v; });
+            }
+
+            // ============================================================
+            // FONCTION : Récupérer les IDs de classes sélectionnées
+            // ============================================================
+            function getSelectedClasseIds() {
+                if (isSelect2Active(classeSelect)) {
+                    const val = jQuery(classeSelect).val();
+                    return Array.isArray(val) ? val : (val ? [val] : []);
+                }
+                return Array.from(classeSelect.selectedOptions)
+                    .map(function (o) { return o.value; })
+                    .filter(function (v) { return v; });
+            }
+
+            // ============================================================
+            // FONCTION : Rafraîchir Select2 sur #id_classes
+            // ============================================================
+            function refreshClasseSelect2() {
+                if (!isSelect2Active(classeSelect)) return;
+
+                console.log('[Domaine] Rafraîchissement Select2 sur classes');
+
+                try {
+                    // Détruire Select2
+                    jQuery(classeSelect).select2('destroy');
+
+                    // Réinitialiser
+                    jQuery(classeSelect).select2({
+                        theme: 'bootstrap-5',
+                        width: '100%',
+                        placeholder: 'Sélectionnez les classes...',
+                        closeOnSelect: false,
+                    });
+                } catch (e) {
+                    console.error('[Domaine] Erreur refresh Select2:', e);
+                }
+            }
+
+            // ============================================================
+            // FONCTION : Mettre à jour le compteur
+            // ============================================================
+            function updateClassesCount() {
+                if (classesCountBadge) {
+                    classesCountBadge.textContent = classeSelect.options.length;
+                }
+            }
+
+            // ============================================================
+            // FONCTION : Afficher un message dans le select vide
+            // ============================================================
+            function setEmptyMessage(message) {
+                classeSelect.innerHTML = '';
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = message;
+                option.disabled = true;
+                option.selected = true;
+                classeSelect.appendChild(option);
+
+                refreshClasseSelect2();
+
+                if (classesHint) {
+                    classesHint.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+                }
+                updateClassesCount();
+            }
+
+            // ============================================================
+            // FONCTION PRINCIPALE : Charger les classes
+            // ============================================================
+            function loadClasses(niveauIds, preserveSelection) {
+                if (preserveSelection === undefined) preserveSelection = true;
+
+                console.log('[Domaine] loadClasses → niveaux:', niveauIds);
+
+                // Récupérer la sélection actuelle
+                const selectedIds = preserveSelection ? getSelectedClasseIds() : [];
+                console.log('[Domaine] Classes déjà sélectionnées:', selectedIds);
+
+                if (!niveauIds || niveauIds.length === 0) {
+                    setEmptyMessage("Sélectionnez d'abord un ou plusieurs niveaux");
+                    return;
+                }
+
+                // État de chargement
+                classeSelect.innerHTML = '';
+                const loadingOpt = document.createElement('option');
+                loadingOpt.textContent = 'Chargement...';
+                loadingOpt.disabled = true;
+                classeSelect.appendChild(loadingOpt);
+
+                refreshClasseSelect2();
+
+                if (classesHint) {
+                    classesHint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement des classes…';
+                }
+
+                const refParam = isReference ? '1' : '0';
+
+                // Lancer les fetch en parallèle
+                const promises = niveauIds.map(function (nid) {
+                    const url = '/api/classes-par-niveau/?niveau_id=' + nid + '&reference=' + refParam;
+                    console.log('[Domaine] Fetch:', url);
+
+                    return fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin',
+                    })
+                    .then(function (r) {
+                        console.log('[Domaine] HTTP', r.status, 'niveau', nid);
+                        if (!r.ok) return [];
+                        return r.json();
+                    })
+                    .then(function (data) {
+                        console.log('[Domaine] Données niveau', nid, ':', data);
+                        return data;
+                    })
+                    .catch(function (err) {
+                        console.error('[Domaine] Erreur fetch niveau', nid, ':', err);
+                        return [];
+                    });
+                });
+
+                Promise.all(promises).then(function (results) {
+                    // Fusionner et dédupliquer
+                    const map = {};
+                    results.forEach(function (list) {
+                        if (Array.isArray(list)) {
+                            list.forEach(function (c) {
+                                if (c && c.id && !map[c.id]) {
+                                    map[c.id] = c;
+                                }
+                            });
+                        }
+                    });
+
+                    const classes = Object.values(map).sort(function (a, b) {
+                        return (a.nom || '').localeCompare(b.nom || '');
+                    });
+
+                    console.log('[Domaine] ✅ Total classes:', classes.length);
+
+                    // Vider le select
+                    classeSelect.innerHTML = '';
+
+                    if (classes.length === 0) {
+                        setEmptyMessage("Aucune classe trouvée pour ce(s) niveau(x)");
+                        return;
+                    }
+
+                    // Ajouter les options
+                    classes.forEach(function (classe) {
+                        const option = document.createElement('option');
+                        option.value = classe.id;
+                        option.textContent = classe.nom;
+                        if (selectedIds.indexOf(String(classe.id)) !== -1) {
+                            option.selected = true;
+                        }
+                        classeSelect.appendChild(option);
+                    });
+
+                    // ✅ ÉTAPE CRUCIALE : rafraîchir Select2
+                    refreshClasseSelect2();
+
+                    if (classesHint) {
+                        classesHint.innerHTML =
+                            '<i class="fas fa-check-circle" style="color:var(--wp-success);"></i> ' +
+                            classes.length + ' classe(s) disponible(s).';
+                    }
+                    updateClassesCount();
+                });
+            }
+
+            // ============================================================
+            // ÉVÉNEMENT : changement de niveau
+            // ============================================================
+            function onNiveauxChange() {
+                const ids = getSelectedNiveauIds();
+                console.log('[Domaine] Changement niveaux → IDs:', ids);
+                loadClasses(ids, true);
+            }
+
+            // Attacher les événements (natif + Select2)
+            niveauSelect.addEventListener('change', onNiveauxChange);
+            if (hasSelect2Fn) {
+                jQuery(niveauSelect).on('change', onNiveauxChange);
+            }
+
+            // ============================================================
+            // ÉVÉNEMENT : mise à jour compteur sur classe
+            // ============================================================
+            classeSelect.addEventListener('change', updateClassesCount);
+            if (hasSelect2Fn) {
+                jQuery(classeSelect).on('change', updateClassesCount);
+            }
+
+            // ============================================================
+            // INITIALISATION
+            // ============================================================
+            const initialIds = getSelectedNiveauIds();
+            console.log('[Domaine] Niveaux initiaux:', initialIds);
+
+            if (initialIds.length > 0) {
+                loadClasses(initialIds, true);
+            } else {
+                setEmptyMessage("Sélectionnez d'abord un ou plusieurs niveaux");
+            }
+
+            updateClassesCount();
+
+            console.log('[Domaine] === Initialisation terminée ===');
+        }
+
+        // ============================================================
+        // DÉMARRAGE : attendre que Select2 soit bien initialisé
+        // ============================================================
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                // Petit délai pour laisser Select2 s'initialiser
+                setTimeout(initDomaineForm, 400);
+            });
+        } else {
+            setTimeout(initDomaineForm, 400);
+        }
+    })();
+</script>
+{% endblock %}
