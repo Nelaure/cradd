@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Corbeille - CRADD{% endblock %}
+{% block page_heading %}Corbeille{% endblock %}
+{% block page_subtitle %}Éléments supprimés pouvant être restaurés ou effacés définitivement{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Corbeille</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     EN-TÊTE DE PAGE (BOX avec titre + bouton vider)
+============================================================ -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-trash-alt" style="color:var(--wp-danger);"></i>
+                Corbeille
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Restaurez ou supprimez définitivement les éléments en corbeille.
+            </p>
+        </div>
+        {% if trash_items %}
+        <a href="{% url 'ecoles:empty_trash' %}" class="wp-btn danger"
+           onclick="return confirm('⚠️ Vider TOUTE la corbeille ?\n\nCette action est irréversible.');">
+            <i class="fas fa-broom"></i> Vider la corbeille
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ============================================================
+     TABLEAU DES ÉLÉMENTS SUPPRIMÉS
+============================================================ -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3>
+            <i class="fas fa-list" style="color:var(--wp-primary);"></i>
+            Éléments supprimés
+        </h3>
+        <span class="wp-count-badge">{{ trash_items|length }} élément{{ trash_items|length|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if trash_items %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table datatable">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Modèle</th>
+                        <th>Date de suppression</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in trash_items %}
+                    <tr>
+                        <td data-label="Nom">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-file-alt" style="color:var(--wp-text-light); font-size:12px;"></i>
+                                {{ item.name }}
+                            </strong>
+                        </td>
+                        <td data-label="Modèle">
+                            <span class="wp-badge wp-badge-neutral">
+                                <i class="fas fa-cube"></i> {{ item.model }}
+                            </span>
+                        </td>
+                        <td data-label="Date de suppression">
+                            {% if item.deleted_at %}
+                                <span style="font-size:12.5px; color:var(--wp-text-muted); white-space:nowrap;">
+                                    <i class="fas fa-clock" style="font-size:10px;"></i>
+                                    {{ item.deleted_at|date:"d/m/Y H:i" }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end; flex-wrap:wrap; gap:8px;">
+                                <a href="{% url 'ecoles:restore_item' item.model item.id %}"
+                                   class="wp-btn success sm"
+                                   title="Restaurer cet élément"
+                                   onclick="return confirm('Restaurer « {{ item.name }} » ?');">
+                                    <i class="fas fa-undo"></i> Restaurer
+                                </a>
+                                <a href="{% url 'ecoles:permanent_delete' item.model item.id %}"
+                                   class="wp-btn danger sm"
+                                   title="Supprimer définitivement"
+                                   onclick="return confirm('⚠️ Supprimer DÉFINITIVEMENT « {{ item.name }} » ?\n\nCette action est irréversible.');">
+                                    <i class="fas fa-times-circle"></i> Supprimer
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-trash-alt"></i>
+            <h5 style="font-weight:700; margin:14px 0 10px; color:var(--wp-text-strong);">
+                La corbeille est vide
+            </h5>
+            <p style="max-width:500px; margin:0 auto 20px; line-height:1.7;">
+                Aucun élément supprimé pour le moment.
+            </p>
+            <a href="{% url 'ecoles:dashboard' %}" class="wp-btn">
+                <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

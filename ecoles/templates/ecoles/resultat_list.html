@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Résultats - CRADD{% endblock %}
+{% block page_heading %}Liste des résultats{% endblock %}
+{% block page_subtitle %}Consultation et filtrage des notes saisies{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Résultats</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== EN-TÊTE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-chart-bar" style="color:var(--wp-primary);"></i>
+                Résultats
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Filtrez les notes par école, niveau, classe, cours, année ou statut.
+            </p>
+        </div>
+        <a href="{% url 'ecoles:resultat_create' %}" class="wp-btn">
+            <i class="fas fa-plus"></i> Saisir des résultats
+        </a>
+    </div>
+</div>
+
+<!-- ===== FILTRES ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-filter"></i> Filtres</h3>
+        <span class="wp-count-badge">{{ resultats.paginator.count }} résultat{{ resultats.paginator.count|pluralize }}</span>
+    </div>
+    <div class="wp-card-body">
+        <form method="get" id="filterForm">
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label for="filter_ecole" class="wp-form-label">
+                        <i class="fas fa-school"></i> École
+                    </label>
+                    <select name="ecole" id="filter_ecole" class="wp-select">
+                        <option value="">Toutes</option>
+                        {% for e in ecoles %}
+                            <option value="{{ e.id }}" {% if e.id|stringformat:"s" == selected_ecole %}selected{% endif %}>
+                                {{ e.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_niveau" class="wp-form-label">
+                        <i class="fas fa-layer-group"></i> Niveau
+                    </label>
+                    <select name="niveau" id="filter_niveau" class="wp-select">
+                        <option value="">Tous</option>
+                        {% for n in niveaux %}
+                            <option value="{{ n.id }}" {% if n.id|stringformat:"s" == selected_niveau %}selected{% endif %}>
+                                {{ n.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_classe" class="wp-form-label">
+                        <i class="fas fa-users"></i> Classe
+                    </label>
+                    <select name="classe" id="filter_classe" class="wp-select">
+                        <option value="">Toutes</option>
+                        {% for c in classes %}
+                            <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_classe %}selected{% endif %}>
+                                {{ c.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_cours" class="wp-form-label">
+                        <i class="fas fa-book"></i> Cours
+                    </label>
+                    <select name="cours" id="filter_cours" class="wp-select">
+                        <option value="">Tous</option>
+                        {% for c in cours %}
+                            <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_cours %}selected{% endif %}>
+                                {{ c.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_annee" class="wp-form-label">
+                        <i class="fas fa-calendar-alt"></i> Année
+                    </label>
+                    <select name="annee" id="filter_annee" class="wp-select">
+                        <option value="">Toutes</option>
+                        {% for a in annees %}
+                            <option value="{{ a.id }}" {% if a.id|stringformat:"s" == selected_annee %}selected{% endif %}>
+                                {{ a.annee }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_statut" class="wp-form-label">
+                        <i class="fas fa-flag"></i> Statut
+                    </label>
+                    <select name="statut" id="filter_statut" class="wp-select">
+                        <option value="">Tous</option>
+                        <option value="reussite" {% if request.GET.statut == 'reussite' %}selected{% endif %}>
+                            Réussite (≥ 50%)
+                        </option>
+                        <option value="echec" {% if request.GET.statut == 'echec' %}selected{% endif %}>
+                            Échec (&lt; 50%)
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="wp-check" style="margin-top:28px;">
+                        <input type="checkbox" name="sans_note" value="1" id="sansNote"
+                               {% if request.GET.sans_note %}checked{% endif %}>
+                        <label for="sansNote">
+                            <i class="fas fa-user-slash"></i> Afficher les élèves sans note
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="wp-form-actions-inline">
+                        <button type="submit" class="wp-btn">
+                            <i class="fas fa-filter"></i> Filtrer
+                        </button>
+                        <a href="{% url 'ecoles:resultat_list' %}" class="wp-btn outline">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== TABLEAU DES RÉSULTATS ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-list"></i> Résultats</h3>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if resultats %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Élève</th>
+                        <th>Cours</th>
+                        <th>Cycle</th>
+                        <th>Évaluation</th>
+                        <th>Points</th>
+                        <th>Max</th>
+                        <th>%</th>
+                        <th>Année</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in resultats %}
+                    <tr>
+                        <td data-label="Élève">
+                            <strong style="color:var(--wp-text-strong); font-size:13px;">
+                                <i class="fas fa-user-graduate" style="color:var(--wp-primary); font-size:11px;"></i>
+                                {{ r.eleve.get_nom_complet }}
+                            </strong>
+                            {% if r.eleve.classe %}
+                                <br><small style="color:var(--wp-text-light); font-size:11px;">
+                                    {{ r.eleve.classe.nom }}
+                                </small>
+                            {% endif %}
+                        </td>
+                        <td data-label="Cours">
+                            <span style="font-weight:600; color:var(--wp-text-strong);">
+                                {{ r.cours.nom }}
+                            </span>
+                        </td>
+                        <td data-label="Cycle">
+                            <span class="wp-badge wp-badge-neutral">
+                                Cycle {{ r.evaluation_config.cycle_num }}
+                            </span>
+                        </td>
+                        <td data-label="Évaluation">
+                            <span style="font-size:12.5px;">
+                                {{ r.evaluation_config.get_type_display }}{% if r.evaluation_config.periode_num %} {{ r.evaluation_config.periode_num }}{% endif %}
+                            </span>
+                        </td>
+                        <td data-label="Points">
+                            <strong style="color:var(--wp-primary);">
+                                {{ r.points_obtenus }}
+                            </strong>
+                        </td>
+                        <td data-label="Max">
+                            <span style="color:var(--wp-text-muted);">
+                                {{ r.points_max }}
+                            </span>
+                        </td>
+                        <td data-label="%">
+                            {% if r.pourcentage >= 50 %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-check"></i> {{ r.pourcentage|floatformat:1 }}%
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger">
+                                    <i class="fas fa-times"></i> {{ r.pourcentage|floatformat:1 }}%
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Année">
+                            <span style="font-size:12.5px; color:var(--wp-text-muted);">
+                                {{ r.annee_scolaire.annee }}
+                            </span>
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+                                <a href="{% url 'ecoles:resultat_edit' r.id %}"
+                                   class="wp-action-btn edit"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'ecoles:resultat_delete' r.id %}"
+                                   class="wp-action-btn danger"
+                                   title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-chart-bar"></i>
+            <p>Aucun résultat trouvé avec ces filtres.</p>
+            <a href="{% url 'ecoles:resultat_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Saisir des résultats
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== PAGINATION ===== -->
+{% if resultats.has_other_pages %}
+<div class="wp-card" style="margin-top:20px;">
+    <div class="wp-card-body">
+        <div class="wp-pagination">
+            {% if resultats.has_previous %}
+                <a href="?page=1&{{ request.GET.urlencode }}" class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ resultats.previous_page_number }}&{{ request.GET.urlencode }}" class="wp-page-link">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-left"></i></span>
+            {% endif %}
+
+            {% for num in resultats.paginator.page_range %}
+                {% if resultats.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > resultats.number|add:"-3" and num < resultats.number|add:"3" %}
+                    <a href="?page={{ num }}&{{ request.GET.urlencode }}" class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if resultats.has_next %}
+                <a href="?page={{ resultats.next_page_number }}&{{ request.GET.urlencode }}" class="wp-page-link">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="?page={{ resultats.paginator.num_pages }}&{{ request.GET.urlencode }}" class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:12px; color:var(--wp-text-light);">
+            Page {{ resultats.number }} sur {{ resultats.paginator.num_pages }}
+            · {{ resultats.paginator.count }} résultat{{ resultats.paginator.count|pluralize }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ===== ÉLÈVES SANS NOTE ===== -->
+{% if eleves_sans_note %}
+<div class="wp-card" style="margin-top:20px;">
+    <div class="wp-card-header" style="background:var(--wp-warning-soft);">
+        <h3 style="color:#8a6800;">
+            <i class="fas fa-user-slash"></i> Élèves sans note
+        </h3>
+        <span class="wp-count-badge" style="background:var(--wp-warning-soft); color:#8a6800;">
+            {{ eleves_sans_note|length }} élève{{ eleves_sans_note|length|pluralize }}
+        </span>
+    </div>
+    <div class="wp-card-body" style="padding:0;">
+        <ul class="wp-list">
+            {% for eleve in eleves_sans_note %}
+            <li class="wp-list-item">
+                <div class="wp-list-content">
+                    <span class="wp-list-avatar" style="background:linear-gradient(135deg, var(--wp-warning), #f59e0b);">
+                        <i class="fas fa-user-graduate"></i>
+                    </span>
+                    <div>
+                        <div class="wp-list-title">{{ eleve.get_nom_complet }}</div>
+                        <div class="wp-list-subtitle">
+                            <i class="fas fa-users" style="font-size:10px;"></i>
+                            {{ eleve.classe.nom }}{% if eleve.ecole %} · {{ eleve.ecole.nom }}{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <a href="{% url 'ecoles:resultat_create' %}?eleve={{ eleve.id }}&cours={{ request.GET.cours }}&annee_scolaire={{ request.GET.annee }}"
+                   class="wp-btn sm">
+                    <i class="fas fa-pen"></i> Saisir
+                </a>
+            </li>
+            {% empty %}
+            <li class="wp-list-item">
+                <div style="text-align:center; width:100%; color:var(--wp-text-light); padding:10px;">
+                    <i class="fas fa-check-circle" style="color:var(--wp-success);"></i>
+                    Aucun élève sans note pour ce cours et cette année.
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

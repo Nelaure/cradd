@@ -1,0 +1,498 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - CRADD{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+{% block page_subtitle %}Formulaire de saisie pour les utilisateurs{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'accounts:user_list' %}">Utilisateurs</a>
+    <span class="sep">/</span>
+    <span>{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-9">
+        <div class="wp-card">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-user-cog" style="color:var(--wp-primary);"></i>
+                    {{ title }}
+                </h3>
+            </div>
+
+            <div class="wp-card-body">
+                <form method="post" novalidate id="userForm">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="wp-toast error" style="position:static; margin-bottom:16px;">
+                            <span class="wp-toast-icon"><i class="fas fa-exclamation-circle"></i></span>
+                            <div class="wp-toast-body">
+                                <div class="wp-toast-title">Erreur</div>
+                                <div class="wp-toast-message">
+                                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- ============================================================
+                         Champs en deux colonnes (sauf est_actif et eleves_associes)
+                    ============================================================ -->
+                    <div class="row g-3">
+                        {% for field in form %}
+                            {% if field.name != 'est_actif' and field.name != 'eleves_associes' %}
+                            <div class="col-md-6">
+                                <label for="{{ field.id_for_label }}" class="wp-form-label">
+                                    {% if field.name == 'username' %}<i class="fas fa-user"></i>
+                                    {% elif field.name == 'first_name' or field.name == 'last_name' %}<i class="fas fa-signature"></i>
+                                    {% elif field.name == 'email' %}<i class="fas fa-envelope"></i>
+                                    {% elif field.name == 'password1' or field.name == 'password2' %}<i class="fas fa-key"></i>
+                                    {% elif field.name == 'role' %}<i class="fas fa-user-tag"></i>
+                                    {% elif field.name == 'ecole_affectation' %}<i class="fas fa-school"></i>
+                                    {% elif field.name == 'niveau_affectation' %}<i class="fas fa-layer-group"></i>
+                                    {% elif field.name == 'classe_affectation' %}<i class="fas fa-users"></i>
+                                    {% elif field.name == 'province_affectation' %}<i class="fas fa-map-marker-alt"></i>
+                                    {% elif field.name == 'telephone' %}<i class="fas fa-phone"></i>
+                                    {% else %}<i class="fas fa-tag"></i>
+                                    {% endif %}
+                                    {{ field.label }}
+                                    {% if field.field.required %}<span style="color:var(--wp-danger);">*</span>{% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="wp-form-error">{{ field.errors|striptags }}</div>
+                                {% endif %}
+                                {% if field.help_text %}
+                                    <div class="wp-form-help">
+                                        <i class="fas fa-info-circle"></i>
+                                        {{ field.help_text }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <!-- ============================================================
+                         Champ eleves_associes (pleine largeur)
+                    ============================================================ -->
+                    {% if 'eleves_associes' in form.fields %}
+                    <div style="margin-top:24px; padding-top:20px; border-top:1px dashed var(--wp-border-light);">
+                        <label for="{{ form.eleves_associes.id_for_label }}" class="wp-form-label">
+                            <i class="fas fa-user-friends"></i>
+                            {{ form.eleves_associes.label }}
+                        </label>
+                        {{ form.eleves_associes }}
+
+                        {% if form.eleves_associes.errors %}
+                            <div class="wp-form-error">{{ form.eleves_associes.errors|striptags }}</div>
+                        {% endif %}
+
+                        <div class="wp-form-help" style="margin-top:10px; flex-direction:column; align-items:flex-start; gap:6px;">
+                            <span>
+                                <span class="wp-badge wp-badge-primary" id="selectedCount" style="font-weight:700;">0</span>
+                                élève(s) sélectionné(s).
+                            </span>
+                            <small style="line-height:1.6;">
+                                Maintenez <kbd>Ctrl</kbd> (ou <kbd>Cmd</kbd>) pour sélectionner plusieurs élèves.<br>
+                                Changez les filtres pour voir d'autres élèves — vos sélections sont conservées.
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- ============================================================
+                         Champ est_actif
+                    ============================================================ -->
+                    {% if 'est_actif' in form.fields %}
+                    <div style="margin-top:20px; padding-top:20px; border-top:1px dashed var(--wp-border-light);">
+                        <div class="wp-check">
+                            {{ form.est_actif }}
+                            <label for="{{ form.est_actif.id_for_label }}" style="font-weight:500;">
+                                <i class="fas fa-toggle-on" style="color:var(--wp-primary);"></i>
+                                {{ form.est_actif.label }}
+                            </label>
+                            {% if form.est_actif.errors %}
+                                <div class="wp-form-error">{{ form.est_actif.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- ============================================================
+                         Actions
+                    ============================================================ -->
+                    <div class="wp-form-actions" style="justify-content:flex-end;">
+                        <a href="{% url 'accounts:user_list' %}" class="wp-btn secondary">
+                            <i class="fas fa-times"></i> Annuler
+                        </a>
+                        <button type="submit" class="wp-btn">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       STYLING DES WIDGETS DJANGO
+    ============================================================ */
+    .wp-card-body input[type="text"],
+    .wp-card-body input[type="date"],
+    .wp-card-body input[type="email"],
+    .wp-card-body input[type="number"],
+    .wp-card-body input[type="tel"],
+    .wp-card-body input[type="password"],
+    .wp-card-body input[type="file"],
+    .wp-card-body select,
+    .wp-card-body textarea {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-family: inherit;
+        color: var(--wp-text);
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius-sm);
+        outline: none;
+        transition: all var(--wp-transition);
+        line-height: 1.5;
+    }
+
+    .wp-card-body input:focus,
+    .wp-card-body select:focus,
+    .wp-card-body textarea:focus {
+        border-color: var(--wp-primary);
+        box-shadow: 0 0 0 3px var(--wp-primary-soft);
+    }
+
+    .wp-card-body textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .wp-card-body input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--wp-primary);
+        cursor: pointer;
+    }
+
+    /* Select multiple pour élèves associés */
+    .wp-card-body select[multiple] {
+        min-height: 240px;
+        padding: 8px;
+    }
+
+    .wp-card-body select[multiple] option {
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 2px;
+    }
+
+    .wp-card-body select[multiple] option:checked {
+        background: var(--wp-primary);
+        color: #fff !important;
+    }
+
+    /* Mise en évidence des élèves sélectionnés hors du filtre courant */
+    .eleve-hors-filtre {
+        font-style: italic;
+        color: var(--wp-text-light) !important;
+        background-color: var(--wp-surface-alt);
+    }
+
+    .eleve-hors-filtre::before {
+        content: "🔒 ";
+        font-size: 0.8em;
+        margin-right: 4px;
+    }
+
+    .eleve-hors-filtre:checked {
+        background: var(--wp-primary) !important;
+        color: #fff !important;
+    }
+
+    /* Kbd dans les aides */
+    .wp-form-help kbd {
+        background: var(--wp-surface-alt);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 3px;
+        padding: 0 5px;
+        font-size: 10.5px;
+        font-family: monospace;
+    }
+
+    /* Indication visuelle sur les combos désactivés */
+    .wp-card-body select:disabled {
+        background: var(--wp-surface-alt);
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // RÉCUPÉRATION DES ÉLÉMENTS
+        // ============================================================
+        const roleField = document.getElementById('id_role');
+        const ecoleField = document.getElementById('id_ecole_affectation');
+        const niveauField = document.getElementById('id_niveau_affectation');
+        const classeField = document.getElementById('id_classe_affectation');
+        const elevesField = document.getElementById('id_eleves_associes');
+
+        // ✅ ID de l'utilisateur en cours d'édition (vide en création)
+        const currentUserId = "{% if form.instance.pk %}{{ form.instance.pk }}{% endif %}";
+
+        // ============================================================
+        // COMPTEUR DE SÉLECTION ÉLÈVES
+        // ============================================================
+        function updateSelectedCount() {
+            if (!elevesField) return;
+            const count = elevesField.selectedOptions.length;
+            const badge = document.getElementById('selectedCount');
+            if (badge) {
+                badge.textContent = count;
+                if (count > 0) {
+                    badge.classList.remove('wp-badge-primary');
+                    badge.classList.add('wp-badge-success');
+                } else {
+                    badge.classList.remove('wp-badge-success');
+                    badge.classList.add('wp-badge-primary');
+                }
+            }
+        }
+
+        function getSelectedIds() {
+            if (!elevesField) return [];
+            return Array.from(elevesField.selectedOptions).map(opt => opt.value);
+        }
+
+        function applySelection(ids) {
+            if (!elevesField) return;
+            const options = elevesField.options;
+            for (let i = 0; i < options.length; i++) {
+                options[i].selected = ids.includes(options[i].value);
+            }
+            updateSelectedCount();
+        }
+
+        // ============================================================
+        // MISE À JOUR DE LA LISTE DES ÉLÈVES
+        // ============================================================
+        let elevesCache = {};
+
+        function updateEleves(ecoleId, niveauId, classeId, preserveSelection = true) {
+            if (!elevesField) return;
+            let selectedIds = preserveSelection ? getSelectedIds() : [];
+
+            let url = '/api/eleves/?';
+            if (ecoleId) url += 'ecole_id=' + ecoleId + '&';
+            if (niveauId) url += 'niveau_id=' + niveauId + '&';
+            if (classeId) url += 'classe_id=' + classeId + '&';
+            url = url.replace(/[?&]$/, '');
+
+            if (!ecoleId && !niveauId && !classeId) {
+                url = '/api/eleves/';
+            }
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(eleve => {
+                        elevesCache[eleve.id] = eleve;
+                    });
+
+                    const newIds = new Set(data.map(e => String(e.id)));
+                    let idsToKeep = new Set(selectedIds);
+                    newIds.forEach(id => idsToKeep.add(id));
+
+                    const fragment = document.createDocumentFragment();
+
+                    const emptyOpt = document.createElement('option');
+                    emptyOpt.value = '';
+                    emptyOpt.textContent = '---------';
+                    fragment.appendChild(emptyOpt);
+
+                    const sortedIds = Array.from(idsToKeep).sort((a, b) => {
+                        const nameA = elevesCache[a] ? elevesCache[a].nom_complet || '' : '';
+                        const nameB = elevesCache[b] ? elevesCache[b].nom_complet || '' : '';
+                        return nameA.localeCompare(nameB);
+                    });
+
+                    sortedIds.forEach(id => {
+                        if (elevesCache[id]) {
+                            const eleve = elevesCache[id];
+                            const option = document.createElement('option');
+                            option.value = id;
+
+                            if (!newIds.has(id)) {
+                                option.textContent = `${eleve.nom_complet} (hors filtre actuel)`;
+                                option.className = 'eleve-hors-filtre';
+                            } else {
+                                option.textContent = eleve.nom_complet;
+                            }
+
+                            if (selectedIds.includes(id)) {
+                                option.selected = true;
+                            }
+                            fragment.appendChild(option);
+                        }
+                    });
+
+                    elevesField.innerHTML = '';
+                    elevesField.appendChild(fragment);
+
+                    applySelection(selectedIds);
+                    updateSelectedCount();
+                })
+                .catch(error => console.error('Erreur chargement élèves:', error));
+        }
+
+        // ============================================================
+        // CASCADES : niveaux + classes (avec exclusion des doublons)
+        // ============================================================
+        function loadNiveaux(ecoleId, selectedNiveauId = null) {
+            if (!niveauField) return;
+            let url = `/api/niveaux/?ecole_id=${ecoleId}`;
+            // ✅ Passer l'ID de l'utilisateur en cours d'édition
+            if (currentUserId) {
+                url += `&current_user_id=${currentUserId}`;
+            }
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    niveauField.innerHTML = '<option value="">---------</option>';
+                    data.forEach(function (niveau) {
+                        const option = document.createElement('option');
+                        option.value = niveau.id;
+                        option.text = niveau.nom;
+                        if (selectedNiveauId && String(selectedNiveauId) === String(niveau.id)) {
+                            option.selected = true;
+                        }
+                        niveauField.appendChild(option);
+                    });
+                    if (selectedNiveauId) {
+                        loadClasses(ecoleId, selectedNiveauId);
+                    } else if (classeField) {
+                        classeField.innerHTML = '<option value="">---------</option>';
+                    }
+                })
+                .catch(error => console.error('Erreur chargement niveaux:', error));
+        }
+
+        function loadClasses(ecoleId, niveauId, selectedClasseId = null) {
+            if (!classeField) return;
+            let url = `/api/classes/?ecole_id=${ecoleId}&niveau_id=${niveauId}`;
+            // ✅ Passer l'ID de l'utilisateur en cours d'édition
+            if (currentUserId) {
+                url += `&current_user_id=${currentUserId}`;
+            }
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    classeField.innerHTML = '<option value="">---------</option>';
+                    data.forEach(function (classe) {
+                        const option = document.createElement('option');
+                        option.value = classe.id;
+                        option.text = classe.nom;
+                        if (selectedClasseId && String(selectedClasseId) === String(classe.id)) {
+                            option.selected = true;
+                        }
+                        classeField.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Erreur chargement classes:', error));
+        }
+
+        // ============================================================
+        // ÉVÉNEMENTS
+        // ============================================================
+        if (ecoleField) {
+            ecoleField.addEventListener('change', function () {
+                const ecoleId = this.value;
+                if (ecoleId) {
+                    loadNiveaux(ecoleId);
+                    if (niveauField) niveauField.value = '';
+                    if (classeField) classeField.innerHTML = '<option value="">---------</option>';
+                    updateEleves(ecoleId, '', '', true);
+                } else {
+                    if (niveauField) niveauField.innerHTML = '<option value="">---------</option>';
+                    if (classeField) classeField.innerHTML = '<option value="">---------</option>';
+                    updateEleves('', '', '', true);
+                }
+            });
+        }
+
+        if (niveauField) {
+            niveauField.addEventListener('change', function () {
+                const ecoleId = ecoleField ? ecoleField.value : '';
+                const niveauId = this.value;
+                if (ecoleId && niveauId) {
+                    loadClasses(ecoleId, niveauId);
+                    updateEleves(ecoleId, niveauId, '', true);
+                } else if (ecoleId) {
+                    if (classeField) classeField.innerHTML = '<option value="">---------</option>';
+                    updateEleves(ecoleId, '', '', true);
+                } else {
+                    if (classeField) classeField.innerHTML = '<option value="">---------</option>';
+                    updateEleves('', '', '', true);
+                }
+            });
+        }
+
+        if (classeField) {
+            classeField.addEventListener('change', function () {
+                const ecoleId = ecoleField ? ecoleField.value : '';
+                const niveauId = niveauField ? niveauField.value : '';
+                const classeId = this.value;
+                if (ecoleId) {
+                    updateEleves(ecoleId, niveauId, classeId, true);
+                } else {
+                    updateEleves('', '', '', true);
+                }
+            });
+        }
+
+        if (elevesField) {
+            elevesField.addEventListener('change', updateSelectedCount);
+        }
+
+        // ============================================================
+        // INITIALISATION
+        // ============================================================
+        const initialEcoleId = ecoleField ? ecoleField.value : '';
+        const initialNiveauId = niveauField ? niveauField.value : '';
+        const initialClasseId = classeField ? classeField.value : '';
+
+        if (initialEcoleId) {
+            loadNiveaux(initialEcoleId, initialNiveauId);
+            if (initialNiveauId) {
+                loadClasses(initialEcoleId, initialNiveauId, initialClasseId);
+            }
+            updateEleves(initialEcoleId, initialNiveauId, initialClasseId, true);
+        } else {
+            updateEleves('', '', '', true);
+        }
+
+        updateSelectedCount();
+    });
+</script>
+{% endblock %}

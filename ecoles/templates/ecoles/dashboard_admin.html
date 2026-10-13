@@ -1,0 +1,743 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord - Administrateur{% endblock %}
+{% block page_heading %}Tableau de bord{% endblock %}
+{% block page_subtitle %}Administrateur{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Administration</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     FILTRE PAR PROVINCE
+============================================================ -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-lg-8">
+        <div class="wp-card" style="margin-bottom:0;">
+            <div class="wp-card-header">
+                <h3><i class="fas fa-filter" style="color:var(--wp-primary);"></i> Filtrer par province</h3>
+            </div>
+            <div class="wp-card-body">
+                <form method="get" action="{% url 'ecoles:dashboard' %}">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-8">
+                            <label for="id_province_filter" class="wp-form-label">
+                                <i class="fas fa-map-marker-alt"></i> Province
+                            </label>
+                            <select name="province" id="id_province_filter" class="wp-select">
+                                <option value="">Toutes les provinces</option>
+                                {% for prov in provinces %}
+                                    <option value="{{ prov.id }}" {% if province_filter and province_filter.id == prov.id %}selected{% endif %}>
+                                        {{ prov.nom }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="wp-btn" style="width:100%;">
+                                <i class="fas fa-search"></i> Filtrer
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3><i class="fas fa-info-circle" style="color:var(--wp-primary);"></i> Filtre actif</h3>
+            </div>
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                {% if province_filter %}
+                    <span class="wp-badge wp-badge-success" style="font-size:12.5px; padding:6px 14px;">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Province : {{ province_filter.nom }}
+                    </span>
+                    <a href="{% url 'ecoles:dashboard' %}" class="wp-btn outline sm">
+                        <i class="fas fa-undo"></i> Réinitialiser
+                    </a>
+                {% else %}
+                    <span style="color:var(--wp-text-light); font-size:12.5px;">
+                        <i class="fas fa-globe"></i> Aucun filtre (vue globale)
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     STATISTIQUES GLOBALES - Ligne 1
+============================================================ -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-school"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_ecoles }}</div>
+                    <div class="stat-label">Écoles</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_niveaux }}</div>
+                    <div class="stat-label">Niveaux</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_classes }}</div>
+                    <div class="stat-label">Classes</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_cours }}</div>
+                    <div class="stat-label">Cours</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     STATISTIQUES GLOBALES - Ligne 2
+============================================================ -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_eleves }}</div>
+                    <div class="stat-label">Élèves</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_notes }}</div>
+                    <div class="stat-label">Notes saisies</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ moyenne_generale_globale|floatformat:2 }}</div>
+                    <div class="stat-label">Moyenne générale</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-flag-checkered"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ taux_reussite_global }}%</div>
+                    <div class="stat-label">Taux de réussite</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     GRAPHIQUES PRINCIPAUX
+============================================================ -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-lg-6">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3><i class="fas fa-chart-bar" style="color:var(--wp-primary);"></i> Élèves par école</h3>
+            </div>
+            <div class="wp-card-body">
+                <canvas id="ecoleChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3><i class="fas fa-chart-pie" style="color:var(--wp-primary);"></i> Répartition par sexe</h3>
+            </div>
+            <div class="wp-card-body">
+                <canvas id="sexeChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3><i class="fas fa-chart-pie" style="color:var(--wp-primary);"></i> Élèves par niveau</h3>
+            </div>
+            <div class="wp-card-body">
+                <canvas id="niveauChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     STATISTIQUES VISITEURS ANONYMES (7 derniers jours)
+============================================================ -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-lg-6">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-user-secret" style="color:var(--wp-primary);"></i>
+                    Visiteurs anonymes (pays)
+                </h3>
+                <span class="wp-count-badge">{{ total_visitor_pays }} pays</span>
+            </div>
+            <div class="wp-card-body">
+                <canvas id="visitorCountryChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-city" style="color:var(--wp-primary);"></i>
+                    Visiteurs par ville
+                </h3>
+                <span class="wp-count-badge">{{ total_visitor_villes }} villes</span>
+            </div>
+            <div class="wp-card-body" style="padding:0;">
+                <div style="overflow-x:auto;">
+                    <table class="wp-table">
+                        <thead>
+                            <tr>
+                                <th>Pays</th>
+                                <th>Ville</th>
+                                <th style="text-align:right;">Visiteurs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in visitor_city_items %}
+                            <tr>
+                                <td data-label="Pays">
+                                    <span class="wp-badge wp-badge-neutral">
+                                        <i class="fas fa-globe"></i> {{ item.country }}
+                                    </span>
+                                </td>
+                                <td data-label="Ville">
+                                    <span style="font-size:12.5px;">
+                                        <i class="fas fa-map-pin" style="color:var(--wp-primary); font-size:11px;"></i>
+                                        {{ item.city }}
+                                    </span>
+                                </td>
+                                <td data-label="Visiteurs" style="text-align:right;">
+                                    <span class="wp-badge wp-badge-info" style="font-weight:700;">
+                                        {{ item.count }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" style="text-align:center; color:var(--wp-text-light); padding:20px;">
+                                    <i class="fas fa-inbox" style="font-size:20px; opacity:0.5;"></i>
+                                    <br>Aucune donnée
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     STATISTIQUES UTILISATEURS CONNECTÉS
+============================================================ -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-lg-6">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-user-check" style="color:var(--wp-primary);"></i>
+                    Utilisateurs connectés (pays)
+                </h3>
+                <span class="wp-count-badge">{{ total_user_pays }} pays</span>
+            </div>
+            <div class="wp-card-body">
+                <canvas id="userCountryChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-user" style="color:var(--wp-primary);"></i>
+                    Utilisateurs par ville
+                </h3>
+                <span class="wp-count-badge">{{ total_user_villes }} villes</span>
+            </div>
+            <div class="wp-card-body" style="padding:0;">
+                <div style="overflow-x:auto;">
+                    <table class="wp-table">
+                        <thead>
+                            <tr>
+                                <th>Pays</th>
+                                <th>Ville</th>
+                                <th style="text-align:right;">Utilisateurs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in user_city_items %}
+                            <tr>
+                                <td data-label="Pays">
+                                    <span class="wp-badge wp-badge-neutral">
+                                        <i class="fas fa-globe"></i> {{ item.country }}
+                                    </span>
+                                </td>
+                                <td data-label="Ville">
+                                    <span style="font-size:12.5px;">
+                                        <i class="fas fa-map-pin" style="color:var(--wp-primary); font-size:11px;"></i>
+                                        {{ item.city }}
+                                    </span>
+                                </td>
+                                <td data-label="Utilisateurs" style="text-align:right;">
+                                    <span class="wp-badge wp-badge-primary" style="font-weight:700;">
+                                        {{ item.count }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" style="text-align:center; color:var(--wp-text-light); padding:20px;">
+                                    <i class="fas fa-inbox" style="font-size:20px; opacity:0.5;"></i>
+                                    <br>Aucune donnée
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     PERFORMANCE PAR ÉCOLE
+============================================================ -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-table" style="color:var(--wp-primary);"></i> Performance par école</h3>
+        <span class="wp-count-badge">{{ stats_par_ecole|length }} école{{ stats_par_ecole|length|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if stats_par_ecole %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table datatable">
+                <thead>
+                    <tr>
+                        <th>École</th>
+                        <th>Total élèves</th>
+                        <th>Réussis</th>
+                        <th>Taux (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in stats_par_ecole %}
+                    <tr>
+                        <td data-label="École">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-school" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ stat.nom }}
+                            </strong>
+                        </td>
+                        <td data-label="Total élèves">
+                            <span class="wp-badge wp-badge-neutral" style="font-weight:700;">
+                                {{ stat.total }}
+                            </span>
+                        </td>
+                        <td data-label="Réussis">
+                            <span class="wp-badge wp-badge-success" style="font-weight:700;">
+                                {{ stat.reussis }}
+                            </span>
+                        </td>
+                        <td data-label="Taux">
+                            {% if stat.taux >= 70 %}
+                                <span class="wp-badge wp-badge-success" style="font-weight:700;">
+                                    <i class="fas fa-arrow-up"></i> {{ stat.taux }}%
+                                </span>
+                            {% elif stat.taux >= 50 %}
+                                <span class="wp-badge wp-badge-warning" style="font-weight:700;">
+                                    <i class="fas fa-minus"></i> {{ stat.taux }}%
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger" style="font-weight:700;">
+                                    <i class="fas fa-arrow-down"></i> {{ stat.taux }}%
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-school"></i>
+            <p>Aucune école trouvée.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       STAT CARD MODERN - Adapté à la palette wp-*
+       ============================================================ */
+    .stat-card-modern {
+        position: relative;
+        overflow: hidden;
+        transition: transform var(--wp-transition), box-shadow var(--wp-transition);
+        cursor: default;
+    }
+    .stat-card-modern:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--wp-shadow-md);
+    }
+    .stat-card-modern .stat-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        background: var(--wp-primary-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 22px;
+        color: var(--wp-primary);
+        transition: background var(--wp-transition), color var(--wp-transition), transform var(--wp-transition);
+    }
+    .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary);
+        color: #fff;
+        transform: scale(1.05) rotate(-4deg);
+    }
+    .stat-card-modern .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        line-height: 1.2;
+        letter-spacing: -0.5px;
+    }
+    .stat-card-modern .stat-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--wp-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+    .stat-card-modern .stat-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        opacity: 0.6;
+        transition: height var(--wp-transition), opacity var(--wp-transition);
+    }
+    .stat-card-modern:hover .stat-bar {
+        height: 4px;
+        opacity: 1;
+    }
+
+    [data-bs-theme="dark"] .stat-card-modern .stat-icon {
+        background: rgba(34, 113, 177, 0.20);
+        color: var(--wp-primary-light);
+    }
+    [data-bs-theme="dark"] .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary);
+        color: #fff;
+    }
+
+    @media (max-width: 576px) {
+        .stat-card-modern .stat-icon {
+            width: 44px;
+            height: 44px;
+            font-size: 18px;
+        }
+        .stat-card-modern .stat-number {
+            font-size: 1.4rem;
+        }
+        .stat-card-modern .stat-label {
+            font-size: 0.65rem;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    (function () {
+        // ============================================================
+        // RÉCUPÉRATION DES COULEURS DU THÈME
+        // ============================================================
+        const style = getComputedStyle(document.documentElement);
+        const primaryColor = style.getPropertyValue('--wp-primary').trim() || '#2271b1';
+        const primaryLight = style.getPropertyValue('--wp-primary-light').trim() || '#72aee6';
+        const successColor = style.getPropertyValue('--wp-success').trim() || '#00a32a';
+        const warningColor = style.getPropertyValue('--wp-warning').trim() || '#dba617';
+        const dangerColor = style.getPropertyValue('--wp-danger').trim() || '#d63638';
+        const textColor = style.getPropertyValue('--wp-text').trim() || '#1d2327';
+        const textMuted = style.getPropertyValue('--wp-text-muted').trim() || '#50575e';
+        const borderColor = style.getPropertyValue('--wp-border-light').trim() || '#e2e4e7';
+
+        const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+        // ============================================================
+        // GRAPHIQUE : Élèves par école
+        // ============================================================
+        const ecoleCtx = document.getElementById('ecoleChart');
+        if (ecoleCtx) {
+            new Chart(ecoleCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ ecole_labels|safe }},
+                    datasets: [{
+                        label: 'Élèves',
+                        data: {{ ecole_counts|safe }},
+                        backgroundColor: primaryColor + '99',
+                        borderColor: primaryColor,
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: textColor,
+                            titleColor: '#fff',
+                            bodyColor: '#fff'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: textMuted },
+                            grid: { color: gridColor }
+                        },
+                        x: {
+                            ticks: { color: textMuted },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // GRAPHIQUE : Répartition par sexe
+        // ============================================================
+        const sexeCtx = document.getElementById('sexeChart');
+        if (sexeCtx) {
+            new Chart(sexeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ sexe_labels|safe }},
+                    datasets: [{
+                        data: {{ sexe_counts|safe }},
+                        backgroundColor: [primaryColor, primaryLight, successColor],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: textMuted, padding: 12, font: { size: 11 } }
+                        }
+                    },
+                    cutout: '68%'
+                }
+            });
+        }
+
+        // ============================================================
+        // GRAPHIQUE : Élèves par niveau
+        // ============================================================
+        const niveauCtx = document.getElementById('niveauChart');
+        if (niveauCtx) {
+            new Chart(niveauCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ niveau_labels|safe }},
+                    datasets: [{
+                        data: {{ niveau_counts|safe }},
+                        backgroundColor: [
+                            primaryColor,
+                            primaryLight,
+                            successColor,
+                            warningColor,
+                            '#8b5cf6',
+                            '#06b6d4'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: textMuted, padding: 12, font: { size: 11 } }
+                        }
+                    },
+                    cutout: '68%'
+                }
+            });
+        }
+
+        // ============================================================
+        // GRAPHIQUE : Visiteurs anonymes par pays
+        // ============================================================
+        const visitorCountryCtx = document.getElementById('visitorCountryChart');
+        if (visitorCountryCtx) {
+            new Chart(visitorCountryCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ visitor_country_labels|safe }},
+                    datasets: [{
+                        label: 'Visiteurs',
+                        data: {{ visitor_country_data|safe }},
+                        backgroundColor: successColor + '99',
+                        borderColor: successColor,
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: textMuted },
+                            grid: { color: gridColor }
+                        },
+                        x: {
+                            ticks: { color: textMuted },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // GRAPHIQUE : Utilisateurs connectés par pays
+        // ============================================================
+        const userCountryCtx = document.getElementById('userCountryChart');
+        if (userCountryCtx) {
+            new Chart(userCountryCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ user_country_labels|safe }},
+                    datasets: [{
+                        label: 'Utilisateurs',
+                        data: {{ user_country_data|safe }},
+                        backgroundColor: primaryColor + '99',
+                        borderColor: primaryColor,
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: textMuted },
+                            grid: { color: gridColor }
+                        },
+                        x: {
+                            ticks: { color: textMuted },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    })();
+</script>
+{% endblock %}

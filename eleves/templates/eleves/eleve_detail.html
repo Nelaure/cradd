@@ -1,0 +1,636 @@
+{% extends "base.html" %}
+{% load static %}
+{% load eleve_extras %}
+
+{% block title %}Détail de l'élève - {{ eleve.get_nom_complet }}{% endblock %}
+{% block page_heading %}{{ eleve.get_nom_complet }}{% endblock %}
+{% block page_subtitle %}Détail du parcours scolaire{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'eleves:eleve_list' %}">Élèves</a>
+    <span class="sep">/</span>
+    <span>{{ eleve.get_nom_complet }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+    <!-- ============================================================
+         COLONNE GAUCHE — Photo et infos personnelles
+         ============================================================ -->
+    <div class="col-lg-4 col-md-5">
+        <div class="wp-card" style="position:sticky; top:80px;">
+            <div class="wp-card-body" style="text-align:center; padding:24px;">
+
+                <!-- Photo / Avatar -->
+                {% if eleve.photo %}
+                    <img src="{{ eleve.photo.url }}"
+                         alt="Photo de {{ eleve.get_nom_complet }}"
+                         style="width:150px; height:150px; object-fit:cover; border-radius:50%; border:4px solid var(--wp-primary); box-shadow:var(--wp-shadow-md); margin-bottom:16px;">
+                {% else %}
+                    <div style="width:150px; height:150px; margin:0 auto 16px; border-radius:50%; background:linear-gradient(135deg, var(--wp-primary), var(--wp-primary-light)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:56px; font-weight:800; box-shadow:var(--wp-shadow-md);">
+                        {{ eleve.prenom|slice:":1"|upper }}{{ eleve.nom|slice:":1"|upper }}
+                    </div>
+                {% endif %}
+
+                <!-- Nom + sexe -->
+                <h4 style="margin:0 0 8px; font-size:18px; font-weight:800; color:var(--wp-text-strong);">
+                    {{ eleve.get_nom_complet }}
+                </h4>
+                <div style="margin-bottom:16px;">
+                    {% if eleve.sexe == 'M' %}
+                        <span class="wp-badge wp-badge-info">
+                            <i class="fas fa-mars"></i> {{ eleve.get_sexe_display }}
+                        </span>
+                    {% elif eleve.sexe == 'F' %}
+                        <span class="wp-badge wp-badge-danger" style="background:rgba(244,114,182,0.15); color:#be185d;">
+                            <i class="fas fa-venus"></i> {{ eleve.get_sexe_display }}
+                        </span>
+                    {% else %}
+                        <span class="wp-badge wp-badge-neutral">{{ eleve.get_sexe_display }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Infos personnelles -->
+                <div style="text-align:left; margin-top:8px; display:flex; flex-direction:column; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                        <i class="fas fa-id-card" style="color:var(--wp-primary); width:18px; text-align:center;"></i>
+                        <span class="wp-code">{{ eleve.matricule|default:"—" }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                        <i class="fas fa-calendar-alt" style="color:var(--wp-primary); width:18px; text-align:center;"></i>
+                        <span>{{ eleve.date_naissance|date:"d/m/Y"|default:"Non renseignée" }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                        <i class="fas fa-map-marker-alt" style="color:var(--wp-primary); width:18px; text-align:center;"></i>
+                        <span>{{ eleve.lieu_naissance|default:"—" }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                        <i class="fas fa-phone" style="color:var(--wp-primary); width:18px; text-align:center;"></i>
+                        <span>{{ eleve.telephone|default:"—" }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                        <i class="fas fa-envelope" style="color:var(--wp-primary); width:18px; text-align:center;"></i>
+                        <span>{{ eleve.email|default:"—" }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                        <i class="fas fa-home" style="color:var(--wp-primary); width:18px; text-align:center;"></i>
+                        <span>{{ eleve.adresse|default:"—" }}</span>
+                    </div>
+                </div>
+
+                <hr style="margin:20px 0; border:0; border-top:1px dashed var(--wp-border-light);">
+
+                <!-- Actions -->
+                <div class="wp-form-actions-inline" style="justify-content:center;">
+                    <a href="{% url 'eleves:eleve_edit' eleve.id %}" class="wp-btn sm">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                    <a href="{% url 'eleves:eleve_reinscrire' eleve.id %}" class="wp-btn success sm">
+                        <i class="fas fa-redo"></i> Réinscrire
+                    </a>
+                    <a href="{% url 'eleves:eleve_delete' eleve.id %}" class="wp-btn danger sm"
+                       onclick="return confirm('Supprimer définitivement cet élève ?');">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         COLONNE DROITE — Situation actuelle + Parcours + Bulletins
+         ============================================================ -->
+    <div class="col-lg-8 col-md-7">
+
+        <!-- ===== Situation actuelle ===== -->
+        <div class="wp-card" style="margin-bottom:20px;">
+            <div class="wp-card-header">
+                <h3><i class="fas fa-info-circle" style="color:var(--wp-primary);"></i> Situation actuelle</h3>
+            </div>
+            <div class="wp-card-body">
+                <div class="row g-3">
+                    <div class="col-6 col-sm-4">
+                        <div class="wp-form-label"><i class="fas fa-school"></i> École</div>
+                        <div style="font-size:13px; font-weight:600; color:var(--wp-text-strong);">
+                            {{ eleve.ecole.nom|default:"—" }}
+                        </div>
+                    </div>
+
+                    <!-- ✅ NIVEAU + SECTION -->
+                    <div class="col-6 col-sm-4">
+                        <div class="wp-form-label"><i class="fas fa-layer-group"></i> Niveau</div>
+                        <div style="font-size:13px; font-weight:600; color:var(--wp-text-strong);">
+                            {% if eleve.niveau %}
+                                {{ eleve.niveau.nom|default:"MAXIMA" }}
+                                {% if eleve.niveau.section %}
+                                    <span style="color:var(--wp-text-light); font-weight:500;">
+                                        ({{ eleve.niveau.section.nom|default:"MAXIMA" }})
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-sm-4">
+                        <div class="wp-form-label"><i class="fas fa-users"></i> Classe</div>
+                        <div style="font-size:13px; font-weight:600; color:var(--wp-text-strong);">
+                            {{ eleve.classe.nom|default:"—" }}
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-4">
+                        <div class="wp-form-label"><i class="fas fa-calendar-alt"></i> Année scolaire</div>
+                        <div style="font-size:13px; font-weight:600; color:var(--wp-text-strong);">
+                            {{ eleve.annee_scolaire.annee|default:"—" }}
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-4">
+                        <div class="wp-form-label"><i class="fas fa-clock"></i> Date d'inscription</div>
+                        <div style="font-size:13px; font-weight:600; color:var(--wp-text-strong);">
+                            {{ eleve.date_inscription|date:"d/m/Y"|default:"—" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Parcours scolaire ===== -->
+        <div class="wp-card" style="margin-bottom:20px;">
+            <div class="wp-card-header">
+                <h3><i class="fas fa-history" style="color:var(--wp-primary);"></i> Parcours scolaire</h3>
+            </div>
+            <div class="wp-card-body">
+                {% if resultats_par_annee %}
+                    <div class="accordion" id="accordionParcours">
+                        {% for annee_id, data in resultats_par_annee.items %}
+                        <div class="accordion-item" style="border:1px solid var(--wp-border-light); border-radius:8px; margin-bottom:12px; overflow:hidden;">
+                            <h2 class="accordion-header" id="heading{{ annee_id }}" style="margin:0;">
+                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#collapse{{ annee_id }}"
+                                        aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+                                        aria-controls="collapse{{ annee_id }}"
+                                        style="background:var(--wp-surface-alt); color:var(--wp-text-strong); font-weight:600; border:none; padding:14px 18px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%; text-align:left; cursor:pointer;">
+                                    <strong>{{ data.annee.annee }}</strong>
+                                    {% if data.parcours %}
+                                        <span class="wp-badge wp-badge-primary">{{ data.parcours.ecole.nom }}</span>
+                                        <span class="wp-badge wp-badge-neutral">
+                                            {{ data.parcours.classe.nom }}
+                                            {% if data.parcours.niveau %}
+                                                — {{ data.parcours.niveau.nom|default:"MAXIMA" }}
+                                                {% if data.parcours.niveau.section %}
+                                                    ({{ data.parcours.niveau.section.nom|default:"MAXIMA" }})
+                                                {% endif %}
+                                            {% endif %}
+                                        </span>
+                                    {% endif %}
+                                    {% if data.annuel_data.pourcentage_general is not None %}
+                                        {% if data.annuel_data.pourcentage_general >= 70 %}
+                                            <span class="wp-badge wp-badge-success">{{ data.annuel_data.pourcentage_general|floatformat:1 }}%</span>
+                                        {% elif data.annuel_data.pourcentage_general >= 50 %}
+                                            <span class="wp-badge wp-badge-warning">{{ data.annuel_data.pourcentage_general|floatformat:1 }}%</span>
+                                        {% else %}
+                                            <span class="wp-badge wp-badge-danger">{{ data.annuel_data.pourcentage_general|floatformat:1 }}%</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </button>
+                            </h2>
+                            <div id="collapse{{ annee_id }}"
+                                 class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                                 data-bs-parent="#accordionParcours">
+                                <div class="accordion-body" style="padding:20px;">
+
+                                    {% if data.resultats_par_cours %}
+                                        {% for cycle_info in data.cycles_info %}
+                                        <h6 style="color:var(--wp-primary); margin:20px 0 12px; font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                            <i class="fas fa-sync-alt"></i>
+                                            Cycle {{ cycle_info.cycle_num }}
+                                            {% if cycle_info.masque_parent %}
+                                                <span class="wp-badge wp-badge-neutral">Masqué</span>
+                                            {% endif %}
+                                        </h6>
+
+                                        <div style="overflow-x:auto;">
+                                            <table class="wp-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Matière</th>
+                                                        {% for periode in cycle_info.periodes %}
+                                                        <th style="text-align:center;">
+                                                            Période {{ periode }}
+                                                            {% if user_can_edit_visibility %}
+                                                            <button class="toggle-colonne wp-action-btn info"
+                                                                    style="width:24px; height:24px; padding:0; margin-left:6px;"
+                                                                    data-eleve="{{ eleve.id }}"
+                                                                    data-annee="{{ annee_id }}"
+                                                                    data-cours="all"
+                                                                    data-cycle="{{ cycle_info.cycle_num }}"
+                                                                    data-type="periode"
+                                                                    data-periode="{{ periode }}"
+                                                                    title="Masquer/Rendre visible cette colonne">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                            {% endif %}
+                                                        </th>
+                                                        {% endfor %}
+                                                        <th style="text-align:center;">
+                                                            Examen
+                                                            {% if user_can_edit_visibility %}
+                                                            <button class="toggle-colonne wp-action-btn info"
+                                                                    style="width:24px; height:24px; padding:0; margin-left:6px;"
+                                                                    data-eleve="{{ eleve.id }}"
+                                                                    data-annee="{{ annee_id }}"
+                                                                    data-cours="all"
+                                                                    data-cycle="{{ cycle_info.cycle_num }}"
+                                                                    data-type="examen"
+                                                                    data-periode="None"
+                                                                    title="Masquer/Rendre visible cette colonne">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                            {% endif %}
+                                                        </th>
+                                                        <th style="text-align:center;">Total (pts)</th>
+                                                        <th style="text-align:center;">%</th>
+                                                        {% if user_can_edit_visibility %}
+                                                        <th style="text-align:center;">Visibilité</th>
+                                                        {% endif %}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for cours_id, cours_data in data.resultats_par_cours.items %}
+                                                    <tr>
+                                                        <td><strong style="color:var(--wp-text-strong);">{{ cours_data.cours_nom }}</strong></td>
+                                                        {% for periode in cycle_info.periodes %}
+                                                        <td style="text-align:center;">
+                                                            {% for eval in cours_data.evaluations %}
+                                                                {% if eval.cycle == cycle_info.cycle_num and eval.type == 'periode' and eval.periode == periode %}
+                                                                    {% if eval.colonne_masque or eval.est_masque_pour_parent %}
+                                                                        <span style="color:var(--wp-text-light); font-style:italic;">Masqué</span>
+                                                                    {% elif eval.points_obtenus is not None %}
+                                                                        <strong style="color:var(--wp-primary);">{{ eval.points_obtenus|floatformat:1 }}</strong>
+                                                                        <span style="color:var(--wp-text-light);">/{{ eval.points_max }}</span>
+                                                                        {% if eval.masque %}
+                                                                            <i class="fas fa-eye-slash" style="color:var(--wp-danger); margin-left:4px;" title="Masqué"></i>
+                                                                        {% endif %}
+                                                                    {% else %}
+                                                                        <span style="color:var(--wp-text-light);">—</span>
+                                                                    {% endif %}
+                                                                {% endif %}
+                                                            {% empty %}
+                                                                <span style="color:var(--wp-text-light);">—</span>
+                                                            {% endfor %}
+                                                        </td>
+                                                        {% endfor %}
+                                                        <td style="text-align:center;">
+                                                            {% for eval in cours_data.evaluations %}
+                                                                {% if eval.cycle == cycle_info.cycle_num and eval.type == 'examen' %}
+                                                                    {% if eval.colonne_masque or eval.est_masque_pour_parent %}
+                                                                        <span style="color:var(--wp-text-light); font-style:italic;">Masqué</span>
+                                                                    {% elif eval.points_obtenus is not None %}
+                                                                        <strong style="color:var(--wp-primary);">{{ eval.points_obtenus|floatformat:1 }}</strong>
+                                                                        <span style="color:var(--wp-text-light);">/{{ eval.points_max }}</span>
+                                                                        {% if eval.masque %}
+                                                                            <i class="fas fa-eye-slash" style="color:var(--wp-danger); margin-left:4px;" title="Masqué"></i>
+                                                                        {% endif %}
+                                                                    {% else %}
+                                                                        <span style="color:var(--wp-text-light);">—</span>
+                                                                    {% endif %}
+                                                                {% endif %}
+                                                            {% empty %}
+                                                                <span style="color:var(--wp-text-light);">—</span>
+                                                            {% endfor %}
+                                                        </td>
+                                                        <td style="text-align:center;">
+                                                            {% with totaux=cours_data.totaux_cycle %}
+                                                                {% if totaux.masque %}
+                                                                    <span style="color:var(--wp-text-light); font-style:italic;">Masqué</span>
+                                                                {% elif totaux.total_possible > 0 %}
+                                                                    {{ totaux.total_obtenu|floatformat:1 }}/{{ totaux.total_possible }}
+                                                                {% else %}
+                                                                    <span style="color:var(--wp-text-light);">—</span>
+                                                                {% endif %}
+                                                            {% endwith %}
+                                                        </td>
+                                                        <td style="text-align:center;">
+                                                            {% with totaux=cours_data.totaux_cycle %}
+                                                                {% if totaux.masque %}
+                                                                    <span style="color:var(--wp-text-light); font-style:italic;">Masqué</span>
+                                                                {% elif totaux.total_possible > 0 %}
+                                                                    {% if totaux.pourcentage >= 70 %}
+                                                                        <span class="wp-badge wp-badge-success">{{ totaux.pourcentage|floatformat:1 }}%</span>
+                                                                    {% elif totaux.pourcentage >= 50 %}
+                                                                        <span class="wp-badge wp-badge-warning">{{ totaux.pourcentage|floatformat:1 }}%</span>
+                                                                    {% else %}
+                                                                        <span class="wp-badge wp-badge-danger">{{ totaux.pourcentage|floatformat:1 }}%</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span style="color:var(--wp-text-light);">—</span>
+                                                                {% endif %}
+                                                            {% endwith %}
+                                                        </td>
+                                                        {% if user_can_edit_visibility %}
+                                                        <td style="text-align:center;">
+                                                            <button class="toggle-visibility wp-action-btn info"
+                                                                    data-eleve="{{ eleve.id }}"
+                                                                    data-annee="{{ annee_id }}"
+                                                                    data-cours="{{ cours_id }}"
+                                                                    data-cycle="{{ cycle_info.cycle_num }}"
+                                                                    title="Basculer la visibilité de toutes les évaluations du cycle">
+                                                                {% with masque=cours_data.masques_par_cycle|default:False %}
+                                                                    {% if masque %}
+                                                                        <i class="fas fa-eye-slash"></i>
+                                                                    {% else %}
+                                                                        <i class="fas fa-eye"></i>
+                                                                    {% endif %}
+                                                                {% endwith %}
+                                                            </button>
+                                                        </td>
+                                                        {% endif %}
+                                                    </tr>
+                                                    {% endfor %}
+
+                                                    <!-- Ligne TOTAL (pts) -->
+                                                    <tr style="background:var(--wp-primary-soft);">
+                                                        <td><strong>Total (pts)</strong></td>
+                                                        {% for total in cycle_info.totals %}
+                                                        <td style="text-align:center;">
+                                                            {% if total.masque %}
+                                                                <span style="color:var(--wp-text-light); font-style:italic;">Masqué</span>
+                                                            {% elif total.total_possible > 0 %}
+                                                                {{ total.total_obtenu|floatformat:1 }}/{{ total.total_possible }}
+                                                            {% else %}
+                                                                <span style="color:var(--wp-text-light);">—</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        {% endfor %}
+                                                        <td></td>
+                                                        <td></td>
+                                                        {% if user_can_edit_visibility %}<td></td>{% endif %}
+                                                    </tr>
+
+                                                    <!-- Ligne TOTAL (%) -->
+                                                    <tr style="background:var(--wp-surface-alt);">
+                                                        <td><strong>Total (%)</strong></td>
+                                                        {% for total in cycle_info.totals %}
+                                                        <td style="text-align:center;">
+                                                            {% if total.masque %}
+                                                                <span style="color:var(--wp-text-light); font-style:italic;">Masqué</span>
+                                                            {% elif total.total_possible > 0 %}
+                                                                {% if total.pourcentage >= 70 %}
+                                                                    <span class="wp-badge wp-badge-success">{{ total.pourcentage|floatformat:1 }}%</span>
+                                                                {% elif total.pourcentage >= 50 %}
+                                                                    <span class="wp-badge wp-badge-warning">{{ total.pourcentage|floatformat:1 }}%</span>
+                                                                {% else %}
+                                                                    <span class="wp-badge wp-badge-danger">{{ total.pourcentage|floatformat:1 }}%</span>
+                                                                {% endif %}
+                                                            {% else %}
+                                                                <span style="color:var(--wp-text-light);">—</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        {% endfor %}
+                                                        <td></td>
+                                                        <td></td>
+                                                        {% if user_can_edit_visibility %}<td></td>{% endif %}
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% endfor %}
+
+                                        <!-- Résultat annuel -->
+                                        {% if data.annuel_data.pourcentage_general is not None %}
+                                        <div style="background:var(--wp-primary-soft); border-radius:8px; padding:14px 18px; margin-top:16px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                                            <span style="font-size:13px; font-weight:600; color:var(--wp-text-strong); display:flex; align-items:center; gap:8px;">
+                                                <i class="fas fa-calculator" style="color:var(--wp-primary);"></i>
+                                                Pourcentage général
+                                            </span>
+                                            <span style="font-size:22px; font-weight:800;
+                                                {% if data.annuel_data.pourcentage_general >= 70 %}color:var(--wp-success);
+                                                {% elif data.annuel_data.pourcentage_general >= 50 %}color:var(--wp-warning);
+                                                {% else %}color:var(--wp-danger);{% endif %}">
+                                                {{ data.annuel_data.pourcentage_general|floatformat:1 }}%
+                                            </span>
+                                        </div>
+                                        {% endif %}
+
+                                    {% else %}
+                                        <div class="wp-empty" style="padding:24px;">
+                                            <i class="fas fa-info-circle"></i>
+                                            <p style="margin:0;">Aucun résultat enregistré pour cette année.</p>
+                                        </div>
+                                    {% endif %}
+
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="wp-empty">
+                        <i class="fas fa-history"></i>
+                        <p>Aucun parcours enregistré.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ===== Bulletins ===== -->
+        <div class="wp-card">
+            <div class="wp-card-header">
+                <h3><i class="fas fa-file-alt" style="color:var(--wp-primary);"></i> Bulletins</h3>
+                <a href="{% url 'eleves:bulletin_create' %}?eleve={{ eleve.id }}" class="wp-btn sm">
+                    <i class="fas fa-upload"></i> Ajouter
+                </a>
+            </div>
+            <div class="wp-card-body" style="padding:0;">
+                {% if bulletins %}
+                <div style="overflow-x:auto;">
+                    <table class="wp-table">
+                        <thead>
+                            <tr>
+                                <th>Année</th>
+                                <th>Fichier</th>
+                                <th>Date</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in bulletins %}
+                            <tr>
+                                <td data-label="Année">
+                                    <span class="wp-badge wp-badge-neutral">{{ b.annee_scolaire.annee }}</span>
+                                </td>
+                                <td data-label="Fichier">
+                                    <a href="{{ b.fichier.url }}" target="_blank"
+                                       style="color:var(--wp-primary); font-weight:600; text-decoration:none;">
+                                        <i class="fas fa-file-pdf"></i> Voir le bulletin
+                                    </a>
+                                </td>
+                                <td data-label="Date">
+                                    <span style="font-size:12px; color:var(--wp-text-muted);">
+                                        {{ b.date_upload|date:"d/m/Y H:i" }}
+                                    </span>
+                                </td>
+                                <td data-label="Actions" style="text-align:right;">
+                                    <form method="post" action="{% url 'eleves:bulletin_delete' b.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="wp-action-btn danger"
+                                                onclick="return confirm('Supprimer ce bulletin ?');"
+                                                title="Supprimer">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="wp-empty">
+                    <i class="fas fa-file-alt"></i>
+                    <p>Aucun bulletin enregistré.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* Accordéon personnalisé */
+    .accordion-button::after {
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+    .accordion-button:not(.collapsed) {
+        background: var(--wp-primary-soft) !important;
+        color: var(--wp-primary) !important;
+    }
+    .accordion-button:focus {
+        box-shadow: none !important;
+        border-color: var(--wp-border-light) !important;
+    }
+    .accordion-item {
+        background: var(--wp-surface);
+    }
+    [data-bs-theme="dark"] .accordion-button {
+        background: var(--wp-surface-alt) !important;
+        color: var(--wp-text-strong) !important;
+    }
+    [data-bs-theme="dark"] .accordion-button:not(.collapsed) {
+        background: var(--wp-primary-soft) !important;
+        color: var(--wp-primary-light) !important;
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    (function () {
+        // ============================================================
+        // BASCULE DE VISIBILITÉ D'UN CYCLE ENTIER
+        // ============================================================
+        document.querySelectorAll('.toggle-visibility').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const eleveId = this.dataset.eleve;
+                const anneeId = this.dataset.annee;
+                const coursId = this.dataset.cours;
+                const cycleNum = this.dataset.cycle;
+                const icon = this.querySelector('i');
+
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+                const url = `{% url 'eleves:toggle_masquage' %}?eleve_id=${eleveId}&annee_id=${anneeId}&cours_id=${coursId}&cycle_num=${cycleNum}`;
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.masque) {
+                            icon.className = 'fas fa-eye-slash';
+                            this.title = 'Masqué';
+                        } else {
+                            icon.className = 'fas fa-eye';
+                            this.title = 'Visible';
+                        }
+                        setTimeout(() => location.reload(), 500);
+                    } else {
+                        alert('Erreur : ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur réseau:', error);
+                    alert('Une erreur réseau est survenue.');
+                });
+            });
+        });
+
+        // ============================================================
+        // BASCULE DE VISIBILITÉ D'UNE COLONNE (période ou examen)
+        // ============================================================
+        document.querySelectorAll('.toggle-colonne').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const eleveId = this.dataset.eleve;
+                const anneeId = this.dataset.annee;
+                const cycleNum = this.dataset.cycle;
+                const typeCol = this.dataset.type;
+                const periodeNum = this.dataset.periode;
+                const icon = this.querySelector('i');
+
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+                const url = `{% url 'eleves:toggle_colonne_masquage' %}?eleve_id=${eleveId}&annee_id=${anneeId}&cycle_num=${cycleNum}&type=${typeCol}&periode_num=${periodeNum}`;
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.masque) {
+                            icon.className = 'fas fa-eye-slash';
+                            this.title = 'Colonne masquée';
+                        } else {
+                            icon.className = 'fas fa-eye';
+                            this.title = 'Colonne visible';
+                        }
+                        setTimeout(() => location.reload(), 500);
+                    } else {
+                        alert('Erreur : ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur réseau:', error);
+                    alert('Une erreur réseau est survenue.');
+                });
+            });
+        });
+    })();
+</script>
+{% endblock %}

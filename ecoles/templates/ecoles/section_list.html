@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sections - CRADD{% endblock %}
+{% block page_heading %}Liste des sections{% endblock %}
+{% block page_subtitle %}Gestion des sections et options d'enseignement{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Sections</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== EN-TÊTE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-stream" style="color:var(--wp-primary);"></i>
+                Sections
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Gérez les sections (Enseignement Général, Technique, etc.) et leurs options.
+            </p>
+        </div>
+        <a href="{% url 'ecoles:section_create' %}" class="wp-btn">
+            <i class="fas fa-plus"></i> Ajouter une section
+        </a>
+    </div>
+</div>
+
+<!-- ===== TABLEAU ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-list"></i> Liste des sections</h3>
+        <span class="wp-count-badge">{{ sections.paginator.count }} section{{ sections.paginator.count|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if sections %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Code</th>
+                        <th>Ordre</th>
+                        <th>Description</th>
+                        <th>Nb options</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for section in sections %}
+                    <tr>
+                        <td data-label="Nom">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-stream" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ section.nom }}
+                            </strong>
+                        </td>
+                        <td data-label="Code">
+                            {% if section.code %}
+                                <span class="wp-code">{{ section.code }}</span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Ordre">
+                            <span class="wp-badge wp-badge-neutral">
+                                <i class="fas fa-sort-numeric-down"></i> {{ section.ordre }}
+                            </span>
+                        </td>
+                        <td data-label="Description">
+                            {% if section.description %}
+                                <span style="font-size:12.5px; color:var(--wp-text-muted);">
+                                    {{ section.description|truncatechars:50 }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Nb options">
+                            <span class="wp-badge wp-badge-info" style="font-weight:700;">
+                                <i class="fas fa-list"></i> {{ section.options.count }}
+                            </span>
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+                                <a href="{% url 'ecoles:section_edit' section.id %}"
+                                   class="wp-action-btn edit"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'ecoles:section_delete' section.id %}"
+                                   class="wp-action-btn danger"
+                                   title="Supprimer"
+                                   onclick="return confirm('Supprimer la section « {{ section.nom }} » ?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-stream"></i>
+            <p>Aucune section trouvée.</p>
+            <a href="{% url 'ecoles:section_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Créer la première section
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== PAGINATION ===== -->
+{% if sections.has_other_pages %}
+<div class="wp-card" style="margin-top:20px;">
+    <div class="wp-card-body">
+        <div class="wp-pagination">
+            {% if sections.has_previous %}
+                <a href="?page=1" class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ sections.previous_page_number }}" class="wp-page-link">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-left"></i></span>
+            {% endif %}
+
+            {% for num in sections.paginator.page_range %}
+                {% if sections.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > sections.number|add:"-3" and num < sections.number|add:"3" %}
+                    <a href="?page={{ num }}" class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if sections.has_next %}
+                <a href="?page={{ sections.next_page_number }}" class="wp-page-link">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="?page={{ sections.paginator.num_pages }}" class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:12px; color:var(--wp-text-light);">
+            Page {{ sections.number }} sur {{ sections.paginator.num_pages }}
+            · {{ sections.paginator.count }} section{{ sections.paginator.count|pluralize }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

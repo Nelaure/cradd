@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Classes - CRADD{% endblock %}
+{% block page_heading %}Classes{% endblock %}
+{% block page_subtitle %}Classes de référence et instances dans les écoles{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Classes</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== EN-TÊTE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-users" style="color:var(--wp-primary);"></i>
+                Classes
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Gérez les classes de référence et leurs instances par école.
+            </p>
+        </div>
+        <a href="{% url 'ecoles:classe_create' %}" class="wp-btn">
+            <i class="fas fa-plus"></i> Ajouter une classe
+        </a>
+    </div>
+</div>
+
+<!-- ===== FILTRES ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-filter"></i> Filtres</h3>
+    </div>
+    <div class="wp-card-body">
+        <form method="get">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="ecoleFilter" class="wp-form-label">
+                        <i class="fas fa-school"></i> École
+                    </label>
+                    <select name="ecole" id="ecoleFilter" class="wp-select">
+                        <option value="">Toutes les écoles</option>
+                        {% for ecole in ecoles %}
+                            <option value="{{ ecole.id }}"
+                                    {% if selected_ecole|stringformat:"s" == ecole.id|stringformat:"s" %}selected{% endif %}>
+                                {{ ecole.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="niveauFilter" class="wp-form-label">
+                        <i class="fas fa-layer-group"></i> Niveau
+                    </label>
+                    <select name="niveau" id="niveauFilter" class="wp-select">
+                        <option value="">Tous les niveaux</option>
+                        {% for niveau in niveaux %}
+                            <option value="{{ niveau.id }}"
+                                    {% if selected_niveau|stringformat:"s" == niveau.id|stringformat:"s" %}selected{% endif %}>
+                                {{ niveau.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="wp-form-actions-inline" style="width:100%;">
+                        <button type="submit" class="wp-btn" style="flex:1;">
+                            <i class="fas fa-filter"></i> Filtrer
+                        </button>
+                        <a href="{% url 'ecoles:classe_list' %}" class="wp-btn outline">
+                            <i class="fas fa-times"></i> Réinitialiser
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== TABLEAU ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-list"></i> Liste des classes</h3>
+        <span class="wp-count-badge">{{ classes.paginator.count }} classe{{ classes.paginator.count|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if classes %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Niveau</th>
+                        <th>École</th>
+                        <th>Type</th>
+                        <th>Nb élèves</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for classe in classes %}
+                    <tr>
+                        <td data-label="Nom">
+                            <strong style="color:var(--wp-text-strong); font-size:14px;">
+                                <i class="fas fa-users" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ classe.nom }}
+                            </strong>
+                            {% if classe.description %}
+                                <br><small style="color:var(--wp-text-light); font-size:11.5px;">
+                                    {{ classe.description|truncatechars:50 }}
+                                </small>
+                            {% endif %}
+                        </td>
+                        <td data-label="Niveau">
+                            <span class="wp-badge wp-badge-neutral">
+                                <i class="fas fa-layer-group"></i> {{ classe.niveau.nom }}
+                            </span>
+                        </td>
+                        <td data-label="École">
+                            {% if classe.est_reference %}
+                                <span style="color:var(--wp-text-light); font-style:italic; font-size:12px;">
+                                    — (référence)
+                                </span>
+                            {% else %}
+                                <span style="font-size:12.5px;">
+                                    <i class="fas fa-school" style="color:var(--wp-primary); font-size:11px;"></i>
+                                    {{ classe.ecole.nom|default:"-" }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Type">
+                            {% if classe.est_reference %}
+                                <span class="wp-badge wp-badge-primary">
+                                    <i class="fas fa-star"></i> Référence
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-info">
+                                    <i class="fas fa-copy"></i> Instance
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Nb élèves">
+                            <span class="wp-badge wp-badge-info" style="font-weight:700;">
+                                <i class="fas fa-user-graduate"></i> {{ classe.eleves.count }}
+                            </span>
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+                                <a href="{% url 'ecoles:classe_edit' classe.id %}"
+                                   class="wp-action-btn edit"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if not classe.est_reference %}
+                                    <a href="{% url 'ecoles:classe_duplicate' classe.id %}"
+                                       class="wp-action-btn info"
+                                       title="Dupliquer">
+                                        <i class="fas fa-copy"></i>
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'ecoles:classe_delete' classe.id %}"
+                                   class="wp-action-btn danger"
+                                   title="Supprimer"
+                                   onclick="return confirm('Supprimer cette classe ? Toutes les données associées seront perdues.');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-users"></i>
+            <p>Aucune classe trouvée.</p>
+            <a href="{% url 'ecoles:classe_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Créer une classe
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== PAGINATION ===== -->
+{% if classes.has_other_pages %}
+<div class="wp-card" style="margin-top:20px;">
+    <div class="wp-card-body">
+        <div class="wp-pagination">
+            {% if classes.has_previous %}
+                <a href="?page=1{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_niveau %}&niveau={{ selected_niveau }}{% endif %}"
+                   class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ classes.previous_page_number }}{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_niveau %}&niveau={{ selected_niveau }}{% endif %}"
+                   class="wp-page-link">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-left"></i></span>
+            {% endif %}
+
+            {% for num in classes.paginator.page_range %}
+                {% if classes.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > classes.number|add:"-3" and num < classes.number|add:"3" %}
+                    <a href="?page={{ num }}{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_niveau %}&niveau={{ selected_niveau }}{% endif %}"
+                       class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if classes.has_next %}
+                <a href="?page={{ classes.next_page_number }}{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_niveau %}&niveau={{ selected_niveau }}{% endif %}"
+                   class="wp-page-link">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="?page={{ classes.paginator.num_pages }}{% if selected_ecole %}&ecole={{ selected_ecole }}{% endif %}{% if selected_niveau %}&niveau={{ selected_niveau }}{% endif %}"
+                   class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:12px; color:var(--wp-text-light);">
+            Page {{ classes.number }} sur {{ classes.paginator.num_pages }}
+            · {{ classes.paginator.count }} classe{{ classes.paginator.count|pluralize }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

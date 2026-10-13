@@ -1,0 +1,1364 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cours · CRADD{% endblock %}
+{% block page_heading %}Liste des cours{% endblock %}
+{% block page_subtitle %}Gestion complète des cours par école, niveau, classe et domaine{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Cours</span>
+{% endblock %}
+
+{% block content %}
+<div class="cours-list-page">
+
+    <!-- ============================================================
+         EN-TÊTE DE PAGE (BOX avec titre + bouton)
+    ============================================================ -->
+    <div class="wp-card" style="margin-bottom:20px;">
+        <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div>
+                <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                    <i class="fas fa-book" style="color:var(--wp-primary);"></i>
+                    Liste des cours
+                </h2>
+                <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                    Gérez les cours de référence et leurs instances dans les écoles.
+                </p>
+            </div>
+            <a href="{% url 'ecoles:cours_create' %}{% if request.GET.ref == '0' %}?ref=0{% endif %}" class="wp-btn">
+                <i class="fas fa-plus-circle"></i> Nouveau cours
+            </a>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         SECTION : COURS RÉCEMMENT AJOUTÉS
+    ============================================================ -->
+    {% if cours_recents %}
+    <div class="wp-card recent-section">
+        <div class="wp-card-header recent-header">
+            <h3 class="recent-title">
+                <i class="fas fa-clock" style="color:var(--wp-primary);"></i>
+                <span>Cours récemment ajoutés</span>
+                <span class="wp-count-badge">{{ cours_recents|length }}</span>
+            </h3>
+            <div class="recent-controls">
+                <button type="button" class="wp-icon-btn" id="scrollRecentsLeft" title="Précédent">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button type="button" class="wp-icon-btn" id="scrollRecentsRight" title="Suivant">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button type="button" class="wp-icon-btn" id="toggleRecents" title="Replier">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+        </div>
+        <div class="wp-card-body">
+            <div class="recent-scroll-wrapper" id="recentWrapper">
+                <div class="recent-scroll">
+                    {% for c in cours_recents %}
+                    <div class="recent-card">
+                        <div class="recent-card-header">
+                            {% if c.est_reference %}
+                                <span class="wp-badge wp-badge-warning">
+                                    <i class="fas fa-star"></i> Réf.
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-circle"></i> Inst.
+                                </span>
+                            {% endif %}
+                            {% if c.date_creation %}
+                                <span class="recent-time" title="Ajouté le {{ c.date_creation|date:'d/m/Y H:i' }}">
+                                    <i class="fas fa-hourglass-half"></i> {{ c.date_creation|timesince }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <h5 class="recent-card-title" title="{{ c.nom }}">{{ c.nom|truncatechars:28 }}</h5>
+                        <div class="recent-card-code">
+                            <i class="fas fa-barcode"></i> {{ c.code }}
+                        </div>
+                        <div class="recent-card-tags">
+                            {% if c.classe %}
+                                <a href="?classe={{ c.classe.id }}" class="recent-tag recent-tag-classe">
+                                    <i class="fas fa-users"></i> {{ c.classe.nom }}
+                                </a>
+                            {% endif %}
+                            {% if c.domaine %}
+                                <a href="?domaine={{ c.domaine.id }}" class="recent-tag recent-tag-domaine">
+                                    <i class="fas fa-tag"></i> {{ c.domaine.nom|truncatechars:15 }}
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="recent-card-actions">
+                            <a href="{% url 'ecoles:cours_edit' c.pk %}" class="wp-action-btn edit" title="Modifier">
+                                <i class="fas fa-pen"></i>
+                            </a>
+                            <a href="{% url 'ecoles:cours_delete' c.pk %}" class="wp-action-btn danger" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ============================================================
+         FILTRES AVANCÉS
+    ============================================================ -->
+    <div class="wp-card filters-card">
+        <div class="wp-card-header filters-header" id="filtersHeader">
+            <h3 class="filters-header-left">
+                <i class="fas fa-filter" style="color:var(--wp-primary);"></i>
+                <span>Filtres de recherche</span>
+                {% if nb_filtres_actifs %}
+                    <span class="wp-count-badge">{{ nb_filtres_actifs }}</span>
+                {% endif %}
+            </h3>
+            <div class="filters-header-right">
+                {% if nb_filtres_actifs %}
+                    <a href="{% url 'ecoles:cours_list' %}" class="wp-btn danger sm">
+                        <i class="fas fa-times-circle"></i>
+                        <span class="btn-label">Tout effacer</span>
+                    </a>
+                {% endif %}
+                <button type="button" class="wp-icon-btn" id="toggleFilters" title="Replier / Déplier">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="wp-card-body filters-body" id="filtersBody">
+            <form method="get" id="filtreForm">
+                <div class="wp-form-grid-4 filters-grid">
+                    <!-- Recherche texte -->
+                    <div class="wp-form-group" style="margin-bottom:0;">
+                        <label class="wp-form-label">
+                            <i class="fas fa-search" style="color:var(--wp-primary);"></i> Recherche
+                        </label>
+                        <div class="input-group-wp">
+                            <input type="text"
+                                   name="q"
+                                   id="filtre_q"
+                                   class="wp-input"
+                                   placeholder="Nom ou code du cours..."
+                                   value="{{ search_query|default:'' }}">
+                            <button type="button" class="btn-clear-input" id="clearSearch"
+                                    style="display: {% if search_query %}flex{% else %}none{% endif %};">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- École -->
+                    <div class="wp-form-group" style="margin-bottom:0;">
+                        <label class="wp-form-label">
+                            <i class="fas fa-school" style="color:var(--wp-primary);"></i> École
+                        </label>
+                        <select name="ecole" id="filtre_ecole" class="wp-select">
+                            <option value="">Toutes les écoles</option>
+                            {% for e in ecoles %}
+                                <option value="{{ e.id }}" {% if selected_ecole == e.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ e.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Niveau -->
+                    <div class="wp-form-group" style="margin-bottom:0;">
+                        <label class="wp-form-label">
+                            <i class="fas fa-layer-group" style="color:var(--wp-primary);"></i> Niveau
+                        </label>
+                        <select name="niveau" id="filtre_niveau" class="wp-select">
+                            <option value="">Tous les niveaux</option>
+                            {% for n in niveaux %}
+                                <option value="{{ n.id }}" {% if selected_niveau == n.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ n.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Classe -->
+                    <div class="wp-form-group" style="margin-bottom:0;">
+                        <label class="wp-form-label">
+                            <i class="fas fa-users" style="color:var(--wp-primary);"></i> Classe
+                        </label>
+                        <select name="classe" id="filtre_classe" class="wp-select">
+                            <option value="">Toutes les classes</option>
+                            {% for c in classes %}
+                                <option value="{{ c.id }}" {% if selected_classe == c.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ c.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Domaine -->
+                    <div class="wp-form-group" style="margin-bottom:0;">
+                        <label class="wp-form-label">
+                            <i class="fas fa-tags" style="color:var(--wp-primary);"></i> Domaine
+                        </label>
+                        <select name="domaine" id="filtre_domaine" class="wp-select">
+                            <option value="">Tous les domaines</option>
+                            {% for d in domaines %}
+                                <option value="{{ d.id }}" {% if selected_domaine == d.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ d.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Type -->
+                    <div class="wp-form-group" style="margin-bottom:0;">
+                        <label class="wp-form-label">
+                            <i class="fas fa-bookmark" style="color:var(--wp-primary);"></i> Type
+                        </label>
+                        <select name="type" class="wp-select">
+                            <option value="">Tous</option>
+                            <option value="reference" {% if selected_type == 'reference' %}selected{% endif %}>Références</option>
+                            <option value="instance" {% if selected_type == 'instance' %}selected{% endif %}>Instances</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filters-actions">
+                    <button type="submit" class="wp-btn">
+                        <i class="fas fa-search"></i> Appliquer
+                    </button>
+                    <a href="{% url 'ecoles:cours_list' %}" class="wp-btn secondary">
+                        <i class="fas fa-redo"></i> Réinitialiser
+                    </a>
+                    <span class="results-count">
+                        <i class="fas fa-layer-group"></i>
+                        <strong>{{ total_groupes }}</strong> cours distinct{{ total_groupes|pluralize }}
+                        <span class="results-sep">·</span>
+                        <i class="fas fa-book"></i>
+                        <strong>{{ total_cours }}</strong> instance{{ total_cours|pluralize }}
+                    </span>
+                </div>
+            </form>
+
+            <!-- Filtres actifs -->
+            {% if nb_filtres_actifs %}
+            <div class="active-filters">
+                <span class="active-label">
+                    <i class="fas fa-filter"></i> Filtres actifs :
+                </span>
+                {% if search_query %}
+                    <a href="?{% for k,v in request.GET.items %}{% if k != 'q' and k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}" class="wp-badge wp-badge-primary">
+                        <i class="fas fa-search"></i> "{{ search_query }}"
+                        <i class="fas fa-times"></i>
+                    </a>
+                {% endif %}
+                {% if selected_ecole %}
+                    <a href="?{% for k,v in request.GET.items %}{% if k != 'ecole' and k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}" class="wp-badge wp-badge-primary">
+                        <i class="fas fa-school"></i> {% for e in ecoles %}{% if e.id|stringformat:"s" == selected_ecole %}{{ e.nom }}{% endif %}{% endfor %}
+                        <i class="fas fa-times"></i>
+                    </a>
+                {% endif %}
+                {% if selected_niveau %}
+                    <a href="?{% for k,v in request.GET.items %}{% if k != 'niveau' and k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}" class="wp-badge wp-badge-primary">
+                        <i class="fas fa-layer-group"></i> {% for n in niveaux %}{% if n.id|stringformat:"s" == selected_niveau %}{{ n.nom }}{% endif %}{% endfor %}
+                        <i class="fas fa-times"></i>
+                    </a>
+                {% endif %}
+                {% if selected_classe %}
+                    <a href="?{% for k,v in request.GET.items %}{% if k != 'classe' and k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}" class="wp-badge wp-badge-primary">
+                        <i class="fas fa-users"></i> {% for c in classes %}{% if c.id|stringformat:"s" == selected_classe %}{{ c.nom }}{% endif %}{% endfor %}
+                        <i class="fas fa-times"></i>
+                    </a>
+                {% endif %}
+                {% if selected_domaine %}
+                    <a href="?{% for k,v in request.GET.items %}{% if k != 'domaine' and k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}" class="wp-badge wp-badge-primary">
+                        <i class="fas fa-tags"></i> {% for d in domaines %}{% if d.id|stringformat:"s" == selected_domaine %}{{ d.nom }}{% endif %}{% endfor %}
+                        <i class="fas fa-times"></i>
+                    </a>
+                {% endif %}
+                {% if selected_type %}
+                    <a href="?{% for k,v in request.GET.items %}{% if k != 'type' and k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}" class="wp-badge wp-badge-primary">
+                        <i class="fas fa-bookmark"></i> {% if selected_type == 'reference' %}Références{% else %}Instances{% endif %}
+                        <i class="fas fa-times"></i>
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ============================================================
+         LISTE DES COURS (GROUPÉS)
+    ============================================================ -->
+    <div class="wp-card cours-main-card">
+        <div class="wp-card-header cours-main-header">
+            <h3 class="cours-main-header-left">
+                <i class="fas fa-book" style="color:var(--wp-primary);"></i>
+                <span>Liste des cours</span>
+                <span class="wp-count-badge">{{ cours_page.paginator.count }}</span>
+            </h3>
+            <div class="cours-main-header-right">
+                <span class="hint-text">
+                    <i class="fas fa-info-circle"></i>
+                    Chaque carte regroupe toutes les classes où le cours est donné
+                </span>
+            </div>
+        </div>
+
+        <div class="wp-card-body cours-main-body">
+            {% if cours_page %}
+            <div class="cours-cards-grid">
+                {% for g in cours_page %}
+                <div class="cours-card">
+                    <!-- En-tête de la carte -->
+                    <div class="cours-card-header">
+                        <div class="cours-card-badges">
+                            {% if g.est_reference %}
+                                <span class="wp-badge wp-badge-warning">
+                                    <i class="fas fa-star"></i> Référence
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-circle"></i> Instance
+                                </span>
+                            {% endif %}
+                            {% if g.nb_classes > 1 %}
+                                <span class="wp-badge wp-badge-primary">
+                                    <i class="fas fa-users"></i> {{ g.nb_classes }} classes
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-neutral">
+                                    <i class="fas fa-user"></i> 1 classe
+                                </span>
+                            {% endif %}
+                        </div>
+                        {% if g.date_recente %}
+                            <span class="cours-card-date" title="Dernière création">
+                                <i class="fas fa-clock"></i> {{ g.date_recente|date:"d/m/Y" }}
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Titre et description -->
+                    <div class="cours-card-title-zone">
+                        <h4 class="cours-card-title">{{ g.nom }}</h4>
+                        {% if g.description %}
+                            <p class="cours-card-description">{{ g.description|truncatechars:80 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Codes -->
+                    <div class="cours-card-block">
+                        <span class="block-label">
+                            <i class="fas fa-barcode"></i> Code{{ g.codes|length|pluralize }} :
+                        </span>
+                        <div class="codes-container">
+                            {% for code in g.codes %}
+                                <span class="code-badge">{{ code }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- École / Niveau / Domaine -->
+                    <div class="cours-card-meta">
+                        <div class="meta-item">
+                            {% if g.ecole %}
+                                <i class="fas fa-school"></i>
+                                <span title="{{ g.ecole.nom }}">{{ g.ecole.nom|truncatechars:20 }}</span>
+                            {% else %}
+                                <i class="fas fa-globe"></i>
+                                <span style="font-style:italic; color:var(--wp-text-light);">Référence globale</span>
+                            {% endif %}
+                        </div>
+                        {% if g.niveau %}
+                            <div class="meta-item">
+                                <i class="fas fa-layer-group"></i>
+                                <span title="{{ g.niveau.nom }}">{{ g.niveau.nom|truncatechars:20 }}</span>
+                            </div>
+                        {% endif %}
+                        {% if g.domaine %}
+                            <a href="?domaine={{ g.domaine.id }}" class="meta-item meta-item-link">
+                                <i class="fas fa-tags"></i>
+                                <span title="{{ g.domaine.nom }}">{{ g.domaine.nom|truncatechars:20 }}</span>
+                            </a>
+                        {% endif %}
+                        {% if g.coefficient_unique %}
+                            <div class="meta-item">
+                                <i class="fas fa-hashtag"></i>
+                                <span>Coeff. <strong>{{ g.coefficient_unique }}</strong></span>
+                            </div>
+                        {% elif g.coefficients|length > 1 %}
+                            <div class="meta-item">
+                                <i class="fas fa-hashtag"></i>
+                                <span>Coeff. <strong>{{ g.coefficients_str }}</strong></span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Classes -->
+                    <div class="cours-card-classes">
+                        <span class="block-label">
+                            <i class="fas fa-users"></i> Classes concernées :
+                        </span>
+                        <div class="classes-container">
+                            {% for ci in g.classes_info %}
+                                <a href="?classe={{ ci.classe.id }}"
+                                   class="classe-badge"
+                                   title="Classe : {{ ci.classe.nom }} — Code : {{ ci.code }}">
+                                    <i class="fas fa-user-graduate"></i>
+                                    {{ ci.classe.nom }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Pied de la carte -->
+                    <div class="cours-card-footer">
+                        <span class="cours-card-footer-info">
+                            <i class="fas fa-list-ol"></i>
+                            {{ g.nb_classes }} instance{{ g.nb_classes|pluralize }}
+                        </span>
+                        <div class="cours-card-actions">
+                            <a href="{% url 'ecoles:cours_edit' g.cours_principal_id %}"
+                               class="wp-btn sm"
+                               title="Modifier le cours principal">
+                                <i class="fas fa-pen"></i>
+                                <span class="btn-label">Modifier</span>
+                            </a>
+                            <a href="{% url 'ecoles:cours_delete' g.cours_principal_id %}"
+                               class="wp-btn danger sm"
+                               title="Supprimer le cours principal">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- ============================================================
+                 PAGINATION
+            ============================================================ -->
+            {% if cours_page.has_other_pages %}
+            <div class="pagination-wrapper">
+                <div class="pagination-info">
+                    <i class="fas fa-list-ol"></i>
+                    Page <strong>{{ cours_page.number }}</strong> sur <strong>{{ cours_page.paginator.num_pages }}</strong>
+                    <span class="results-sep">·</span>
+                    <strong>{{ cours_page.paginator.count }}</strong> cours distinct{{ cours_page.paginator.count|pluralize }}
+                </div>
+
+                <nav class="wp-pagination">
+                    {% if cours_page.has_previous %}
+                        <a class="wp-page-link" href="?page=1{{ query_params }}" title="Première page">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        <a class="wp-page-link" href="?page={{ cours_page.previous_page_number }}{{ query_params }}" title="Précédente">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    {% else %}
+                        <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                        <span class="wp-page-link disabled"><i class="fas fa-angle-left"></i></span>
+                    {% endif %}
+
+                    {% for num in cours_page.paginator.page_range %}
+                        {% if cours_page.number == num %}
+                            <span class="wp-page-link active">{{ num }}</span>
+                        {% elif num > cours_page.number|add:'-3' and num < cours_page.number|add:'3' %}
+                            <a class="wp-page-link" href="?page={{ num }}{{ query_params }}">{{ num }}</a>
+                        {% elif num == 1 or num == cours_page.paginator.num_pages %}
+                            <a class="wp-page-link" href="?page={{ num }}{{ query_params }}">{{ num }}</a>
+                        {% elif num == cours_page.number|add:'-4' or num == cours_page.number|add:'4' %}
+                            <span class="wp-page-link disabled">…</span>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if cours_page.has_next %}
+                        <a class="wp-page-link" href="?page={{ cours_page.next_page_number }}{{ query_params }}" title="Suivante">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        <a class="wp-page-link" href="?page={{ cours_page.paginator.num_pages }}{{ query_params }}" title="Dernière page">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    {% else %}
+                        <span class="wp-page-link disabled"><i class="fas fa-angle-right"></i></span>
+                        <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+                    {% endif %}
+                </nav>
+
+                <div class="pagination-jump">
+                    <label for="pageJump">
+                        <i class="fas fa-arrow-right"></i> Aller à
+                    </label>
+                    <select id="pageJump" class="wp-select" style="min-width:110px; padding:6px 30px 6px 12px;">
+                        {% for num in cours_page.paginator.page_range %}
+                            <option value="{{ num }}" {% if num == cours_page.number %}selected{% endif %}>
+                                Page {{ num }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <!-- Empty state -->
+            <div class="wp-empty">
+                <i class="fas fa-book-open"></i>
+                <h5 style="font-weight:700;margin:14px 0 10px;color:var(--wp-text-strong);">Aucun cours trouvé</h5>
+                <p style="max-width:500px;margin:0 auto 20px;line-height:1.7;">
+                    {% if nb_filtres_actifs %}
+                        Aucun cours ne correspond à vos critères de recherche.
+                        <br>
+                        <a href="{% url 'ecoles:cours_list' %}">Effacer tous les filtres</a>
+                    {% else %}
+                        Commencez par créer votre premier cours pour démarrer la gestion.
+                    {% endif %}
+                </p>
+                <a href="{% url 'ecoles:cours_create' %}" class="wp-btn">
+                    <i class="fas fa-plus-circle"></i> Créer un cours
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       WRAPPER
+    ============================================================ */
+    .cours-list-page {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* ============================================================
+       SECTION : COURS RÉCEMMENT AJOUTÉS
+    ============================================================ */
+    .recent-section {
+        border-left: 4px solid var(--wp-primary);
+    }
+    .recent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .recent-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        font-size: 14px;
+        margin: 0;
+        flex-wrap: wrap;
+    }
+    .recent-controls {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .recent-scroll-wrapper {
+        overflow: hidden;
+        transition: max-height 0.35s ease, opacity 0.3s ease;
+        max-height: 500px;
+        opacity: 1;
+    }
+    .recent-scroll-wrapper.collapsed {
+        max-height: 0;
+        opacity: 0;
+        margin-top: -16px;
+    }
+    .recent-scroll {
+        display: flex;
+        gap: 14px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        padding-bottom: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--wp-border) transparent;
+    }
+    .recent-scroll::-webkit-scrollbar { height: 6px; }
+    .recent-scroll::-webkit-scrollbar-track { background: transparent; }
+    .recent-scroll::-webkit-scrollbar-thumb {
+        background: var(--wp-border);
+        border-radius: 9999px;
+    }
+    .recent-card {
+        flex: 0 0 250px;
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius-sm);
+        padding: 14px 16px;
+        transition: all var(--wp-transition);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .recent-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--wp-transition);
+    }
+    .recent-card:hover::before { transform: scaleX(1); }
+    .recent-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--wp-shadow-md);
+        border-color: var(--wp-primary-light);
+    }
+    .recent-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+    .recent-time {
+        font-size: 10.5px;
+        color: var(--wp-text-light);
+        font-style: italic;
+        white-space: nowrap;
+    }
+    .recent-card-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        margin: 0 0 6px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .recent-card-code {
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 11px;
+        color: var(--wp-primary);
+        background: var(--wp-primary-soft);
+        padding: 3px 8px;
+        border-radius: var(--wp-radius-xs);
+        display: inline-block;
+        margin-bottom: 10px;
+        align-self: flex-start;
+    }
+    .recent-card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 12px;
+        flex: 1;
+    }
+    .recent-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 9px;
+        border-radius: 9999px;
+        font-size: 10.5px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all var(--wp-transition);
+        white-space: nowrap;
+    }
+    .recent-tag-classe {
+        background: var(--wp-accent-soft);
+        color: var(--wp-accent-hover);
+    }
+    .recent-tag-classe:hover { background: var(--wp-accent); color: #fff; }
+    .recent-tag-domaine {
+        background: var(--wp-warning-soft);
+        color: #8a6800;
+    }
+    .recent-tag-domaine:hover { background: var(--wp-warning); color: #fff; }
+    .recent-card-actions {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+        padding-top: 8px;
+        border-top: 1px dashed var(--wp-border-light);
+    }
+
+    /* ============================================================
+       FILTRES
+    ============================================================ */
+    .filters-card { overflow: visible; }
+    .filters-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .filters-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        font-size: 14px;
+        margin: 0;
+    }
+    .filters-header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .filters-body {
+        max-height: 900px;
+        overflow: hidden;
+        transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
+        opacity: 1;
+    }
+    .filters-body.collapsed {
+        max-height: 0;
+        opacity: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    /* Input avec bouton clear */
+    .input-group-wp {
+        position: relative;
+        display: block;
+    }
+    .input-group-wp .wp-input {
+        padding-right: 40px;
+    }
+    .btn-clear-input {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: var(--wp-text-light);
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        transition: all var(--wp-transition);
+        padding: 0;
+    }
+    .btn-clear-input:hover {
+        background: var(--wp-danger-soft);
+        color: var(--wp-danger);
+    }
+
+    .filters-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 20px;
+        padding-top: 18px;
+        border-top: 1px dashed var(--wp-border-light);
+        flex-wrap: wrap;
+    }
+    .results-count {
+        margin-left: auto;
+        font-size: 12.5px;
+        color: var(--wp-text-muted);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .results-count strong {
+        color: var(--wp-primary);
+        font-size: 14px;
+    }
+    .results-sep { opacity: 0.4; margin: 0 2px; }
+
+    /* Filtres actifs */
+    .active-filters {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px dashed var(--wp-border-light);
+    }
+    .active-label {
+        font-size: 11.5px;
+        color: var(--wp-text-muted);
+        margin-right: 4px;
+        font-weight: 600;
+    }
+    .active-filters .wp-badge {
+        text-decoration: none;
+        transition: all var(--wp-transition);
+    }
+    .active-filters .wp-badge:hover {
+        background: var(--wp-primary);
+        color: #fff;
+    }
+
+    /* ============================================================
+       LISTE DES COURS
+    ============================================================ */
+    .cours-main-card { overflow: visible; }
+    .cours-main-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .cours-main-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        font-size: 14px;
+        margin: 0;
+    }
+    .hint-text {
+        font-size: 11.5px;
+        color: var(--wp-text-muted);
+    }
+    .hint-text i { color: var(--wp-primary); }
+
+    .cours-main-body {
+        background: var(--wp-surface-alt);
+    }
+
+    /* Grille de cartes */
+    .cours-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 18px;
+        margin-bottom: 20px;
+    }
+    .cours-card {
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius);
+        padding: 20px;
+        transition: all var(--wp-transition);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .cours-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.4s ease;
+    }
+    .cours-card:hover::before { transform: scaleX(1); }
+    .cours-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--wp-shadow-md);
+        border-color: var(--wp-primary-light);
+    }
+    .cours-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+    .cours-card-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .cours-card-date {
+        font-size: 10.5px;
+        color: var(--wp-text-light);
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .cours-card-title-zone { margin-bottom: 16px; }
+    .cours-card-title {
+        font-size: 17px;
+        font-weight: 800;
+        color: var(--wp-text-strong);
+        margin: 0 0 6px 0;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+    .cours-card-description {
+        font-size: 12px;
+        color: var(--wp-text-muted);
+        margin: 0;
+        line-height: 1.5;
+        word-break: break-word;
+    }
+    .cours-card-block { margin-bottom: 14px; }
+    .block-label {
+        display: block;
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+        color: var(--wp-text-light);
+        margin-bottom: 8px;
+    }
+    .block-label i { color: var(--wp-primary); font-size: 10px; }
+
+    .codes-container,
+    .classes-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .code-badge {
+        display: inline-block;
+        background: var(--wp-primary-soft);
+        color: var(--wp-primary);
+        padding: 4px 10px;
+        border-radius: var(--wp-radius-xs);
+        font-size: 11px;
+        font-weight: 700;
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+        border: 1px solid rgba(34, 113, 177, 0.20);
+        word-break: break-all;
+    }
+    .cours-card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px 14px;
+        background: var(--wp-surface-alt);
+        border-radius: var(--wp-radius-sm);
+        margin-bottom: 16px;
+    }
+    .meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11.5px;
+        color: var(--wp-text-muted);
+        text-decoration: none;
+        max-width: 100%;
+    }
+    .meta-item i {
+        color: var(--wp-primary);
+        font-size: 11px;
+        flex-shrink: 0;
+    }
+    .meta-item span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .meta-item-link {
+        color: #8a6800;
+        background: var(--wp-warning-soft);
+        padding: 3px 9px;
+        border-radius: 9999px;
+        transition: all var(--wp-transition);
+    }
+    .meta-item-link i { color: #8a6800; }
+    .meta-item-link:hover { background: var(--wp-warning); color: #fff; }
+    .meta-item-link:hover i { color: #fff; }
+
+    .cours-card-classes {
+        margin-bottom: 16px;
+        flex: 1;
+    }
+    .classe-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: 9999px;
+        background: var(--wp-accent-soft);
+        color: var(--wp-accent-hover);
+        border: 1px solid rgba(0, 163, 42, 0.25);
+        font-size: 11.5px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all var(--wp-transition);
+        white-space: nowrap;
+        max-width: 100%;
+    }
+    .classe-badge:hover {
+        background: var(--wp-accent);
+        color: #fff;
+        border-color: var(--wp-accent);
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0, 163, 42, 0.25);
+    }
+    .cours-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px dashed var(--wp-border-light);
+        margin-top: auto;
+        flex-wrap: wrap;
+    }
+    .cours-card-footer-info {
+        font-size: 11.5px;
+        color: var(--wp-text-light);
+        white-space: nowrap;
+    }
+    .cours-card-footer-info i { color: var(--wp-primary); }
+    .cours-card-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    /* ============================================================
+       PAGINATION
+    ============================================================ */
+    .pagination-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 24px;
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius);
+        flex-wrap: wrap;
+    }
+    .pagination-info {
+        font-size: 12.5px;
+        color: var(--wp-text-muted);
+    }
+    .pagination-info i { color: var(--wp-primary); margin-right: 4px; }
+    .pagination-info strong { color: var(--wp-text-strong); }
+    .pagination-jump {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    .pagination-jump label {
+        font-size: 11.5px;
+        white-space: nowrap;
+        color: var(--wp-text-muted);
+        margin: 0;
+    }
+    .pagination-jump label i { color: var(--wp-primary); }
+    .pagination-jump .wp-select {
+        min-width: 110px;
+        padding: 6px 30px 6px 12px;
+        font-size: 12px;
+    }
+
+    /* ============================================================
+       EMPTY STATE
+    ============================================================ */
+    .wp-empty h5 {
+        font-size: 17px;
+        color: var(--wp-text-strong);
+    }
+    .wp-empty p a {
+        color: var(--wp-primary);
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .wp-empty p a:hover { text-decoration: underline; }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 1200px) {
+        .cours-cards-grid {
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        }
+    }
+    @media (max-width: 992px) {
+        .cours-list-page { gap: 16px; }
+        .recent-card { flex: 0 0 230px; }
+        .cours-cards-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+        }
+        .cours-main-body { padding: 16px; }
+        .cours-main-header { padding: 14px 18px; }
+        .filters-body { padding: 18px; }
+        .pagination-wrapper {
+            padding: 16px 18px;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .pagination-wrapper > .wp-pagination {
+            justify-content: center;
+            order: 1;
+        }
+        .pagination-info { text-align: center; order: 0; }
+        .pagination-jump { justify-content: center; order: 2; }
+    }
+    @media (max-width: 768px) {
+        .cours-list-page { gap: 14px; }
+        .recent-section { padding: 14px 16px; }
+        .recent-title { font-size: 13px; gap: 8px; }
+        .recent-card { flex: 0 0 210px; padding: 12px 14px; }
+        .recent-card-title { font-size: 13px; }
+
+        .filters-header { padding: 14px 16px; }
+        .filters-header-left { font-size: 13px; }
+        .filters-header-right .wp-btn .btn-label { display: none; }
+        .filters-body { padding: 16px; }
+        .filters-grid { grid-template-columns: 1fr !important; gap: 14px; }
+        .filters-actions {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+        }
+        .filters-actions .wp-btn { width: 100%; justify-content: center; }
+        .results-count {
+            margin-left: 0;
+            justify-content: center;
+            font-size: 12px;
+            padding-top: 4px;
+        }
+        .active-filters { gap: 6px; }
+        .active-label { width: 100%; margin-bottom: 4px; }
+
+        .cours-main-header { padding: 12px 14px; gap: 8px; }
+        .cours-main-header-left { font-size: 13px; gap: 8px; }
+        .cours-main-header-right { display: none; }
+        .cours-main-body { padding: 12px; }
+        .cours-cards-grid { grid-template-columns: 1fr; gap: 12px; }
+        .cours-card { padding: 16px; }
+        .cours-card-title { font-size: 15px; }
+        .cours-card-description { font-size: 11.5px; }
+        .cours-card-meta { padding: 10px 12px; gap: 8px; }
+        .meta-item { font-size: 11px; }
+        .cours-card-actions .wp-btn .btn-label { display: none; }
+
+        .pagination-wrapper { padding: 14px 16px; gap: 12px; }
+        .pagination-info { font-size: 12px; }
+        .pagination-jump { width: 100%; justify-content: center; }
+        .pagination-jump .wp-select { flex: 1; max-width: 200px; }
+    }
+    @media (max-width: 480px) {
+        .recent-card { flex: 0 0 190px; padding: 10px 12px; }
+        .recent-card-title { font-size: 12.5px; }
+        .recent-time { font-size: 10px; }
+        .filters-header { padding: 12px 14px; }
+        .filters-body { padding: 14px; }
+        .cours-main-body { padding: 10px; }
+        .cours-card { padding: 14px; }
+        .cours-card-title { font-size: 14px; }
+        .code-badge { font-size: 10.5px; padding: 3px 8px; }
+        .classe-badge { font-size: 10.5px; padding: 4px 10px; }
+    }
+
+    /* Impression */
+    @media print {
+        .recent-section,
+        .filters-card,
+        .pagination-wrapper,
+        .cours-card-actions,
+        .cours-main-header-right {
+            display: none !important;
+        }
+        .cours-cards-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .cours-card {
+            break-inside: avoid;
+            box-shadow: none;
+            border: 1px solid #ccc;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ============================================================
+        // SCROLL DES COURS RÉCENTS
+        // ============================================================
+        const recentScroll = document.querySelector('.recent-scroll');
+        const btnScrollLeft = document.getElementById('scrollRecentsLeft');
+        const btnScrollRight = document.getElementById('scrollRecentsRight');
+
+        if (recentScroll && btnScrollLeft && btnScrollRight) {
+            btnScrollLeft.addEventListener('click', () => {
+                recentScroll.scrollBy({ left: -300, behavior: 'smooth' });
+            });
+            btnScrollRight.addEventListener('click', () => {
+                recentScroll.scrollBy({ left: 300, behavior: 'smooth' });
+            });
+        }
+
+        // ============================================================
+        // TOGGLE RECENTS
+        // ============================================================
+        const toggleRecents = document.getElementById('toggleRecents');
+        const recentWrapper = document.getElementById('recentWrapper');
+
+        if (toggleRecents && recentWrapper) {
+            toggleRecents.addEventListener('click', function () {
+                recentWrapper.classList.toggle('collapsed');
+                const icon = this.querySelector('i');
+                icon.className = recentWrapper.classList.contains('collapsed')
+                    ? 'fas fa-chevron-down'
+                    : 'fas fa-chevron-up';
+                this.title = recentWrapper.classList.contains('collapsed') ? 'Déplier' : 'Replier';
+            });
+        }
+
+        // ============================================================
+        // TOGGLE FILTRES
+        // ============================================================
+        const toggleFilters = document.getElementById('toggleFilters');
+        const filtersBody = document.getElementById('filtersBody');
+
+        if (toggleFilters && filtersBody) {
+            toggleFilters.addEventListener('click', function (e) {
+                e.stopPropagation();
+                filtersBody.classList.toggle('collapsed');
+                const icon = this.querySelector('i');
+                icon.className = filtersBody.classList.contains('collapsed')
+                    ? 'fas fa-chevron-down'
+                    : 'fas fa-chevron-up';
+            });
+        }
+
+        // ============================================================
+        // EFFACER LA RECHERCHE
+        // ============================================================
+        const clearSearch = document.getElementById('clearSearch');
+        const filtreQ = document.getElementById('filtre_q');
+
+        if (clearSearch && filtreQ) {
+            clearSearch.addEventListener('click', function () {
+                filtreQ.value = '';
+                this.style.display = 'none';
+                document.getElementById('filtreForm').submit();
+            });
+
+            filtreQ.addEventListener('input', function () {
+                clearSearch.style.display = this.value ? 'flex' : 'none';
+            });
+
+            filtreQ.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('filtreForm').submit();
+                }
+            });
+        }
+
+        // ============================================================
+        // FILTRAGE EN CASCADE : ÉCOLE → NIVEAU → CLASSE
+        // ============================================================
+        const filtreEcole = document.getElementById('filtre_ecole');
+        const filtreNiveau = document.getElementById('filtre_niveau');
+        const filtreClasse = document.getElementById('filtre_classe');
+        const filtreForm = document.getElementById('filtreForm');
+
+        if (filtreEcole) {
+            filtreEcole.addEventListener('change', function () {
+                const ecoleId = this.value;
+
+                if (filtreNiveau) filtreNiveau.innerHTML = '<option value="">Tous les niveaux</option>';
+                if (filtreClasse) filtreClasse.innerHTML = '<option value="">Toutes les classes</option>';
+
+                if (!ecoleId) {
+                    filtreForm.submit();
+                    return;
+                }
+
+                fetch(`/api/niveaux/?ecole_id=${ecoleId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        data.forEach(niveau => {
+                            const opt = document.createElement('option');
+                            opt.value = niveau.id;
+                            opt.textContent = niveau.nom;
+                            filtreNiveau.appendChild(opt);
+                        });
+                        filtreForm.submit();
+                    })
+                    .catch(err => {
+                        console.error('Erreur niveaux:', err);
+                        filtreForm.submit();
+                    });
+            });
+        }
+
+        if (filtreNiveau) {
+            filtreNiveau.addEventListener('change', function () {
+                const niveauId = this.value;
+
+                if (filtreClasse) filtreClasse.innerHTML = '<option value="">Toutes les classes</option>';
+
+                if (!niveauId) {
+                    filtreForm.submit();
+                    return;
+                }
+
+                fetch(`/api/classes-par-niveau/?niveau_id=${niveauId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        data.forEach(classe => {
+                            const opt = document.createElement('option');
+                            opt.value = classe.id;
+                            opt.textContent = classe.nom;
+                            filtreClasse.appendChild(opt);
+                        });
+                        filtreForm.submit();
+                    })
+                    .catch(err => {
+                        console.error('Erreur classes:', err);
+                        filtreForm.submit();
+                    });
+            });
+        }
+
+        // ============================================================
+        // SAUT DIRECT DE PAGE
+        // ============================================================
+        const pageJump = document.getElementById('pageJump');
+        if (pageJump) {
+            pageJump.addEventListener('change', function () {
+                const page = this.value;
+                const url = new URL(window.location.href);
+                url.searchParams.set('page', page);
+                window.location.href = url.toString();
+            });
+        }
+
+    });
+</script>
+{% endblock %}

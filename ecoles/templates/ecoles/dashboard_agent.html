@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord - Agent{% endblock %}
+{% block page_heading %}Tableau de bord{% endblock %}
+{% block page_subtitle %}{% if is_agent_global %}Gestion globale des références{% else %}{{ ecole_nom }}{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Agent</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== BANDEAU D'INFORMATION ===== -->
+<div class="wp-card" style="margin-bottom:20px; background:linear-gradient(135deg, rgba(34,113,177,0.06), rgba(34,113,177,0.02)); border-left:4px solid var(--wp-primary);">
+    <div class="wp-card-body" style="padding:16px 20px; display:flex; align-items:start; gap:14px;">
+        <i class="fas fa-shield-alt" style="color:var(--wp-primary); font-size:22px; margin-top:2px;"></i>
+        <div>
+            <div style="font-weight:700; color:var(--wp-text-strong); font-size:14px; margin-bottom:4px;">
+                Espace Agent — Suppléant de l'Administrateur
+            </div>
+            <div style="font-size:12.5px; color:var(--wp-text-muted); line-height:1.6;">
+                Vous gérez les <strong>entités de référence</strong> (sections, niveaux, classes, domaines, cours)
+                du système. Vos modifications sont propagées automatiquement à toutes les écoles concernées.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== STATISTIQUES RÉFÉRENCES ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-header">
+        <h3>
+            <i class="fas fa-bookmark" style="color:var(--wp-primary);"></i>
+            Entités de référence
+        </h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="{% url 'ecoles:section_list' %}" class="wp-btn sm outline">
+                <i class="fas fa-stream"></i> Sections
+            </a>
+            <a href="{% url 'ecoles:niveau_list' %}" class="wp-btn sm outline">
+                <i class="fas fa-layer-group"></i> Niveaux
+            </a>
+            <a href="{% url 'ecoles:classe_list' %}" class="wp-btn sm outline">
+                <i class="fas fa-users"></i> Classes
+            </a>
+            <a href="{% url 'ecoles:domaine_list' %}" class="wp-btn sm outline">
+                <i class="fas fa-tags"></i> Domaines
+            </a>
+            <a href="{% url 'ecoles:cours_list' %}" class="wp-btn sm outline">
+                <i class="fas fa-book"></i> Cours
+            </a>
+        </div>
+    </div>
+    <div class="wp-card-body">
+        <div class="row g-3">
+            <div class="col-xl-3 col-md-6">
+                <div class="wp-stat-mini">
+                    <div class="wp-stat-mini-icon" style="background:rgba(34,113,177,0.12); color:var(--wp-primary);">
+                        <i class="fas fa-stream"></i>
+                    </div>
+                    <div class="wp-stat-mini-content">
+                        <div class="wp-stat-mini-value">{{ total_sections }}</div>
+                        <div class="wp-stat-mini-label">Sections</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="wp-stat-mini">
+                    <div class="wp-stat-mini-icon" style="background:rgba(34,113,177,0.12); color:var(--wp-primary);">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="wp-stat-mini-content">
+                        <div class="wp-stat-mini-value">{{ total_niveaux_ref }}</div>
+                        <div class="wp-stat-mini-label">Niveaux réf.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="wp-stat-mini">
+                    <div class="wp-stat-mini-icon" style="background:rgba(34,113,177,0.12); color:var(--wp-primary);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="wp-stat-mini-content">
+                        <div class="wp-stat-mini-value">{{ total_classes_ref }}</div>
+                        <div class="wp-stat-mini-label">Classes réf.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="wp-stat-mini">
+                    <div class="wp-stat-mini-icon" style="background:rgba(34,113,177,0.12); color:var(--wp-primary);">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div class="wp-stat-mini-content">
+                        <div class="wp-stat-mini-value">{{ total_cours_ref }}</div>
+                        <div class="wp-stat-mini-label">Cours réf.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:16px; padding:12px 14px; background:rgba(34,113,177,0.06); border-radius:6px; border-left:3px solid var(--wp-primary);">
+            <div style="display:flex; align-items:start; gap:10px;">
+                <i class="fas fa-info-circle" style="color:var(--wp-primary); font-size:14px; margin-top:2px;"></i>
+                <div style="font-size:12.5px; color:var(--wp-text-muted); line-height:1.55;">
+                    En tant qu'<strong>agent</strong>, vous pouvez créer, modifier et synchroniser
+                    les entités de <strong>référence</strong> (sections, niveaux, classes, domaines, cours).
+                    Ces modifications sont propagées automatiquement aux écoles concernées.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== STATISTIQUES STRUCTURELLES (GLOBALES) ===== -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-school"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_ecoles }}</div>
+                    <div class="stat-label">Écoles</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_niveaux_inst }}</div>
+                    <div class="stat-label">Niveaux (instances)</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_classes_inst }}</div>
+                    <div class="stat-label">Classes (instances)</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_cours_inst }}</div>
+                    <div class="stat-label">Cours (instances)</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== RÉPARTITION PAR PROVINCE ===== -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-xl-6 col-md-12">
+        <div class="wp-card" style="margin-bottom:0;">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-map-marker-alt" style="color:var(--wp-primary);"></i>
+                    Répartition structurelle
+                </h3>
+            </div>
+            <div class="wp-card-body">
+                <ul class="wp-list">
+                    <li class="wp-list-item">
+                        <div class="wp-list-content">
+                            <div class="wp-list-avatar" style="background:linear-gradient(135deg, var(--wp-primary), var(--wp-primary-light));">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <div class="wp-list-title">Provinces</div>
+                                <div class="wp-list-subtitle">Provinces enregistrées dans le système</div>
+                            </div>
+                        </div>
+                        <span class="wp-badge wp-badge-primary" style="font-weight:700;">
+                            {{ total_provinces }}
+                        </span>
+                    </li>
+                    <li class="wp-list-item">
+                        <div class="wp-list-content">
+                            <div class="wp-list-avatar" style="background:linear-gradient(135deg, var(--wp-accent), #34d058);">
+                                <i class="fas fa-school"></i>
+                            </div>
+                            <div>
+                                <div class="wp-list-title">Écoles</div>
+                                <div class="wp-list-subtitle">Établissements rattachés aux références</div>
+                            </div>
+                        </div>
+                        <span class="wp-badge wp-badge-success" style="font-weight:700;">
+                            {{ total_ecoles }}
+                        </span>
+                    </li>
+                    <li class="wp-list-item">
+                        <div class="wp-list-content">
+                            <div class="wp-list-avatar" style="background:linear-gradient(135deg, var(--wp-warning), #f59e0b);">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div>
+                                <div class="wp-list-title">Niveaux (références)</div>
+                                <div class="wp-list-subtitle">Niveaux maîtres disponibles</div>
+                            </div>
+                        </div>
+                        <span class="wp-badge wp-badge-warning" style="font-weight:700;">
+                            {{ total_niveaux_ref }}
+                        </span>
+                    </li>
+                    <li class="wp-list-item">
+                        <div class="wp-list-content">
+                            <div class="wp-list-avatar" style="background:linear-gradient(135deg, var(--wp-secondary), var(--wp-secondary-hover));">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div>
+                                <div class="wp-list-title">Cours (références)</div>
+                                <div class="wp-list-subtitle">Cours maîtres disponibles</div>
+                            </div>
+                        </div>
+                        <span class="wp-badge wp-badge-neutral" style="font-weight:700;">
+                            {{ total_cours_ref }}
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-6 col-md-12">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-tasks" style="color:var(--wp-accent);"></i>
+                    Actions rapides
+                </h3>
+            </div>
+            <div class="wp-card-body">
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <a href="{% url 'ecoles:section_list' %}" class="wp-btn" style="justify-content:flex-start; padding:14px 18px;">
+                        <i class="fas fa-stream"></i>
+                        <span>Gérer les sections</span>
+                    </a>
+                    <a href="{% url 'ecoles:niveau_list' %}" class="wp-btn success" style="justify-content:flex-start; padding:14px 18px;">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Gérer les niveaux de référence</span>
+                    </a>
+                    <a href="{% url 'ecoles:classe_list' %}" class="wp-btn warning" style="justify-content:flex-start; padding:14px 18px;">
+                        <i class="fas fa-users"></i>
+                        <span>Gérer les classes de référence</span>
+                    </a>
+                    <a href="{% url 'ecoles:cours_list' %}" class="wp-btn secondary" style="justify-content:flex-start; padding:14px 18px;">
+                        <i class="fas fa-book"></i>
+                        <span>Gérer les cours de référence</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .stat-card-modern {
+        position: relative;
+        overflow: hidden;
+        transition: transform var(--wp-transition), box-shadow var(--wp-transition);
+    }
+    .stat-card-modern:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--wp-shadow-md);
+    }
+    .stat-card-modern .stat-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        background: var(--wp-primary-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 22px;
+        color: var(--wp-primary);
+        transition: background var(--wp-transition), color var(--wp-transition), transform var(--wp-transition);
+    }
+    .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary);
+        color: #fff;
+        transform: scale(1.05) rotate(-4deg);
+    }
+    .stat-card-modern .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        line-height: 1.2;
+        letter-spacing: -0.5px;
+    }
+    .stat-card-modern .stat-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--wp-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+    .stat-card-modern .stat-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        opacity: 0.6;
+        transition: height var(--wp-transition), opacity var(--wp-transition);
+    }
+    .stat-card-modern:hover .stat-bar {
+        height: 4px;
+        opacity: 1;
+    }
+
+    /* --- Mini-stats références --- */
+    .wp-stat-mini {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        background: var(--wp-surface-alt);
+        border-radius: var(--wp-radius);
+        border: 1px solid var(--wp-border-light);
+        transition: all var(--wp-transition);
+    }
+    .wp-stat-mini:hover {
+        background: var(--wp-surface);
+        border-color: var(--wp-primary);
+        transform: translateY(-2px);
+        box-shadow: var(--wp-shadow-sm);
+    }
+    .wp-stat-mini-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .wp-stat-mini-content {
+        min-width: 0;
+        flex: 1;
+    }
+    .wp-stat-mini-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        line-height: 1.15;
+        letter-spacing: -0.3px;
+    }
+    .wp-stat-mini-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--wp-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-top: 2px;
+    }
+
+    [data-bs-theme="dark"] .stat-card-modern .stat-icon {
+        background: rgba(34, 113, 177, 0.20);
+        color: var(--wp-primary-light);
+    }
+    [data-bs-theme="dark"] .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary);
+        color: #fff;
+    }
+    [data-bs-theme="dark"] .wp-stat-mini {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(255, 255, 255, 0.06);
+    }
+    [data-bs-theme="dark"] .wp-stat-mini:hover {
+        background: rgba(34, 113, 177, 0.10);
+        border-color: var(--wp-primary);
+    }
+
+    /* --- Actions rapides --- */
+    .wp-btn[style*="justify-content:flex-start"] {
+        text-align: left;
+        font-weight: 600;
+    }
+    .wp-btn[style*="justify-content:flex-start"] i {
+        width: 20px;
+        text-align: center;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}

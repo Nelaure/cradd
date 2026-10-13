@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - CRADD{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+{% block page_subtitle %}Remplissez les informations de la catégorie{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'actualites:dashboard' %}">Actualités</a>
+    <span class="sep">/</span>
+    <a href="{% url 'actualites:categorie_list' %}">Catégories</a>
+    <span class="sep">/</span>
+    <span>{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="wp-card">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-tag" style="color:var(--wp-primary);"></i>
+                    {{ title }}
+                </h3>
+            </div>
+
+            <div class="wp-card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="wp-toast error" style="position:static; margin-bottom:16px;">
+                            <span class="wp-toast-icon"><i class="fas fa-exclamation-circle"></i></span>
+                            <div class="wp-toast-body">
+                                <div class="wp-toast-title">Erreur</div>
+                                <div class="wp-toast-message">
+                                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- ============================================================
+                         NOM
+                    ============================================================ -->
+                    <div style="margin-bottom:20px;">
+                        <label for="{{ form.nom.id_for_label }}" class="wp-form-label">
+                            <i class="fas fa-tag"></i> Nom
+                            <span style="color:var(--wp-danger);">*</span>
+                        </label>
+                        {{ form.nom }}
+                        {% if form.nom.errors %}
+                            <div class="wp-form-error">{{ form.nom.errors|striptags }}</div>
+                        {% endif %}
+                        {% if form.nom.help_text %}
+                            <div class="wp-form-help">
+                                <i class="fas fa-info-circle"></i>
+                                {{ form.nom.help_text }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- ============================================================
+                         SLUG
+                    ============================================================ -->
+                    <div style="margin-bottom:20px;">
+                        <label for="{{ form.slug.id_for_label }}" class="wp-form-label">
+                            <i class="fas fa-link"></i> Slug
+                            <span style="color:var(--wp-text-light); font-weight:400; font-size:11px;">(laisser vide pour auto-génération)</span>
+                        </label>
+                        {{ form.slug }}
+                        {% if form.slug.errors %}
+                            <div class="wp-form-error">{{ form.slug.errors|striptags }}</div>
+                        {% endif %}
+                        <div class="wp-form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Le slug est utilisé dans l'URL. Ex: <code style="background:var(--wp-surface-alt); padding:1px 6px; border-radius:3px; font-size:11px;">ma-categorie</code>.
+                            S'il est vide, il sera généré automatiquement à partir du nom.
+                        </div>
+                    </div>
+
+                    <!-- ============================================================
+                         DESCRIPTION
+                    ============================================================ -->
+                    <div style="margin-bottom:20px;">
+                        <label for="{{ form.description.id_for_label }}" class="wp-form-label">
+                            <i class="fas fa-align-left"></i> Description
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="wp-form-error">{{ form.description.errors|striptags }}</div>
+                        {% endif %}
+                        {% if form.description.help_text %}
+                            <div class="wp-form-help">
+                                <i class="fas fa-info-circle"></i>
+                                {{ form.description.help_text }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- ============================================================
+                         ACTIONS
+                    ============================================================ -->
+                    <div class="wp-form-actions" style="justify-content:space-between;">
+                        <a href="{% url 'actualites:categorie_list' %}" class="wp-btn secondary">
+                            <i class="fas fa-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="wp-btn">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       STYLING DES WIDGETS DJANGO
+    ============================================================ */
+    .wp-card-body input[type="text"],
+    .wp-card-body input[type="email"],
+    .wp-card-body input[type="url"],
+    .wp-card-body input[type="number"],
+    .wp-card-body select,
+    .wp-card-body textarea {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-family: inherit;
+        color: var(--wp-text);
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius-sm);
+        outline: none;
+        transition: all var(--wp-transition);
+        line-height: 1.5;
+    }
+
+    .wp-card-body input:focus,
+    .wp-card-body select:focus,
+    .wp-card-body textarea:focus {
+        border-color: var(--wp-primary);
+        box-shadow: 0 0 0 3px var(--wp-primary-soft);
+    }
+
+    .wp-card-body textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .wp-card-body input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--wp-primary);
+        cursor: pointer;
+    }
+
+    .wp-card-body code {
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+    }
+</style>
+{% endblock %}

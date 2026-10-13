@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Bulletins - CRADD{% endblock %}
+{% block page_heading %}Bulletins scolaires{% endblock %}
+{% block page_subtitle %}Résultats annuels et appréciations par élève{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Bulletins</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== STATISTIQUES ===== -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-md-3 col-6">
+        <div class="wp-card" style="margin-bottom:0;">
+            <div class="wp-card-body" style="text-align:center; padding:16px;">
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--wp-text-light); margin-bottom:8px;">
+                    <i class="fas fa-file-alt"></i> Total bulletins
+                </div>
+                <div style="font-size:26px; font-weight:800; color:var(--wp-primary);">
+                    {{ bulletins|length }}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="wp-card" style="margin-bottom:0;">
+            <div class="wp-card-body" style="text-align:center; padding:16px;">
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--wp-text-light); margin-bottom:8px;">
+                    <i class="fas fa-chart-line"></i> Moyenne générale
+                </div>
+                <div style="font-size:26px; font-weight:800; color:var(--wp-success);">
+                    {{ moyenne_generale|floatformat:2 }}<small style="font-size:14px; font-weight:600;">/20</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="wp-card" style="margin-bottom:0;">
+            <div class="wp-card-body" style="text-align:center; padding:16px;">
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--wp-text-light); margin-bottom:8px;">
+                    <i class="fas fa-trophy"></i> Taux de réussite
+                </div>
+                <div style="font-size:26px; font-weight:800; color:var(--wp-warning);">
+                    {{ taux_reussite|floatformat:1 }}<small style="font-size:14px; font-weight:600;">%</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="wp-card" style="margin-bottom:0;">
+            <div class="wp-card-body" style="text-align:center; padding:16px;">
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--wp-text-light); margin-bottom:8px;">
+                    <i class="fas fa-users"></i> Élèves distincts
+                </div>
+                <div style="font-size:26px; font-weight:800; color:var(--wp-secondary);">
+                    {{ eleves_distincts }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== FILTRES ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-filter"></i> Filtres</h3>
+    </div>
+    <div class="wp-card-body">
+        <form method="get">
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label for="id_filter_ecole" class="wp-form-label">
+                        <i class="fas fa-school"></i> École
+                    </label>
+                    <select name="ecole" id="id_filter_ecole" class="wp-select">
+                        <option value="">Toutes</option>
+                        {% for e in ecoles %}
+                            <option value="{{ e.id }}" {% if e.id|stringformat:"s" == selected_ecole %}selected{% endif %}>
+                                {{ e.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="id_filter_niveau" class="wp-form-label">
+                        <i class="fas fa-layer-group"></i> Niveau
+                    </label>
+                    <select name="niveau" id="id_filter_niveau" class="wp-select">
+                        <option value="">Tous</option>
+                        {% for n in niveaux %}
+                            <option value="{{ n.id }}" {% if n.id|stringformat:"s" == selected_niveau %}selected{% endif %}>
+                                {{ n.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="id_filter_classe" class="wp-form-label">
+                        <i class="fas fa-users"></i> Classe
+                    </label>
+                    <select name="classe" id="id_filter_classe" class="wp-select">
+                        <option value="">Toutes</option>
+                        {% for c in classes %}
+                            <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_classe %}selected{% endif %}>
+                                {{ c.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="id_filter_annee" class="wp-form-label">
+                        <i class="fas fa-calendar-alt"></i> Année
+                    </label>
+                    <select name="annee" id="id_filter_annee" class="wp-select">
+                        <option value="">Toutes</option>
+                        {% for a in annees %}
+                            <option value="{{ a.id }}" {% if a.id|stringformat:"s" == selected_annee %}selected{% endif %}>
+                                {{ a.annee }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="id_filter_q" class="wp-form-label">
+                        <i class="fas fa-search"></i> Recherche
+                    </label>
+                    <input type="text" name="q" id="id_filter_q" class="wp-input"
+                           placeholder="Rechercher un élève..." value="{{ search_query|default:'' }}">
+                </div>
+                <div class="col-12">
+                    <div class="wp-form-actions-inline">
+                        <button type="submit" class="wp-btn">
+                            <i class="fas fa-filter"></i> Filtrer
+                        </button>
+                        <a href="{% url 'ecoles:bulletin_view' %}" class="wp-btn outline">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== TABLEAU ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-list"></i> Bulletins</h3>
+        <span class="wp-count-badge">{{ bulletins|length }} bulletin{{ bulletins|length|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if bulletins %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Élève</th>
+                        <th>Classe</th>
+                        <th>Moyenne /20</th>
+                        <th>Pourcentage</th>
+                        <th>Appréciation</th>
+                        <th>Statut</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bulletins %}
+                    <tr>
+                        <td data-label="Élève">
+                            <a href="{% url 'eleves:eleve_detail' b.eleve.id %}"
+                               style="text-decoration:none; font-weight:600; color:var(--wp-text-strong);">
+                                <i class="fas fa-user-graduate" style="color:var(--wp-primary); font-size:11px;"></i>
+                                {{ b.eleve.get_nom_complet }}
+                            </a>
+                        </td>
+                        <td data-label="Classe">
+                            <span class="wp-badge wp-badge-neutral">
+                                {{ b.eleve.classe.nom }}
+                            </span>
+                        </td>
+                        <td data-label="Moyenne">
+                            <strong style="font-size:14px; color:var(--wp-primary);">
+                                {{ b.moyenne|floatformat:2 }}
+                            </strong>
+                        </td>
+                        <td data-label="Pourcentage">
+                            <span style="font-size:12.5px; color:var(--wp-text-muted);">
+                                {{ b.pourcentage|floatformat:1 }}%
+                            </span>
+                        </td>
+                        <td data-label="Appréciation">
+                            {% if b.pourcentage >= 80 %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-star"></i> Excellent
+                                </span>
+                            {% elif b.pourcentage >= 60 %}
+                                <span class="wp-badge wp-badge-primary">
+                                    <i class="fas fa-thumbs-up"></i> Bien
+                                </span>
+                            {% elif b.pourcentage >= 50 %}
+                                <span class="wp-badge wp-badge-info">
+                                    <i class="fas fa-check"></i> Passable
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> Insuffisant
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Statut">
+                            {% if b.pourcentage >= 50 %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-check-circle"></i> Réussi
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger">
+                                    <i class="fas fa-times-circle"></i> Échec
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+                                <a href="{% url 'eleves:eleve_detail' b.eleve.id %}"
+                                   class="wp-action-btn info"
+                                   title="Voir l'élève">
+                                    <i class="fas fa-user"></i>
+                                </a>
+                                {% if b.resultat_annuel %}
+                                    <a href="#"
+                                       class="wp-action-btn"
+                                       title="Imprimer le bulletin">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                {% endif %}
+                                <a href="#"
+                                   class="wp-action-btn"
+                                   title="Détails du bulletin">
+                                    <i class="fas fa-file-alt"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-file-alt"></i>
+            <p>Aucun bulletin ne correspond à vos critères.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if is_paginated %}
+    <div class="wp-card-footer">
+        <div class="wp-pagination" style="width:100%;">
+            {% if page_obj.has_previous %}
+                <a href="?page=1&{{ request.GET.urlencode }}" class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}" class="wp-page-link">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-left"></i></span>
+            {% endif %}
+
+            <span class="wp-page-link active">
+                Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}" class="wp-page-link">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}&{{ request.GET.urlencode }}" class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===== ACTIONS SUPPLÉMENTAIRES ===== -->
+<div class="wp-card" style="margin-top:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div style="font-size:12.5px; color:var(--wp-text-light);">
+            <i class="fas fa-info-circle"></i>
+            {{ bulletins|length }} bulletin{{ bulletins|length|pluralize }} affiché{{ bulletins|length|pluralize }}
+        </div>
+        <div class="wp-form-actions-inline">
+            <a href="#" class="wp-btn success">
+                <i class="fas fa-file-excel"></i> Exporter Excel
+            </a>
+            <a href="#" class="wp-btn danger">
+                <i class="fas fa-file-pdf"></i> Exporter PDF
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

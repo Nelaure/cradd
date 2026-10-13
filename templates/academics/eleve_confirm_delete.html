@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <div class="card-header"><h4>Confirmer la suppression</h4></div>
+    <div class="card-body">
+        <p>Voulez-vous vraiment supprimer l'élève <strong>{{ eleve.get_nom_complet }}</strong> ?</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Supprimer</button>
+            <a href="{% url 'academics:eleve_list' %}" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

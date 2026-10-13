@@ -1,0 +1,306 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - CRADD{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+{% block page_subtitle %}Formulaire de saisie pour les écoles{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'ecoles:ecole_list' %}">Écoles</a>
+    <span class="sep">/</span>
+    <span>{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-9">
+        <div class="wp-card">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-school" style="color:var(--wp-primary);"></i>
+                    {{ title }}
+                </h3>
+            </div>
+
+            <div class="wp-card-body">
+
+                <!-- Info province désactivée -->
+                {% if form.province.field.disabled %}
+                <div style="background:var(--wp-primary-soft); border-left:4px solid var(--wp-primary); border-radius:4px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px;">
+                    <i class="fas fa-info-circle" style="color:var(--wp-primary); font-size:1.1rem; margin-top:2px;"></i>
+                    <p style="margin:0; font-size:0.88rem; line-height:1.6;">
+                        La province est fixée en fonction de votre affectation.
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- ============================================================
+                     NIVEAUX DÉJÀ ATTRIBUÉS (édition uniquement)
+                ============================================================ -->
+                {% if form.instance.pk %}
+                    {% with niveaux_attribues as niveaux %}
+                    <div style="margin-bottom:24px;">
+                        <h5 style="margin:0 0 12px; font-size:15px; font-weight:700; color:var(--wp-text-strong); display:flex; align-items:center; gap:8px;">
+                            <i class="fas fa-layer-group" style="color:var(--wp-primary);"></i>
+                            Niveaux déjà attribués
+                        </h5>
+
+                        {% if niveaux %}
+                            <div style="overflow-x:auto;">
+                                <table class="wp-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nom</th>
+                                            <th>Section</th>
+                                            <th>Option</th>
+                                            <th>Statut</th>
+                                            <th style="text-align:right;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for niveau in niveaux %}
+                                        <tr>
+                                            <td data-label="Nom">
+                                                <strong style="color:var(--wp-text-strong);">
+                                                    <i class="fas fa-layer-group" style="color:var(--wp-primary); font-size:11px;"></i>
+                                                    {{ niveau.nom }}
+                                                </strong>
+                                            </td>
+                                            <td data-label="Section">
+                                                {% if niveau.section %}
+                                                    <span class="wp-badge wp-badge-neutral">
+                                                        <i class="fas fa-stream"></i> {{ niveau.section.nom }}
+                                                    </span>
+                                                {% else %}
+                                                    <span style="color:var(--wp-text-light);">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td data-label="Option">
+                                                {% if niveau.option %}
+                                                    <span class="wp-badge wp-badge-info">
+                                                        <i class="fas fa-tag"></i> {{ niveau.option.nom }}
+                                                    </span>
+                                                {% else %}
+                                                    <span style="color:var(--wp-text-light);">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td data-label="Statut">
+                                                {% if niveau.deleted_at %}
+                                                    <span class="wp-badge wp-badge-warning">
+                                                        <i class="fas fa-trash"></i> Supprimé
+                                                    </span>
+                                                {% else %}
+                                                    <span class="wp-badge wp-badge-success">
+                                                        <i class="fas fa-check"></i> Actif
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td data-label="Action" style="text-align:right;">
+                                                <div class="wp-actions" style="justify-content:flex-end;">
+                                                    {% if niveau.deleted_at %}
+                                                        <a href="{% url 'ecoles:restore_niveau' niveau.id %}"
+                                                           class="wp-action-btn success"
+                                                           title="Restaurer"
+                                                           onclick="return confirm('Restaurer ce niveau ?');">
+                                                            <i class="fas fa-undo"></i>
+                                                        </a>
+                                                    {% else %}
+                                                        <a href="{% url 'ecoles:niveau_delete' niveau.id %}"
+                                                           class="wp-action-btn danger"
+                                                           title="Supprimer"
+                                                           onclick="return confirm('⚠️ Supprimer le niveau « {{ niveau.nom }} » de cette école ?\n\nToutes ses classes et cours seront également supprimés définitivement.\n\nCette action est irréversible !');">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p style="margin:10px 0 0; font-size:11.5px; color:var(--wp-text-light);">
+                                <i class="fas fa-info-circle"></i>
+                                Les niveaux marqués « Supprimé » sont en corbeille. Vous pouvez les restaurer.
+                            </p>
+                        {% else %}
+                            <div class="wp-empty" style="padding:24px;">
+                                <i class="fas fa-layer-group"></i>
+                                <p style="margin:0;">Aucun niveau n'est encore attribué à cette école.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <hr style="margin:24px 0; border:0; border-top:1px dashed var(--wp-border-light);">
+                    {% endwith %}
+                {% endif %}
+
+                <!-- ============================================================
+                     FORMULAIRE
+                ============================================================ -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="wp-toast error" style="position:static; margin-bottom:16px;">
+                            <span class="wp-toast-icon"><i class="fas fa-exclamation-circle"></i></span>
+                            <div class="wp-toast-body">
+                                <div class="wp-toast-title">Erreur</div>
+                                <div class="wp-toast-message">
+                                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        {% for field in form %}
+                            {% if field.name != 'niveaux_reference' %}
+                            <div class="col-md-6">
+                                <label for="{{ field.id_for_label }}" class="wp-form-label">
+                                    {% if field.name == 'nom' %}<i class="fas fa-school"></i>
+                                    {% elif field.name == 'code' %}<i class="fas fa-barcode"></i>
+                                    {% elif field.name == 'province' %}<i class="fas fa-map-marker-alt"></i>
+                                    {% elif field.name == 'type_gestion' %}<i class="fas fa-building"></i>
+                                    {% elif field.name == 'responsable' %}<i class="fas fa-user-tie"></i>
+                                    {% elif field.name == 'contact' %}<i class="fas fa-address-book"></i>
+                                    {% elif field.name == 'adresse' %}<i class="fas fa-map-pin"></i>
+                                    {% elif field.name == 'telephone' %}<i class="fas fa-phone"></i>
+                                    {% elif field.name == 'email' %}<i class="fas fa-envelope"></i>
+                                    {% elif field.name == 'est_active' %}<i class="fas fa-toggle-on"></i>
+                                    {% else %}<i class="fas fa-tag"></i>
+                                    {% endif %}
+                                    {{ field.label }}
+                                    {% if field.field.required %}<span style="color:var(--wp-danger);">*</span>{% endif %}
+                                </label>
+
+                                {% if field.name == 'est_active' %}
+                                    <div class="wp-check" style="margin-top:6px;">
+                                        {{ field }}
+                                        <label for="{{ field.id_for_label }}" style="font-weight:500;">
+                                            École active
+                                        </label>
+                                    </div>
+                                {% else %}
+                                    {{ field }}
+                                {% endif %}
+
+                                {% if field.errors %}
+                                    <div class="wp-form-error">{{ field.errors|striptags }}</div>
+                                {% endif %}
+                                {% if field.help_text %}
+                                    <div class="wp-form-help">
+                                        <i class="fas fa-info-circle"></i>
+                                        {{ field.help_text }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+
+                        <!-- Champ niveaux_reference en pleine largeur -->
+                        <div class="col-12">
+                            <label for="{{ form.niveaux_reference.id_for_label }}" class="wp-form-label">
+                                <i class="fas fa-layer-group"></i>
+                                {{ form.niveaux_reference.label }}
+                            </label>
+                            {{ form.niveaux_reference }}
+
+                            {% if form.niveaux_reference.errors %}
+                                <div class="wp-form-error">{{ form.niveaux_reference.errors|striptags }}</div>
+                            {% endif %}
+                            <div class="wp-form-help">
+                                <i class="fas fa-info-circle"></i>
+                                Maintenez <kbd>Ctrl</kbd> (ou <kbd>Cmd</kbd>) pour sélectionner plusieurs niveaux.
+                                Chaque niveau sera copié avec sa section et son option définies dans la référence.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wp-form-actions" style="justify-content:flex-end;">
+                        <a href="{% url 'ecoles:ecole_list' %}" class="wp-btn secondary">
+                            <i class="fas fa-times"></i> Annuler
+                        </a>
+                        <button type="submit" class="wp-btn">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .wp-card-body input[type="text"],
+    .wp-card-body input[type="date"],
+    .wp-card-body input[type="email"],
+    .wp-card-body input[type="number"],
+    .wp-card-body input[type="tel"],
+    .wp-card-body input[type="password"],
+    .wp-card-body select,
+    .wp-card-body textarea {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-family: inherit;
+        color: var(--wp-text);
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius-sm);
+        outline: none;
+        transition: all var(--wp-transition);
+        line-height: 1.5;
+    }
+
+    .wp-card-body input:focus,
+    .wp-card-body select:focus,
+    .wp-card-body textarea:focus {
+        border-color: var(--wp-primary);
+        box-shadow: 0 0 0 3px var(--wp-primary-soft);
+    }
+
+    .wp-card-body select[multiple] {
+        min-height: 160px;
+        padding: 8px;
+    }
+
+    .wp-card-body select[multiple] option {
+        padding: 6px 10px;
+        border-radius: 4px;
+        margin-bottom: 2px;
+    }
+
+    .wp-card-body select[multiple] option:checked {
+        background: var(--wp-primary);
+        color: #fff !important;
+    }
+
+    .wp-card-body input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--wp-primary);
+        cursor: pointer;
+    }
+
+    .wp-card-body textarea {
+        min-height: 80px;
+        resize: vertical;
+    }
+
+    .wp-form-help kbd {
+        background: var(--wp-surface-alt);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 3px;
+        padding: 0 5px;
+        font-size: 10.5px;
+        font-family: monospace;
+    }
+</style>
+{% endblock %}

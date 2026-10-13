@@ -1,0 +1,1197 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord - Cradd{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .dashboard-header { padding: 1rem 0 0.5rem; border-bottom: 1px solid var(--glass-border); margin-bottom: 1.5rem; }
+    .dashboard-header h2 { font-weight: 700; font-size: 1.8rem; color: var(--text-primary); }
+    .dashboard-header small { color: var(--text-muted); font-weight: 400; }
+
+    .stat-card {
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.25s, box-shadow 0.25s;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); }
+    .stat-card .stat-icon { font-size: 2.2rem; opacity: 0.15; position: absolute; right: 1.2rem; top: 1.2rem; color: var(--text-primary); }
+    .stat-card .stat-number { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; margin-bottom: 0.25rem; }
+    .stat-card .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
+    .stat-card .stat-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; }
+    .stat-card .stat-sub a { color: var(--c-primary-light); border-bottom: none; }
+    .stat-card .stat-sub a:hover { color: var(--c-secondary); }
+
+    .chart-container {
+        background: var(--bg-surface);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        height: 100%;
+        transition: box-shadow 0.25s;
+    }
+    .chart-container:hover { box-shadow: var(--shadow-md); }
+    .chart-container canvas { max-height: 220px; width: 100% !important; }
+
+    .stat-table {
+        background: var(--bg-surface);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+    }
+    .stat-table table { font-size: 0.9rem; margin-bottom: 0; }
+    .stat-table table th { font-weight: 600; color: var(--text-muted); border-bottom: 2px solid var(--glass-border); }
+    .stat-table .progress { height: 8px; border-radius: 4px; background: var(--bg-glass); }
+    .stat-table .progress-bar { background: var(--c-gradient); }
+
+    .badge-role {
+        background: rgba(255,255,255,0.2);
+        padding: 0.3rem 1rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #fff;
+        display: inline-block;
+    }
+
+    .section-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--glass-border);
+    }
+
+    .quick-action-btn {
+        border-radius: 50px;
+        padding: 0.4rem 1.2rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: 2px solid var(--glass-border);
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+    }
+    .quick-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        background: var(--bg-glass);
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+    .quick-action-btn i { font-size: 0.9rem; }
+
+    @media (max-width: 768px) {
+        .stat-card .stat-number { font-size: 1.6rem; }
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Tableau de bord{% endblock %}
+{% block page_subtitle %}{{ user.get_full_name|default:user.username }}{% endblock %}
+{% block breadcrumb %}{% endblock %}
+
+{% block content %}
+
+<!-- Message d'accueil -->
+<div class="welcome-card" style="background: var(--c-gradient); color: #fff; border-radius: var(--radius-md); padding: 1.8rem 2rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-md);">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h3>
+                {% if user.est_administrateur %}👋 Bonjour Administrateur
+                {% elif user.est_inspecteur %}👋 Bonjour Inspecteur
+                {% elif user.est_agent %}👋 Bonjour Agent
+                {% elif user.est_enseignant %}👋 Bonjour Enseignant
+                {% elif user.est_parent %}👋 Bonjour Parent
+                {% elif user.est_proved %}👋 Bonjour Directeur Provincial
+                {% else %}👋 Bonjour{% endif %}
+            </h3>
+            <p>
+                {% if user.est_administrateur %}Voici un aperçu global de l'ensemble des établissements ({{ total_ecoles }} écoles, {{ total_eleves }} élèves).
+                {% elif user.est_inspecteur %}Vous supervisez l'ensemble des écoles.
+                {% elif user.est_agent %}Vous gérez l'école <strong>{{ user.ecole_affectation.nom|default:"non attribuée" }}</strong>.
+                {% elif user.est_enseignant %}Vous enseignez dans la classe <strong>{{ user.classe_affectation.nom|default:"non attribuée" }}</strong>.
+                {% elif user.est_parent %}Vous suivez <strong>{{ total_eleves|default:"0" }}</strong> enfant(s).
+                {% elif user.est_proved %}Vous supervisez la province <strong>{{ user.province_affectation.nom|default:"non attribuée" }}</strong> avec <strong>{{ total_ecoles|default:"0" }}</strong> école(s).
+                {% else %}Bienvenue sur votre tableau de bord.{% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <span class="badge-role">{{ user.get_role_display }}</span>
+            {% if user.est_proved and user.province_affectation %}
+                <span class="badge-role ms-2" style="background: rgba(255,255,255,0.15);"><i class="fas fa-map-marker-alt me-1"></i> {{ user.province_affectation.nom }}</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- =============== ADMIN / PROVED / AGENT / INSPECTEUR ========== -->
+<!-- ============================================================ -->
+{% if user.est_administrateur or user.est_inspecteur or user.est_agent or user.est_proved %}
+
+    <!-- === CARTES RÉSUMÉ === -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stat-card blue">
+                <i class="fas fa-school stat-icon"></i>
+                <div class="stat-number">{{ total_ecoles|default:"0" }}</div>
+                <div class="stat-label">Écoles</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stat-card green">
+                <i class="fas fa-layer-group stat-icon"></i>
+                <div class="stat-number">{{ total_niveaux|default:"0" }}</div>
+                <div class="stat-label">Niveaux</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stat-card yellow">
+                <i class="fas fa-users stat-icon"></i>
+                <div class="stat-number">{{ total_classes|default:"0" }}</div>
+                <div class="stat-label">Classes</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stat-card red">
+                <i class="fas fa-book stat-icon"></i>
+                <div class="stat-number">{{ total_cours|default:"0" }}</div>
+                <div class="stat-label">Cours</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stat-card purple">
+                <i class="fas fa-user-graduate stat-icon"></i>
+                <div class="stat-number">{{ total_eleves|default:"0" }}</div>
+                <div class="stat-label">Élèves</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stat-card orange">
+                <i class="fas fa-calendar-alt stat-icon"></i>
+                <div class="stat-number">{{ total_annees|default:"0" }}</div>
+                <div class="stat-label">Années scolaires</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === STATISTIQUES DÉTAILLÉES (ADMIN) === -->
+    {% if user.est_administrateur %}
+        <!-- Taux de réussite global + répartition -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="stat-card teal">
+                    <i class="fas fa-chart-line stat-icon"></i>
+                    <div class="stat-number">{{ taux_reussite_global|floatformat:1 }}%</div>
+                    <div class="stat-label">Taux de réussite global</div>
+                    <div class="stat-sub">{{ reussis_globaux }} / {{ total_resultats }} élèves ayant une moyenne</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-card pink">
+                    <i class="fas fa-venus-mars stat-icon"></i>
+                    <div class="stat-number">
+                        {% for item in repartition_sexe %}
+                            {% if item.sexe == 'Masculin' %}{{ item.total }}{% endif %}
+                        {% endfor %}
+                        /
+                        {% for item in repartition_sexe %}
+                            {% if item.sexe == 'Féminin' %}{{ item.total }}{% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="stat-label">Garçons / Filles</div>
+                    <div class="stat-sub">Total élèves: {{ total_eleves|default:0 }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taux de réussite par sexe -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="stat-table">
+                    <h6 class="section-title"><i class="fas fa-venus-mars me-2"></i> Taux de réussite par sexe</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>Sexe</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                            <tbody>
+                                {% for item in stats_reussite_sexe %}
+                                <tr>
+                                    <td>{{ item.sexe }}</td>
+                                    <td>{{ item.total }}</td>
+                                    <td>{{ item.reussis }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                            <div class="progress flex-grow-1">
+                                                <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphiques (Admin) -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-pie me-2"></i> Élèves par province</h6>
+                    {% if province_labels and province_counts %}
+                    <canvas id="provinceChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-bar me-2"></i> Élèves par école (Top 10)</h6>
+                    {% if ecole_labels and ecole_counts %}
+                    <canvas id="ecoleChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-bar me-2"></i> Élèves par niveau</h6>
+                    {% if niveau_labels and niveau_counts %}
+                    <canvas id="niveauChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-pie me-2"></i> Élèves par classe (Top 10)</h6>
+                    {% if classe_labels and classe_counts %}
+                    <canvas id="classeChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableaux de taux de réussite -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="stat-table">
+                    <h6 class="section-title"><i class="fas fa-check-circle text-success me-2"></i> Taux de réussite par province</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>Province</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                            <tbody>
+                                {% for item in stats_par_province %}
+                                <tr>
+                                    <td>{{ item.nom }}</td>
+                                    <td>{{ item.total }}</td>
+                                    <td>{{ item.reussis }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                            <div class="progress flex-grow-1">
+                                                <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-table">
+                    <h6 class="section-title"><i class="fas fa-school me-2"></i> Taux de réussite par école (Top 10)</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>École</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                            <tbody>
+                                {% for item in stats_par_ecole|slice:":10" %}
+                                <tr>
+                                    <td>{{ item.nom }}</td>
+                                    <td>{{ item.total }}</td>
+                                    <td>{{ item.reussis }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                            <div class="progress flex-grow-1">
+                                                <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="stat-table">
+                    <h6 class="section-title"><i class="fas fa-layer-group me-2"></i> Taux de réussite par niveau</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>Niveau</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                            <tbody>
+                                {% for item in stats_par_niveau %}
+                                <tr>
+                                    <td>{{ item.nom }}</td>
+                                    <td>{{ item.total }}</td>
+                                    <td>{{ item.reussis }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                            <div class="progress flex-grow-1">
+                                                <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-table">
+                    <h6 class="section-title"><i class="fas fa-users me-2"></i> Taux de réussite par classe (Top 10)</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>Classe</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                            <tbody>
+                                {% for item in stats_par_classe|slice:":10" %}
+                                <tr>
+                                    <td>{{ item.nom }}</td>
+                                    <td>{{ item.total }}</td>
+                                    <td>{{ item.reussis }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                            <div class="progress flex-grow-1">
+                                                <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphique des notes par cours -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-column me-2 text-danger"></i> Nombre de notes saisies par cours (Top 6)</h6>
+                    {% if cours_resultats_labels and cours_resultats_counts %}
+                    <canvas id="coursNotesChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    {% elif user.est_proved %}
+        <!-- PROVED : Focus sur la province -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="stat-card teal">
+                    <i class="fas fa-school stat-icon"></i>
+                    <div class="stat-number">{{ total_ecoles }}</div>
+                    <div class="stat-label">Écoles dans la province</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-card pink">
+                    <i class="fas fa-venus-mars stat-icon"></i>
+                    <div class="stat-number">
+                        {% for item in repartition_sexe %}
+                            {% if item.sexe == 'Masculin' %}{{ item.total }}{% endif %}
+                        {% endfor %}
+                        /
+                        {% for item in repartition_sexe %}
+                            {% if item.sexe == 'Féminin' %}{{ item.total }}{% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="stat-label">Garçons / Filles</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taux de réussite par sexe -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="stat-table">
+                    <h6 class="section-title"><i class="fas fa-venus-mars me-2"></i> Taux de réussite par sexe</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>Sexe</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                            <tbody>
+                                {% for item in stats_reussite_sexe %}
+                                <tr>
+                                    <td>{{ item.sexe }}</td>
+                                    <td>{{ item.total }}</td>
+                                    <td>{{ item.reussis }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                            <div class="progress flex-grow-1">
+                                                <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-pie me-2"></i> Élèves par classe</h6>
+                    {% if classes_labels and classes_counts %}
+                    <canvas id="provClasseChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-bar me-2"></i> Moyennes par classe</h6>
+                    {% if moyennes_labels and moyennes_values %}
+                    <canvas id="provMoyennesChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau des écoles avec taux de réussite -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="stat-table">
+                    <h6 class="section-title"><i class="fas fa-school me-2"></i> Taux de réussite par école</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>École</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                            <tbody>
+                                {% for item in stats_par_ecole %}
+                                <tr>
+                                    <td>{{ item.nom }}</td>
+                                    <td>{{ item.total }}</td>
+                                    <td>{{ item.reussis }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                            <div class="progress flex-grow-1">
+                                                <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes par cours -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-column me-2 text-danger"></i> Notes saisies par cours (Top 6)</h6>
+                    {% if cours_resultats_labels and cours_resultats_counts %}
+                    <canvas id="provCoursChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    {% elif user.est_agent or user.est_inspecteur %}
+        <!-- AGENT / INSPECTEUR : Focus sur l'école -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="stat-card teal">
+                    <i class="fas fa-layer-group stat-icon"></i>
+                    <div class="stat-number">{{ total_niveaux }}</div>
+                    <div class="stat-label">Niveaux</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card yellow">
+                    <i class="fas fa-users stat-icon"></i>
+                    <div class="stat-number">{{ total_classes }}</div>
+                    <div class="stat-label">Classes</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card red">
+                    <i class="fas fa-book stat-icon"></i>
+                    <div class="stat-number">{{ total_cours }}</div>
+                    <div class="stat-label">Cours</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card purple">
+                    <i class="fas fa-user-graduate stat-icon"></i>
+                    <div class="stat-number">{{ total_eleves }}</div>
+                    <div class="stat-label">Élèves</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taux de réussite par sexe -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="stat-table">
+                    <h6 class="section-title"><i class="fas fa-venus-mars me-2"></i> Taux de réussite par sexe</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>Sexe</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                            <tbody>
+                                {% for item in stats_reussite_sexe %}
+                                <tr>
+                                    <td>{{ item.sexe }}</td>
+                                    <td>{{ item.total }}</td>
+                                    <td>{{ item.reussis }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                            <div class="progress flex-grow-1">
+                                                <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-pie me-2"></i> Répartition des élèves par classe</h6>
+                    {% if classes_labels and classes_counts %}
+                    <canvas id="agentClasseChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-bar me-2"></i> Moyennes par classe</h6>
+                    {% if moyennes_labels and moyennes_values %}
+                    <canvas id="agentMoyennesChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Taux de réussite par niveau -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="stat-table">
+                    <h6 class="section-title"><i class="fas fa-layer-group me-2"></i> Taux de réussite par niveau</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>Niveau</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                            <tbody>
+                                {% for item in stats_par_niveau %}
+                                <tr>
+                                    <td>{{ item.nom }}</td>
+                                    <td>{{ item.total }}</td>
+                                    <td>{{ item.reussis }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                            <div class="progress flex-grow-1">
+                                                <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes par cours -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="chart-container">
+                    <h6 class="section-title"><i class="fas fa-chart-column me-2 text-danger"></i> Notes saisies par cours (Top 6)</h6>
+                    {% if cours_resultats_labels and cours_resultats_counts %}
+                    <canvas id="agentCoursChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-3">Aucune donnée.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    {% endif %}
+
+<!-- ============================================================ -->
+<!-- =============== ENSEIGNANT ================================== -->
+<!-- ============================================================ -->
+{% elif user.est_enseignant %}
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card teal">
+                <i class="fas fa-users stat-icon"></i>
+                <div class="stat-number">{{ total_eleves|default:"0" }}</div>
+                <div class="stat-label">Élèves dans ma classe</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card pink">
+                <i class="fas fa-book stat-icon"></i>
+                <div class="stat-number">{{ total_cours|default:"0" }}</div>
+                <div class="stat-label">Cours enseignés</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card orange">
+                <i class="fas fa-check-circle stat-icon"></i>
+                <div class="stat-number">{{ total_notes|default:"0" }}</div>
+                <div class="stat-label">Notes saisies</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Taux de réussite par sexe -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="stat-table">
+                <h6 class="section-title"><i class="fas fa-venus-mars me-2"></i> Taux de réussite par sexe</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Sexe</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                        <tbody>
+                            {% for item in stats_reussite_sexe %}
+                            <tr>
+                                <td>{{ item.sexe }}</td>
+                                <td>{{ item.total }}</td>
+                                <td>{{ item.reussis }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                        <div class="progress flex-grow-1">
+                                            <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphique des moyennes -->
+    {% if eleves_moyennes_labels and eleves_moyennes_values %}
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="chart-container">
+                <h6 class="section-title"><i class="fas fa-chart-bar me-2 text-primary"></i> Moyennes par élève (ma classe)</h6>
+                <canvas id="enseignantMoyennesChart"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Répartition par sexe -->
+    {% if repartition_sexe %}
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="stat-table">
+                <h6 class="section-title"><i class="fas fa-venus-mars me-2"></i> Répartition par sexe</h6>
+                <div class="row">
+                    {% for item in repartition_sexe %}
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between">
+                            <span>{{ item.sexe }}</span>
+                            <span>{{ item.total }}</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar" style="width: {% widthratio item.total total_eleves 100 %}%; background: {% if item.sexe == 'Masculin' %}#2b8cbe{% else %}#e83e8c{% endif %};"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+<!-- ============================================================ -->
+<!-- =============== PARENT ====================================== -->
+<!-- ============================================================ -->
+{% elif user.est_parent %}
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="stat-card purple">
+                <i class="fas fa-child stat-icon"></i>
+                <div class="stat-number">{{ total_eleves|default:"0" }}</div>
+                <div class="stat-label">Enfants suivis</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="stat-card green">
+                <i class="fas fa-graduation-cap stat-icon"></i>
+                <div class="stat-number">{{ enfants|length|add:"-0" }}</div>
+                <div class="stat-label">Enfants avec moyenne</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Taux de réussite par sexe (pour ses enfants) -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="stat-table">
+                <h6 class="section-title"><i class="fas fa-venus-mars me-2"></i> Taux de réussite par sexe (mes enfants)</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Sexe</th><th>Élèves</th><th>Réussis</th><th>Taux</th></tr></thead>
+                        <tbody>
+                            {% for item in stats_reussite_sexe %}
+                            <tr>
+                                <td>{{ item.sexe }}</td>
+                                <td>{{ item.total }}</td>
+                                <td>{{ item.reussis }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">{{ item.taux|floatformat:1 }}%</span>
+                                        <div class="progress flex-grow-1">
+                                            <div class="progress-bar" style="width: {{ item.taux|floatformat:0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}<tr><td colspan="4" class="text-muted">Aucune donnée</td></tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des enfants -->
+    {% if enfants %}
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="stat-table">
+                <h6 class="section-title"><i class="fas fa-users me-2 text-info"></i> Mes enfants</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr><th>Nom</th><th>Classe</th><th>École</th><th>Moyenne générale</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for item in enfants %}
+                            <tr>
+                                <td>{{ item.eleve.nom }} {{ item.eleve.prenom }}</td>
+                                <td>{{ item.eleve.classe.nom|default:"-" }}</td>
+                                <td>{{ item.eleve.ecole.nom|default:"-" }}</td>
+                                <td>
+                                    {% if item.moyenne %}
+                                        {{ item.moyenne|floatformat:2 }}/20
+                                    {% else %}
+                                        <span class="text-muted">Non disponible</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'eleves:eleve_detail' item.eleve.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> Voir
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-muted text-center">Aucun enfant associé.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">Vous n'avez encore aucun enfant associé.</div>
+    {% endif %}
+{% endif %}
+
+<!-- ============================================================ -->
+<!-- =============== ACTIONS RAPIDES ============================= -->
+<!-- ============================================================ -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="chart-container">
+            <h6 class="section-title"><i class="fas fa-bolt me-2 text-warning"></i> Actions rapides</h6>
+            <div class="d-flex flex-wrap gap-2">
+                {% if user.est_administrateur %}
+                    <a href="{% url 'ecoles:ecole_create' %}" class="quick-action-btn"><i class="fas fa-plus-circle text-primary"></i> École</a>
+                    <a href="{% url 'ecoles:province_list' %}" class="quick-action-btn"><i class="fas fa-map-marker-alt text-success"></i> Provinces</a>
+                    <a href="{% url 'ecoles:niveau_create' %}" class="quick-action-btn"><i class="fas fa-plus-circle text-success"></i> Niveau</a>
+                    <a href="{% url 'ecoles:classe_create' %}" class="quick-action-btn"><i class="fas fa-plus-circle text-warning"></i> Classe</a>
+                    <a href="{% url 'ecoles:cours_create' %}" class="quick-action-btn"><i class="fas fa-plus-circle text-danger"></i> Cours</a>
+                    <a href="{% url 'eleves:eleve_create' %}" class="quick-action-btn"><i class="fas fa-plus-circle text-info"></i> Élève</a>
+                    <a href="{% url 'ecoles:resultat_create' %}" class="quick-action-btn"><i class="fas fa-pen text-secondary"></i> Saisir notes</a>
+                    <a href="{% url 'accounts:user_list' %}" class="quick-action-btn"><i class="fas fa-users-cog text-dark"></i> Utilisateurs</a>
+                {% elif user.est_inspecteur %}
+                    <a href="{% url 'ecoles:ecole_list' %}" class="quick-action-btn"><i class="fas fa-school"></i> Voir écoles</a>
+                    <a href="{% url 'ecoles:resultat_list' %}" class="quick-action-btn"><i class="fas fa-chart-line"></i> Résultats</a>
+                    <a href="{% url 'ecoles:eleves_sans_notes' %}" class="quick-action-btn"><i class="fas fa-user-slash"></i> Élèves sans notes</a>
+                {% elif user.est_agent %}
+                    <a href="{% url 'eleves:eleve_create' %}" class="quick-action-btn"><i class="fas fa-plus-circle text-info"></i> Ajouter élève</a>
+                    <a href="{% url 'ecoles:resultat_create' %}" class="quick-action-btn"><i class="fas fa-pen text-secondary"></i> Saisir notes</a>
+                    <a href="{% url 'eleves:eleve_list' %}" class="quick-action-btn"><i class="fas fa-list"></i> Voir tous les élèves</a>
+                    <a href="{% url 'ecoles:classe_list' %}" class="quick-action-btn"><i class="fas fa-users"></i> Classes</a>
+                    <a href="{% url 'ecoles:eleves_sans_notes' %}" class="quick-action-btn"><i class="fas fa-user-slash"></i> Élèves sans notes</a>
+                {% elif user.est_proved %}
+                    <a href="{% url 'ecoles:ecole_list' %}" class="quick-action-btn"><i class="fas fa-school"></i> Voir écoles de ma province</a>
+                    <a href="{% url 'ecoles:niveau_list' %}" class="quick-action-btn"><i class="fas fa-layer-group"></i> Niveaux</a>
+                    <a href="{% url 'ecoles:classe_list' %}" class="quick-action-btn"><i class="fas fa-users"></i> Classes</a>
+                    <a href="{% url 'ecoles:cours_list' %}" class="quick-action-btn"><i class="fas fa-book"></i> Cours</a>
+                    <a href="{% url 'eleves:eleve_list' %}" class="quick-action-btn"><i class="fas fa-user-graduate"></i> Élèves</a>
+                    <a href="{% url 'ecoles:resultat_list' %}" class="quick-action-btn"><i class="fas fa-chart-line"></i> Résultats</a>
+                    <a href="{% url 'ecoles:bulletin_view' %}" class="quick-action-btn"><i class="fas fa-file-alt"></i> Bulletins</a>
+                    <a href="{% url 'ecoles:eleves_sans_notes' %}" class="quick-action-btn"><i class="fas fa-user-slash"></i> Élèves sans notes</a>
+                {% elif user.est_enseignant %}
+                    <a href="{% url 'eleves:eleve_create' %}" class="quick-action-btn"><i class="fas fa-plus-circle text-info"></i> Ajouter élève</a>
+                    <a href="{% url 'ecoles:resultat_create' %}" class="quick-action-btn"><i class="fas fa-pen text-secondary"></i> Saisir notes</a>
+                    <a href="{% url 'eleves:eleve_list' %}" class="quick-action-btn"><i class="fas fa-list"></i> Voir mes élèves</a>
+                    <a href="{% url 'ecoles:eleves_sans_notes' %}" class="quick-action-btn"><i class="fas fa-user-slash"></i> Élèves sans notes</a>
+                {% elif user.est_parent %}
+                    <a href="{% url 'eleves:eleve_list' %}" class="quick-action-btn"><i class="fas fa-child"></i> Voir mes enfants</a>
+                    <a href="{% url 'ecoles:resultat_list' %}" class="quick-action-btn"><i class="fas fa-chart-line"></i> Consulter les résultats</a>
+                {% else %}
+                    <a href="{% url 'eleves:eleve_list' %}" class="quick-action-btn"><i class="fas fa-list"></i> Voir les élèves</a>
+                    <a href="{% url 'ecoles:resultat_list' %}" class="quick-action-btn"><i class="fas fa-chart-line"></i> Résultats</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const role = '{{ role|default:"" }}';
+
+    // ============================================================
+    //  ADMIN : graphiques
+    // ============================================================
+    if (role === 'admin') {
+        // Province
+        const provLabels = {{ province_labels|safe }};
+        const provData = {{ province_counts|safe }};
+        if (provLabels.length && document.getElementById('provinceChart')) {
+            new Chart(document.getElementById('provinceChart'), {
+                type: 'bar',
+                data: {
+                    labels: provLabels,
+                    datasets: [{
+                        label: 'Élèves',
+                        data: provData,
+                        backgroundColor: 'rgba(43, 140, 190, 0.6)',
+                        borderColor: '#2b8cbe',
+                        borderWidth: 2
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+        // École
+        const ecoleLabels = {{ ecole_labels|safe }};
+        const ecoleData = {{ ecole_counts|safe }};
+        if (ecoleLabels.length && document.getElementById('ecoleChart')) {
+            new Chart(document.getElementById('ecoleChart'), {
+                type: 'bar',
+                data: {
+                    labels: ecoleLabels,
+                    datasets: [{
+                        label: 'Élèves',
+                        data: ecoleData,
+                        backgroundColor: 'rgba(40, 167, 69, 0.6)',
+                        borderColor: '#28a745',
+                        borderWidth: 2
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } }, indexAxis: 'y' }
+            });
+        }
+        // Niveau
+        const niveauLabels = {{ niveau_labels|safe }};
+        const niveauData = {{ niveau_counts|safe }};
+        if (niveauLabels.length && document.getElementById('niveauChart')) {
+            new Chart(document.getElementById('niveauChart'), {
+                type: 'bar',
+                data: {
+                    labels: niveauLabels,
+                    datasets: [{
+                        label: 'Élèves',
+                        data: niveauData,
+                        backgroundColor: 'rgba(255, 193, 7, 0.6)',
+                        borderColor: '#ffc107',
+                        borderWidth: 2
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+        // Classe (doughnut)
+        const classeLabels = {{ classe_labels|safe }};
+        const classeData = {{ classe_counts|safe }};
+        if (classeLabels.length && document.getElementById('classeChart')) {
+            new Chart(document.getElementById('classeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: classeLabels,
+                    datasets: [{
+                        data: classeData,
+                        backgroundColor: ['#2b8cbe','#28a745','#ffc107','#dc3545','#6f42c1','#fd7e14','#17a2b8','#e83e8c','#20c997','#6610f2'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }, cutout: '65%' }
+            });
+        }
+        // Cours notes
+        const coursLabels = {{ cours_resultats_labels|safe }};
+        const coursData = {{ cours_resultats_counts|safe }};
+        if (coursLabels.length && document.getElementById('coursNotesChart')) {
+            new Chart(document.getElementById('coursNotesChart'), {
+                type: 'bar',
+                data: {
+                    labels: coursLabels,
+                    datasets: [{
+                        label: 'Notes saisies',
+                        data: coursData,
+                        backgroundColor: 'rgba(220, 53, 69, 0.6)',
+                        borderColor: '#dc3545',
+                        borderWidth: 2
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } }, indexAxis: 'y' }
+            });
+        }
+    }
+
+    // ============================================================
+    //  PROVED
+    // ============================================================
+    if (role === 'proved') {
+        // Classe
+        const clLabels = {{ classes_labels|safe }};
+        const clData = {{ classes_counts|safe }};
+        if (clLabels.length && document.getElementById('provClasseChart')) {
+            new Chart(document.getElementById('provClasseChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: clLabels,
+                    datasets: [{
+                        data: clData,
+                        backgroundColor: ['#2b8cbe','#28a745','#ffc107','#dc3545','#6f42c1','#fd7e14','#17a2b8','#e83e8c'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }, cutout: '65%' }
+            });
+        }
+        // Moyennes
+        const moyLabels = {{ moyennes_labels|safe }};
+        const moyData = {{ moyennes_values|safe }};
+        if (moyLabels.length && document.getElementById('provMoyennesChart')) {
+            new Chart(document.getElementById('provMoyennesChart'), {
+                type: 'bar',
+                data: {
+                    labels: moyLabels,
+                    datasets: [{
+                        label: 'Moyenne générale',
+                        data: moyData,
+                        backgroundColor: 'rgba(43, 140, 190, 0.6)',
+                        borderColor: '#2b8cbe',
+                        borderWidth: 2,
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true, max: 20, ticks: { stepSize: 2 } } }, plugins: { legend: { display: false } } }
+            });
+        }
+        // Cours
+        const cLabels = {{ cours_resultats_labels|safe }};
+        const cData = {{ cours_resultats_counts|safe }};
+        if (cLabels.length && document.getElementById('provCoursChart')) {
+            new Chart(document.getElementById('provCoursChart'), {
+                type: 'bar',
+                data: {
+                    labels: cLabels,
+                    datasets: [{
+                        label: 'Notes saisies',
+                        data: cData,
+                        backgroundColor: 'rgba(220, 53, 69, 0.6)',
+                        borderColor: '#dc3545',
+                        borderWidth: 2
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } }, indexAxis: 'y' }
+            });
+        }
+    }
+
+    // ============================================================
+    //  AGENT / INSPECTEUR
+    // ============================================================
+    if (role === 'agent') {
+        // Classe
+        const clLabels = {{ classes_labels|safe }};
+        const clData = {{ classes_counts|safe }};
+        if (clLabels.length && document.getElementById('agentClasseChart')) {
+            new Chart(document.getElementById('agentClasseChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: clLabels,
+                    datasets: [{
+                        data: clData,
+                        backgroundColor: ['#2b8cbe','#28a745','#ffc107','#dc3545','#6f42c1','#fd7e14','#17a2b8','#e83e8c'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }, cutout: '65%' }
+            });
+        }
+        // Moyennes
+        const moyLabels = {{ moyennes_labels|safe }};
+        const moyData = {{ moyennes_values|safe }};
+        if (moyLabels.length && document.getElementById('agentMoyennesChart')) {
+            new Chart(document.getElementById('agentMoyennesChart'), {
+                type: 'bar',
+                data: {
+                    labels: moyLabels,
+                    datasets: [{
+                        label: 'Moyenne générale',
+                        data: moyData,
+                        backgroundColor: 'rgba(43, 140, 190, 0.6)',
+                        borderColor: '#2b8cbe',
+                        borderWidth: 2,
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true, max: 20, ticks: { stepSize: 2 } } }, plugins: { legend: { display: false } } }
+            });
+        }
+        // Cours
+        const cLabels = {{ cours_resultats_labels|safe }};
+        const cData = {{ cours_resultats_counts|safe }};
+        if (cLabels.length && document.getElementById('agentCoursChart')) {
+            new Chart(document.getElementById('agentCoursChart'), {
+                type: 'bar',
+                data: {
+                    labels: cLabels,
+                    datasets: [{
+                        label: 'Notes saisies',
+                        data: cData,
+                        backgroundColor: 'rgba(220, 53, 69, 0.6)',
+                        borderColor: '#dc3545',
+                        borderWidth: 2
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } }, indexAxis: 'y' }
+            });
+        }
+    }
+
+    // ============================================================
+    //  ENSEIGNANT
+    // ============================================================
+    if (role === 'enseignant' && document.getElementById('enseignantMoyennesChart')) {
+        const eleveLabels = {{ eleves_moyennes_labels|safe }};
+        const eleveData = {{ eleves_moyennes_values|safe }};
+        if (eleveLabels && eleveLabels.length) {
+            new Chart(document.getElementById('enseignantMoyennesChart'), {
+                type: 'bar',
+                data: {
+                    labels: eleveLabels,
+                    datasets: [{
+                        label: 'Moyenne (/20)',
+                        data: eleveData,
+                        backgroundColor: 'rgba(40, 167, 69, 0.6)',
+                        borderColor: '#28a745',
+                        borderWidth: 2,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 20, ticks: { stepSize: 2 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

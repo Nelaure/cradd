@@ -1,0 +1,170 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Synchroniser {{ niveau.nom }} - Cradd{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'ecoles:dashboard' %}">Tableau de bord</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'ecoles:niveau_list' %}">Niveaux</a></li>
+                    <li class="breadcrumb-item active">Synchroniser</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow-sm border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        Synchroniser le niveau de référence
+                    </h4>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-graduation-cap me-2"></i>
+                            {{ niveau.nom }}
+                            {% if niveau.section %}
+                                <span class="badge bg-secondary">{{ niveau.section.nom }}</span>
+                            {% endif %}
+                        </h5>
+                        {% if niveau.description %}
+                            <p class="mb-0">{{ niveau.description }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="alert alert-danger">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Action irréversible
+                        </h5>
+                        <p class="mb-2">
+                            Cette action va <strong>propager les modifications</strong> de ce niveau
+                            vers <strong>toutes ses instances</strong> dans toutes les écoles.
+                        </p>
+                        <hr>
+                        <h6>Ce qui sera synchronisé :</h6>
+                        <ul class="mb-0">
+                            <li>Les <strong>classes</strong> (ajout et mise à jour)</li>
+                            <li>Les <strong>domaines</strong> (création si nécessaire)</li>
+                            <li>Les <strong>cours</strong> (coefficients, descriptions)</li>
+                            <li>Les <strong>configurations d'évaluation</strong> (points max, ordre)</li>
+                            <li>Le <strong>type de cycle</strong> (trimestre/semestre)</li>
+                        </ul>
+                    </div>
+
+                    <!-- ===== STATISTIQUES ===== -->
+                    {% if nb_instances == 0 %}
+                        <div class="alert alert-warning">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Aucune école à synchroniser
+                            </h5>
+                            <p class="mb-0">
+                                Ce niveau de référence n'a pas encore été affecté à une école.
+                                Utilisez l'action <strong>« Affecter à mon école »</strong> pour créer
+                                une instance dans une école avant de lancer la synchronisation.
+                            </p>
+                        </div>
+                    {% else %}
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h3 class="text-white mb-0">{{ nb_instances }}</h3>
+                                        <small>École(s) qui seront synchronisée(s)</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h3 class="text-white mb-0">{{ nb_classes_ref }}</h3>
+                                        <small>Classe(s) de référence à propager</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" id="sync-form">
+                        {% csrf_token %}
+
+                        {% if nb_instances > 0 %}
+                        <div class="card border-danger mb-4">
+                            <div class="card-header bg-danger text-white">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                Option avancée
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="force_delete"
+                                           id="force_delete"
+                                           value="on">
+                                    <label class="form-check-label" for="force_delete">
+                                        <strong>Forcer la suppression des notes en conflit</strong>
+                                    </label>
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    <i class="fas fa-info-circle"></i>
+                                    Si cochée : les notes d'évaluations qui n'existent plus dans la référence
+                                    seront <strong>définitivement supprimées</strong>.
+                                    Si décochée (recommandé) : les configurations protégées par des notes
+                                    seront <strong>ignorées</strong> et signalées dans le rapport.
+                                </small>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'ecoles:niveau_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i> Annuler
+                            </a>
+                            {% if nb_instances > 0 %}
+                            <button type="submit"
+                                    class="btn btn-warning"
+                                    id="btn-sync"
+                                    onclick="return confirmSync();">
+                                <i class="fas fa-sync-alt me-1"></i> Lancer la synchronisation
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-secondary" disabled>
+                                <i class="fas fa-ban me-1"></i> Rien à synchroniser
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmSync() {
+    const forceDelete = document.getElementById('force_delete').checked;
+    let message = "Confirmez-vous la synchronisation ?\n\n";
+    message += "Cette action va modifier toutes les instances dans toutes les écoles.";
+    if (forceDelete) {
+        message += "\n\nATTENTION : Le mode 'force_delete' est ACTIVÉ.\n";
+        message += "Des notes seront DÉFINITIVEMENT supprimées !";
+    }
+    return confirm(message);
+}
+document.getElementById('sync-form').addEventListener('submit', function() {
+    var btn = document.getElementById('btn-sync');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Synchronisation...';
+    }
+});
+</script>
+{% endblock %}

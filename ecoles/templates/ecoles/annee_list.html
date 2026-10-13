@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Années scolaires - CRADD{% endblock %}
+{% block page_heading %}Années scolaires{% endblock %}
+{% block page_subtitle %}Gestion des périodes scolaires et écoles associées{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Années scolaires</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== EN-TÊTE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-calendar-alt" style="color:var(--wp-primary);"></i>
+                Années scolaires
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Définissez les années scolaires et les écoles concernées.
+            </p>
+        </div>
+        <a href="{% url 'ecoles:annee_create' %}" class="wp-btn">
+            <i class="fas fa-plus"></i> Ajouter une année
+        </a>
+    </div>
+</div>
+
+<!-- ===== TABLEAU ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-list"></i> Liste des années</h3>
+        <span class="wp-count-badge">{{ annees.paginator.count }} année{{ annees.paginator.count|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if annees %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Année</th>
+                        <th>Date début</th>
+                        <th>Date fin</th>
+                        <th>Statut</th>
+                        <th>Écoles associées</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in annees %}
+                    <tr>
+                        <td data-label="Année">
+                            <strong style="color:var(--wp-text-strong); font-size:14px;">
+                                <i class="fas fa-calendar" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ a.annee }}
+                            </strong>
+                        </td>
+                        <td data-label="Date début">
+                            <span style="font-size:12.5px; color:var(--wp-text-muted);">
+                                <i class="fas fa-play" style="font-size:10px; color:var(--wp-success);"></i>
+                                {{ a.date_debut|date:"d/m/Y" }}
+                            </span>
+                        </td>
+                        <td data-label="Date fin">
+                            <span style="font-size:12.5px; color:var(--wp-text-muted);">
+                                <i class="fas fa-stop" style="font-size:10px; color:var(--wp-danger);"></i>
+                                {{ a.date_fin|date:"d/m/Y" }}
+                            </span>
+                        </td>
+                        <td data-label="Statut">
+                            {% if a.est_actuelle %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-check-circle"></i> Actuelle
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-neutral">
+                                    <i class="fas fa-clock"></i> Passée
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Écoles">
+                            {% if a.ecoles.all %}
+                                <div class="wp-badges-stack">
+                                    {% for e in a.ecoles.all %}
+                                        <span class="wp-badge wp-badge-info">
+                                            <i class="fas fa-school"></i> {{ e.nom }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic; font-size:12.5px;">
+                                    Aucune école
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+                                <a href="{% url 'ecoles:annee_edit' a.id %}"
+                                   class="wp-action-btn edit"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'ecoles:annee_delete' a.id %}"
+                                   class="wp-action-btn danger"
+                                   title="Supprimer"
+                                   onclick="return confirm('Supprimer l\'année « {{ a.annee }} » ?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-calendar-times"></i>
+            <p>Aucune année scolaire enregistrée.</p>
+            <a href="{% url 'ecoles:annee_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Créer la première année
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== PAGINATION ===== -->
+{% if annees.has_other_pages %}
+<div class="wp-card" style="margin-top:20px;">
+    <div class="wp-card-body">
+        <div class="wp-pagination">
+            {% if annees.has_previous %}
+                <a href="?page=1" class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ annees.previous_page_number }}" class="wp-page-link">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-left"></i></span>
+            {% endif %}
+
+            {% for num in annees.paginator.page_range %}
+                {% if annees.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > annees.number|add:"-3" and num < annees.number|add:"3" %}
+                    <a href="?page={{ num }}" class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if annees.has_next %}
+                <a href="?page={{ annees.next_page_number }}" class="wp-page-link">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="?page={{ annees.paginator.num_pages }}" class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:12px; color:var(--wp-text-light);">
+            Page {{ annees.number }} sur {{ annees.paginator.num_pages }}
+            · {{ annees.paginator.count }} année{{ annees.paginator.count|pluralize }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,324 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - CRADD{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+{% block page_subtitle %}
+    {% if is_reinscription %}Réinscription d'un élève{% else %}Formulaire de saisie pour les élèves{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'eleves:eleve_list' %}">Élèves</a>
+    <span class="sep">/</span>
+    <span>{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="wp-card">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-user-plus" style="color:var(--wp-primary);"></i>
+                    {{ title }}
+                </h3>
+            </div>
+
+            <div class="wp-card-body">
+                {% if is_reinscription %}
+                <div style="background:var(--wp-primary-soft); border-left:4px solid var(--wp-primary); border-radius:4px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px;">
+                    <i class="fas fa-info-circle" style="color:var(--wp-primary); font-size:1.1rem; margin-top:2px;"></i>
+                    <p style="margin:0; font-size:0.88rem; line-height:1.6;">
+                        Vous êtes en train de réinscrire <strong>{{ eleve.get_nom_complet }}</strong> pour une nouvelle année scolaire.
+                        L'ancien parcours sera automatiquement fermé et un nouveau sera créé.
+                    </p>
+                </div>
+                {% endif %}
+
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="wp-toast error" style="position:static; margin-bottom:16px;">
+                            <span class="wp-toast-icon"><i class="fas fa-exclamation-circle"></i></span>
+                            <div class="wp-toast-body">
+                                <div class="wp-toast-title">Erreur</div>
+                                <div class="wp-toast-message">
+                                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="{% if field.name == 'adresse' or field.name == 'photo' %}col-12{% else %}col-md-6{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="wp-form-label">
+                                {% if field.name == 'matricule' %}<i class="fas fa-id-card"></i>
+                                {% elif field.name == 'nom' or field.name == 'postnom' or field.name == 'prenom' %}<i class="fas fa-user"></i>
+                                {% elif field.name == 'sexe' %}<i class="fas fa-venus-mars"></i>
+                                {% elif field.name == 'date_naissance' %}<i class="fas fa-birthday-cake"></i>
+                                {% elif field.name == 'lieu_naissance' %}<i class="fas fa-map-pin"></i>
+                                {% elif field.name == 'ecole' %}<i class="fas fa-school"></i>
+                                {% elif field.name == 'niveau' %}<i class="fas fa-layer-group"></i>
+                                {% elif field.name == 'classe' %}<i class="fas fa-users"></i>
+                                {% elif field.name == 'annee_scolaire' %}<i class="fas fa-calendar-alt"></i>
+                                {% elif field.name == 'adresse' %}<i class="fas fa-home"></i>
+                                {% elif field.name == 'photo' %}<i class="fas fa-camera"></i>
+                                {% else %}<i class="fas fa-tag"></i>
+                                {% endif %}
+                                {{ field.label }}
+                                {% if field.field.required %}<span style="color:var(--wp-danger);">*</span>{% endif %}
+                            </label>
+
+                            {{ field }}
+
+                            {% if field.errors %}
+                                <div class="wp-form-error">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                                <div class="wp-form-help">
+                                    <i class="fas fa-info-circle"></i>
+                                    {{ field.help_text }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="wp-form-actions" style="justify-content:flex-end;">
+                        <a href="{% url 'eleves:eleve_list' %}" class="wp-btn secondary">
+                            <i class="fas fa-times"></i> Annuler
+                        </a>
+                        <button type="submit" class="wp-btn">
+                            <i class="fas fa-save"></i>
+                            {% if submit_text %}{{ submit_text }}{% else %}Enregistrer{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       STYLING DES WIDGETS DJANGO
+    ============================================================ */
+    .wp-card-body input[type="text"],
+    .wp-card-body input[type="date"],
+    .wp-card-body input[type="email"],
+    .wp-card-body input[type="number"],
+    .wp-card-body input[type="tel"],
+    .wp-card-body input[type="password"],
+    .wp-card-body input[type="file"],
+    .wp-card-body select,
+    .wp-card-body textarea {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-family: inherit;
+        color: var(--wp-text);
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius-sm);
+        outline: none;
+        transition: all var(--wp-transition);
+        line-height: 1.5;
+    }
+
+    .wp-card-body input:focus,
+    .wp-card-body select:focus,
+    .wp-card-body textarea:focus {
+        border-color: var(--wp-primary);
+        box-shadow: 0 0 0 3px var(--wp-primary-soft);
+    }
+
+    .wp-card-body textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    /* Input file stylisé */
+    .wp-card-body input[type="file"] {
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+
+    .wp-card-body input[type="file"]::file-selector-button {
+        background: var(--wp-primary-soft);
+        color: var(--wp-primary);
+        border: 1px solid rgba(34, 113, 177, 0.25);
+        border-radius: var(--wp-radius-xs);
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 12px;
+        transition: all var(--wp-transition);
+        font-family: inherit;
+    }
+
+    .wp-card-body input[type="file"]::file-selector-button:hover {
+        background: var(--wp-primary);
+        color: #fff;
+        border-color: var(--wp-primary);
+    }
+
+    .wp-card-body input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--wp-primary);
+        cursor: pointer;
+    }
+
+    .wp-card-body select[multiple] {
+        min-height: 140px;
+        padding: 8px;
+    }
+
+    .wp-card-body select[multiple] option {
+        padding: 6px 10px;
+        border-radius: 4px;
+        margin-bottom: 2px;
+    }
+
+    .wp-card-body select[multiple] option:checked {
+        background: var(--wp-primary);
+        color: #fff !important;
+    }
+
+    /* Aperçu de la photo actuelle */
+    .wp-card-body .current-photo {
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .wp-card-body .current-photo img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--wp-border-light);
+    }
+
+    .wp-card-body .current-photo span {
+        font-size: 12px;
+        color: var(--wp-text-light);
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // CASCADE : ÉCOLE → NIVEAU → CLASSE
+        // ============================================================
+        const ecoleSelect = document.getElementById('id_ecole');
+        const niveauSelect = document.getElementById('id_niveau');
+        const classeSelect = document.getElementById('id_classe');
+
+        function updateSelect(url, parentElement, targetSelect, paramName) {
+            if (!targetSelect || !parentElement) return;
+            const value = parentElement.value;
+            if (!value) {
+                targetSelect.innerHTML = '<option value="">---------</option>';
+                return;
+            }
+            fetch(`${url}?${paramName}=${value}`)
+                .then(response => response.json())
+                .then(data => {
+                    targetSelect.innerHTML = '<option value="">---------</option>';
+                    data.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.nom || item.nom_complet;
+                        targetSelect.appendChild(opt);
+                    });
+                })
+                .catch(error => console.error('Erreur AJAX:', error));
+        }
+
+        // ---- École change → recharger niveaux + classes ----
+        if (ecoleSelect) {
+            ecoleSelect.addEventListener('change', function () {
+                // Ne pas recharger si le champ est désactivé (ex: enseignant)
+                if (this.disabled) return;
+
+                if (niveauSelect && !niveauSelect.disabled) {
+                    updateSelect(
+                        '{% url "ecoles:api_get_niveaux" %}',
+                        this,
+                        niveauSelect,
+                        'ecole_id'
+                    );
+                }
+                if (classeSelect && !classeSelect.disabled) {
+                    updateSelect(
+                        '{% url "ecoles:api_get_classes" %}',
+                        this,
+                        classeSelect,
+                        'ecole_id'
+                    );
+                }
+            });
+        }
+
+        // ---- Niveau change → recharger classes ----
+        if (niveauSelect) {
+            niveauSelect.addEventListener('change', function () {
+                if (this.disabled) return;
+
+                if (classeSelect && !classeSelect.disabled) {
+                    updateSelect(
+                        '{% url "ecoles:api_get_classes" %}',
+                        this,
+                        classeSelect,
+                        'niveau_id'
+                    );
+                }
+            });
+        }
+
+        // ============================================================
+        // APERÇU DE LA PHOTO (si un champ photo existe)
+        // ============================================================
+        const photoInput = document.getElementById('id_photo');
+        if (photoInput) {
+            photoInput.addEventListener('change', function (e) {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                // Chercher ou créer un aperçu
+                let preview = document.getElementById('photoPreview');
+                if (!preview) {
+                    preview = document.createElement('div');
+                    preview.id = 'photoPreview';
+                    preview.className = 'current-photo';
+                    photoInput.parentNode.appendChild(preview);
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (ev) {
+                    preview.innerHTML = `
+                        <img src="${ev.target.result}" alt="Aperçu">
+                        <span>Nouvelle photo sélectionnée</span>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    });
+</script>
+{% endblock %}

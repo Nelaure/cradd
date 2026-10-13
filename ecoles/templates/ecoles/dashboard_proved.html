@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord - Direction provinciale{% endblock %}
+{% block page_heading %}Tableau de bord{% endblock %}
+{% block page_subtitle %}Province : {{ province_nom }}{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Direction provinciale</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== STATISTIQUES - Ligne 1 ===== -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-school"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_ecoles }}</div>
+                    <div class="stat-label">Écoles</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_niveaux }}</div>
+                    <div class="stat-label">Niveaux</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_classes }}</div>
+                    <div class="stat-label">Classes</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_eleves }}</div>
+                    <div class="stat-label">Élèves</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== STATISTIQUES - Ligne 2 ===== -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_notes }}</div>
+                    <div class="stat-label">Notes saisies</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ moyenne_province|floatformat:2 }}</div>
+                    <div class="stat-label">Moyenne province</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-flag-checkered"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ taux_reussite_province }}%</div>
+                    <div class="stat-label">Taux de réussite</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TAUX DE RÉUSSITE PAR ÉCOLE ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-chart-bar" style="color:var(--wp-primary);"></i> Taux de réussite par école</h3>
+        <span class="wp-count-badge">{{ stats_par_ecole|length }} école{{ stats_par_ecole|length|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if stats_par_ecole %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>École</th>
+                        <th>Total élèves</th>
+                        <th>Réussis</th>
+                        <th>Taux (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in stats_par_ecole %}
+                    <tr>
+                        <td data-label="École">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-school" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ stat.nom }}
+                            </strong>
+                        </td>
+                        <td data-label="Total élèves">
+                            <span class="wp-badge wp-badge-neutral" style="font-weight:700;">
+                                {{ stat.total }}
+                            </span>
+                        </td>
+                        <td data-label="Réussis">
+                            <span class="wp-badge wp-badge-success" style="font-weight:700;">
+                                {{ stat.reussis }}
+                            </span>
+                        </td>
+                        <td data-label="Taux">
+                            {% if stat.taux >= 70 %}
+                                <span class="wp-badge wp-badge-success" style="font-weight:700;">
+                                    <i class="fas fa-arrow-up"></i> {{ stat.taux }}%
+                                </span>
+                            {% elif stat.taux >= 50 %}
+                                <span class="wp-badge wp-badge-warning" style="font-weight:700;">
+                                    <i class="fas fa-minus"></i> {{ stat.taux }}%
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger" style="font-weight:700;">
+                                    <i class="fas fa-arrow-down"></i> {{ stat.taux }}%
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-chart-bar"></i>
+            <p>Aucune donnée disponible pour cette province.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .stat-card-modern {
+        position: relative;
+        overflow: hidden;
+        transition: transform var(--wp-transition), box-shadow var(--wp-transition);
+    }
+    .stat-card-modern:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--wp-shadow-md);
+    }
+    .stat-card-modern .stat-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        background: var(--wp-primary-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 22px;
+        color: var(--wp-primary);
+        transition: background var(--wp-transition), color var(--wp-transition), transform var(--wp-transition);
+    }
+    .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary);
+        color: #fff;
+        transform: scale(1.05) rotate(-4deg);
+    }
+    .stat-card-modern .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        line-height: 1.2;
+        letter-spacing: -0.5px;
+    }
+    .stat-card-modern .stat-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--wp-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+    .stat-card-modern .stat-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        opacity: 0.6;
+        transition: height var(--wp-transition), opacity var(--wp-transition);
+    }
+    .stat-card-modern:hover .stat-bar {
+        height: 4px;
+        opacity: 1;
+    }
+    [data-bs-theme="dark"] .stat-card-modern .stat-icon {
+        background: rgba(34, 113, 177, 0.20);
+        color: var(--wp-primary-light);
+    }
+    [data-bs-theme="dark"] .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary);
+        color: #fff;
+    }
+</style>
+{% endblock %}

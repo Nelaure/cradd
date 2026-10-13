@@ -1,0 +1,1940 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}CRADDasbl · Centre de Recherche et d'Action pour le Développement Durable{% endblock %}
+
+{% block content_public %}
+
+<!-- ============================================================
+     HERO
+============================================================ -->
+<section class="hero" id="accueil">
+    <div class="hero-background">
+        <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=90"
+             alt="Paysage de développement durable"
+             loading="eager" />
+    </div>
+    <div class="hero-overlay"></div>
+
+    <div class="container">
+        <div class="hero-content">
+            <div class="hero-text">
+                <span class="hero-badge">
+                    <i class="fas fa-leaf"></i>
+                    <span>Développement durable</span>
+                </span>
+
+                <h1 class="hero-title">
+                    <span class="hero-title-accent">LE MONDE</span><br>
+                    ENTRE VOS MAINS
+                </h1>
+
+                <p class="hero-slogan">
+                    « Que les communautés vivent dans des conditions acceptables par l'auto-prise en charge
+                    permettant de concrétiser <strong>cette vision</strong> »
+                </p>
+
+                <p class="hero-mission">
+                    Chaque enfant congolais mérite une éducation de qualité et un environnement préservé.
+                    Ensemble, faisons de l'éducation le moteur du développement durable.
+                </p>
+
+                <div class="hero-cta-group">
+                    <a href="#actions" class="hero-cta hero-cta-primary">
+                        Découvrir nos actions
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="#dons" class="hero-cta hero-cta-outline">
+                        <i class="fas fa-heart"></i>
+                        Faire un don
+                    </a>
+                </div>
+            </div>
+
+            <div class="hero-stats">
+                <div class="hero-stat-item">
+                    <span class="hero-stat-number" data-count="15000">0</span>
+                    <span class="hero-stat-label">Élèves soutenus</span>
+                </div>
+                <div class="hero-stat-item">
+                    <span class="hero-stat-number" data-count="120">0</span>
+                    <span class="hero-stat-label">Écoles partenaires</span>
+                </div>
+                <div class="hero-stat-item">
+                    <span class="hero-stat-number" data-count="8">0</span>
+                    <span class="hero-stat-label">Provinces couvertes</span>
+                </div>
+                <div class="hero-stat-item">
+                    <span class="hero-stat-number" data-count="92" data-suffix="%">0</span>
+                    <span class="hero-stat-label">Taux de réussite</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="#a-propos" class="hero-scroll" aria-label="Défiler vers le bas">
+        <i class="fas fa-chevron-down"></i>
+    </a>
+</section>
+
+<!-- ============================================================
+     À PROPOS
+============================================================ -->
+<section class="section-padding section-neutral" id="a-propos">
+    <div class="container">
+        <div class="section-title">
+            <h2>Qui <span>sommes-nous</span></h2>
+            <p>Une ONG congolaise au service du développement durable</p>
+            <div class="line"></div>
+        </div>
+
+        <div class="mission-grid">
+            <div class="mission-text">
+                <p>
+                    Le <strong>Centre de Recherche et d'Actions pour le Développement Durable</strong> (CRADD)
+                    est une ONG congolaise créée en <strong>2016</strong>.
+                    Nous promouvons la recherche multidisciplinaire et menons des actions novatrices pour
+                    le développement intégré des communautés urbaines et rurales, en particulier dans la
+                    région des Grands Lacs et au-delà.
+                </p>
+                <blockquote class="blockquote">
+                    <p class="mb-0">
+                        <em>
+                            « Que les communautés vivent dans des conditions acceptables par l'auto-prise en charge. »
+                        </em>
+                    </p>
+                </blockquote>
+                <ul class="mission-list mt-3">
+                    <li><i class="fas fa-check"></i> Recherche multidisciplinaire</li>
+                    <li><i class="fas fa-check"></i> Actions communautaires durables</li>
+                    <li><i class="fas fa-check"></i> Autonomisation des populations</li>
+                </ul>
+            </div>
+            <div class="mission-image">
+                <img src="{% static 'images/qui-sommes-nous.jpg' %}" alt="Équipe CRADD" />
+                <div class="floating-badge">
+                    <i class="fas fa-hand-holding-heart"></i>
+                    <span>+92% de réussite</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     NOS ACTIONS
+============================================================ -->
+<section class="section-padding section-alt" id="actions">
+    <div class="container">
+        <div class="section-title">
+            <h2>Nos <span>actions</span></h2>
+            <p>Domaines d'intervention et activités concrètes</p>
+            <div class="line"></div>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="icon"><i class="fas fa-flask"></i></div>
+                <h4>Recherche</h4>
+                <p>Promouvoir la recherche multidisciplinaire pour le développement intégré des communautés.</p>
+                <ul class="list-unstyled mt-3 service-list">
+                    <li><i class="fas fa-check-circle"></i> Études de terrain</li>
+                    <li><i class="fas fa-check-circle"></i> Publications scientifiques</li>
+                    <li><i class="fas fa-check-circle"></i> Recherche-action participative</li>
+                </ul>
+                <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="service-card">
+                <div class="icon"><i class="fas fa-users-cog"></i></div>
+                <h4>Actions communautaires</h4>
+                <p>Programmes concrets pour répondre aux besoins des populations (santé, éducation, environnement).</p>
+                <ul class="list-unstyled mt-3 service-list">
+                    <li><i class="fas fa-check-circle"></i> Formation en AGR pour les femmes</li>
+                    <li><i class="fas fa-check-circle"></i> Focus groupes et consultations</li>
+                    <li><i class="fas fa-check-circle"></i> Production de champignons</li>
+                </ul>
+                <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="service-card">
+                <div class="icon"><i class="fas fa-people-arrows"></i></div>
+                <h4>Éducation & Sensibilisation</h4>
+                <p>Interventions dans les écoles, universités et instituts pour promouvoir la santé, le leadership et la paix.</p>
+                <ul class="list-unstyled mt-3 service-list">
+                    <li><i class="fas fa-check-circle"></i> Sensibilisation VIH/Sida, Ebola, Covid-19</li>
+                    <li><i class="fas fa-check-circle"></i> Lutte contre les violences sexuelles</li>
+                    <li><i class="fas fa-check-circle"></i> Formation au leadership civique</li>
+                </ul>
+                <a href="#" class="learn-more">En savoir plus <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     TÉMOIGNAGES
+============================================================ -->
+<section class="section-padding section-neutral" id="temoignages">
+    <div class="container">
+        <div class="section-title">
+            <h2>Ils <span>témoignent</span></h2>
+            <p>Les voix de ceux qui ont bénéficié de nos actions</p>
+            <div class="line"></div>
+        </div>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
+                <p>"Grâce au CRADD, mon fils a pu reprendre l'école après deux ans d'interruption. Aujourd'hui, il est parmi les meilleurs et participe aux clubs d'écologie."</p>
+                <div class="author">
+                    <div class="avatar avatar-primary">MM</div>
+                    <div class="info">
+                        <div class="name">Marie Mbuyi</div>
+                        <div class="role">Mère d'élève, Kinshasa</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
+                <p>"Les formations en éducation environnementale ont transformé notre approche. Les élèves sont plus engagés et conscients des enjeux."</p>
+                <div class="author">
+                    <div class="avatar avatar-accent">PK</div>
+                    <div class="info">
+                        <div class="name">Paul Kabasele</div>
+                        <div class="role">Enseignant, Lubumbashi</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
+                <p>"Le soutien psychosocial et les activités de reboisement ont permis à des enfants de surmonter les traumatismes et de retrouver l'espoir."</p>
+                <div class="author">
+                    <div class="avatar avatar-warning">JM</div>
+                    <div class="info">
+                        <div class="name">Jean Mukendi</div>
+                        <div class="role">Directeur d'école, Goma</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     ACTUALITÉS (version optimisée)
+============================================================ -->
+<section class="section-padding section-alt" id="actualites">
+    <div class="container">
+        <div class="section-title">
+            <h2>Nos <span>actualités</span></h2>
+            <p>Restez informés de nos actions et projets</p>
+            <div class="line"></div>
+        </div>
+
+        {% if articles %}
+        <div class="news-grid">
+            {% for article in articles %}
+            <a href="{% url 'actualites:article_detail' article.slug %}" class="news-card">
+                <div class="news-card-img">
+                    {% if article.image %}
+                    <img src="{{ article.image.url }}" alt="{{ article.titre }}" loading="lazy" />
+                    {% else %}
+                    <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80" alt="{{ article.titre }}" loading="lazy" />
+                    {% endif %}
+                    {% if article.categorie %}
+                    <span class="news-card-tag">{{ article.categorie.nom }}</span>
+                    {% endif %}
+                </div>
+                <div class="news-card-body">
+                    <div class="news-card-date">
+                        <i class="fas fa-calendar-alt"></i>
+                        {{ article.date_publication|date:"d M Y" }}
+                    </div>
+                    <h3 class="news-card-title">{{ article.titre }}</h3>
+                    <p class="news-card-excerpt">
+                        {{ article.contenu|striptags|safe|truncatechars:90 }}
+                    </p>
+                    <span class="news-card-link">
+                        Lire la suite <i class="fas fa-arrow-right"></i>
+                    </span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="news-empty">
+            <i class="fas fa-newspaper"></i>
+            <p>Aucune actualité disponible pour le moment.</p>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <a href="{% url 'actualites:article_list' %}" class="btn-primary-custom">
+                Voir toutes les actualités <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     DONS
+============================================================ -->
+<section class="donation-section" id="dons">
+    <div class="container">
+        <div class="section-title section-title-light">
+            <h2>Faire un <span>don</span></h2>
+            <p>Votre générosité transforme des vies et bâtit un avenir meilleur</p>
+            <div class="line"></div>
+        </div>
+
+        <div class="donation-grid">
+            <div class="donation-text">
+                <span class="badge-donation">
+                    <i class="fas fa-heart"></i> Soutenez notre mission
+                </span>
+                <h3>Chaque don compte</h3>
+                <p>
+                    Chaque contribution, quelle que soit sa taille, nous aide à financer
+                    nos programmes éducatifs, nos actions communautaires et nos projets de
+                    recherche pour un développement durable en RDC.
+                </p>
+                <ul class="donation-benefits">
+                    <li><i class="fas fa-check-circle"></i> Scolarisation d'enfants défavorisés</li>
+                    <li><i class="fas fa-check-circle"></i> Formation des enseignants et encadreurs</li>
+                    <li><i class="fas fa-check-circle"></i> Reboisement et protection de l'environnement</li>
+                    <li><i class="fas fa-check-circle"></i> Soutien psychosocial aux victimes</li>
+                    <li><i class="fas fa-check-circle"></i> Recherche-action pour le développement</li>
+                </ul>
+            </div>
+
+            <div class="donation-card">
+                <h3><i class="fas fa-hand-holding-usd"></i> Coordonnées pour vos dons</h3>
+                <p class="subtitle">Effectuez votre don via le canal ci-dessous</p>
+
+                <div class="donation-channel">
+                    <div class="donation-channel-header">
+                        <div class="channel-icon mobile-money">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div>
+                            <h4>Mobile Money</h4>
+                            <span class="channel-tag">Rapide & sécurisé</span>
+                        </div>
+                    </div>
+                    <div class="donation-channel-body">
+                        <div class="donation-info-row">
+                            <span class="label"><i class="fas fa-phone"></i> Numéro à créditer</span>
+                            <div class="value-group">
+                                <span class="value" id="donation-number">+243 898 660 364</span>
+                                <button class="btn-copy" onclick="copyToClipboard('donation-number')" title="Copier">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="donation-info-row">
+                            <span class="label"><i class="fas fa-user"></i> Bénéficiaire</span>
+                            <span class="value">CRADD asbl</span>
+                        </div>
+                        <div class="donation-info-row">
+                            <span class="label"><i class="fas fa-comment"></i> Référence</span>
+                            <span class="value">Don – [Votre nom]</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="donation-note">
+                    <i class="fas fa-info-circle"></i>
+                    <p>
+                        Après votre don, envoyez-nous une copie du reçu à
+                        <a href="mailto:dons@craddasbl.org">dons@craddasbl.org</a>
+                        ou via WhatsApp au <strong>+243 898 660 364</strong> pour recevoir votre attestation.
+                    </p>
+                </div>
+
+                <div class="donation-secure">
+                    <i class="fas fa-shield-alt"></i>
+                    Toutes les transactions sont vérifiées manuellement par notre équipe
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     PARTENAIRES
+============================================================ -->
+<section class="section-padding section-neutral" id="partenaires">
+    <div class="container">
+        <div class="section-title">
+            <h2>Nos <span>partenaires</span></h2>
+            <p>Des organisations engagées à nos côtés</p>
+            <div class="line"></div>
+        </div>
+        <div class="partners-grid">
+            <div class="partner-item"><i class="fas fa-hospital-alt"></i> MINISANTE/DPS</div>
+            <div class="partner-item"><i class="fas fa-hand-holding-heart"></i> ONUSIDA</div>
+            <div class="partner-item"><i class="fas fa-users"></i> PNMLS</div>
+            <div class="partner-item"><i class="fas fa-graduation-cap"></i> EPSP</div>
+            <div class="partner-item"><i class="fas fa-female"></i> 50MAWS</div>
+            <div class="partner-item"><i class="fas fa-globe"></i> OMS</div>
+            <div class="partner-item"><i class="fas fa-balance-scale"></i> ASPLC</div>
+            <div class="partner-item"><i class="fas fa-hand-holding-usd"></i> UCOP+</div>
+            <div class="partner-item"><i class="fas fa-shield-alt"></i> MONUSCO</div>
+            <div class="partner-item"><i class="fas fa-female"></i> UNFPA</div>
+            <div class="partner-item"><i class="fas fa-landmark"></i> MINISTERE DU PLAN</div>
+            <div class="partner-item"><i class="fas fa-university"></i> UNESCO</div>
+            <div class="partner-item"><i class="fas fa-globe-africa"></i> RET</div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     NEWSLETTER
+============================================================ -->
+<section class="newsletter-section" id="newsletter">
+    <div class="container">
+        <h2>Restez informé</h2>
+        <p>Recevez nos actualités et les rapports de nos actions éducatives et environnementales</p>
+        <form class="newsletter-form" id="newsletterForm" onsubmit="return false;">
+            <input type="email" placeholder="Votre adresse email" required />
+            <button type="button"><i class="fas fa-paper-plane"></i> S'inscrire</button>
+        </form>
+    </div>
+</section>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       BASE COMMUNE
+    ============================================================ */
+    .section-padding {
+        padding: clamp(4rem, 7vw, 6.5rem) 0;
+    }
+
+    .section-neutral { background: var(--wp-surface-alt); }
+    .section-alt { background: var(--wp-surface); }
+
+    .section-title {
+        text-align: center;
+        max-width: 720px;
+        margin: 0 auto clamp(2.5rem, 4vw, 4rem);
+    }
+
+    .section-title h2 {
+        font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        margin-bottom: 12px;
+        color: var(--wp-text-strong);
+        line-height: 1.15;
+    }
+
+    .section-title h2 span {
+        color: var(--wp-primary);
+        position: relative;
+        display: inline-block;
+    }
+
+    .section-title h2 span::after {
+        content: '';
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));
+        border-radius: 2px;
+        opacity: 0.5;
+    }
+
+    .section-title p {
+        font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+        color: var(--wp-text-muted);
+        margin-bottom: 18px;
+        line-height: 1.7;
+    }
+
+    .section-title .line {
+        width: 70px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));
+        border-radius: 2px;
+        margin: 0 auto;
+    }
+
+    /* ============================================================
+       HERO
+    ============================================================ */
+    .hero {
+        position: relative;
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        padding: 6rem 0 5rem;
+        color: #fff;
+    }
+
+    .hero-background {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+    }
+
+    .hero-background img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scale(1.05);
+        animation: heroZoom 24s ease-in-out infinite alternate;
+    }
+
+    @keyframes heroZoom {
+        from { transform: scale(1.05); }
+        to { transform: scale(1.12); }
+    }
+
+    .hero-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background:
+            linear-gradient(
+                135deg,
+                rgba(10, 16, 24, 0.92) 0%,
+                rgba(15, 35, 60, 0.80) 50%,
+                rgba(34, 113, 177, 0.72) 100%
+            );
+    }
+
+    .hero .container {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero-content {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: clamp(2rem, 5vw, 5rem);
+        align-items: center;
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        background: rgba(114, 174, 230, 0.16);
+        border: 1px solid rgba(114, 174, 230, 0.40);
+        color: #dbeafe;
+        padding: 8px 20px;
+        border-radius: 9999px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+        margin-bottom: 26px;
+        backdrop-filter: blur(8px);
+    }
+
+    .hero-badge i {
+        color: var(--wp-primary-light);
+        font-size: 0.85rem;
+    }
+
+    .hero-title {
+        font-size: clamp(2.4rem, 6vw, 4.3rem);
+        font-weight: 900;
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        margin-bottom: 26px;
+        color: #fff;
+        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.30);
+    }
+
+    .hero-title-accent {
+        background: linear-gradient(135deg, #a5c8ec, var(--wp-primary-light) 60%, #5f9ed1);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-slogan {
+        font-size: clamp(1rem, 1.6vw, 1.15rem);
+        color: rgba(255, 255, 255, 0.93);
+        font-style: italic;
+        line-height: 1.75;
+        margin-bottom: 18px;
+        padding-left: 20px;
+        border-left: 3px solid var(--wp-primary-light);
+        max-width: 640px;
+    }
+
+    .hero-slogan strong {
+        color: #fff;
+        font-style: normal;
+        background: linear-gradient(180deg, transparent 60%, rgba(114, 174, 230, 0.40) 60%);
+        padding: 0 3px;
+    }
+
+    .hero-mission {
+        font-size: clamp(0.95rem, 1.4vw, 1.05rem);
+        color: rgba(255, 255, 255, 0.82);
+        line-height: 1.75;
+        margin-bottom: 34px;
+        max-width: 620px;
+    }
+
+    .hero-cta-group {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .hero-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px 30px;
+        color: #fff;
+        border-radius: 9999px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.25s ease;
+        border: none;
+        letter-spacing: 0.1px;
+        white-space: nowrap;
+    }
+
+    .hero-cta-primary {
+        background: linear-gradient(135deg, var(--wp-primary), var(--wp-primary-hover));
+        box-shadow: 0 10px 26px rgba(34, 113, 177, 0.45);
+    }
+
+    .hero-cta-primary:hover {
+        background: linear-gradient(135deg, var(--wp-primary-hover), #0e4d80);
+        color: #fff;
+        transform: translateY(-3px);
+        box-shadow: 0 14px 32px rgba(34, 113, 177, 0.60);
+    }
+
+    .hero-cta-outline {
+        background: transparent;
+        border: 1.5px solid rgba(255, 255, 255, 0.55);
+        color: #fff;
+    }
+
+    .hero-cta-outline:hover {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: #fff;
+        color: #fff;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 26px rgba(255, 255, 255, 0.15);
+    }
+
+    .hero-cta i {
+        transition: transform 0.25s ease;
+    }
+
+    .hero-cta-primary:hover i {
+        transform: translateX(4px);
+    }
+
+    .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .hero-stat-item {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 18px;
+        padding: 26px 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .hero-stat-item:hover {
+        background: rgba(255, 255, 255, 0.13);
+        transform: translateY(-4px);
+        border-color: rgba(114, 174, 230, 0.55);
+    }
+
+    .hero-stat-number {
+        display: block;
+        font-size: clamp(1.75rem, 3vw, 2.4rem);
+        font-weight: 800;
+        color: #fff;
+        line-height: 1;
+        letter-spacing: -0.025em;
+        margin-bottom: 8px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .hero-stat-label {
+        display: block;
+        font-size: 0.76rem;
+        color: rgba(255, 255, 255, 0.85);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .hero-scroll {
+        position: absolute;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(255, 255, 255, 0.40);
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.25s ease;
+        z-index: 3;
+        animation: scrollBounce 2s ease-in-out infinite;
+    }
+
+    .hero-scroll:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: #fff;
+        color: #fff;
+    }
+
+    @keyframes scrollBounce {
+        0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.8; }
+        50% { transform: translateX(-50%) translateY(6px); opacity: 1; }
+    }
+
+    /* ============================================================
+       À PROPOS
+    ============================================================ */
+    .mission-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(2rem, 5vw, 5rem);
+        align-items: center;
+    }
+
+    .mission-text p {
+        font-size: 1rem;
+        color: var(--wp-text-muted);
+        line-height: 1.85;
+        margin-bottom: 20px;
+    }
+
+    .mission-text .blockquote {
+        background: var(--wp-primary-soft);
+        border-left: 4px solid var(--wp-primary);
+        padding: 20px 24px;
+        border-radius: 0 8px 8px 0;
+        font-size: 0.95rem;
+        color: var(--wp-text);
+        line-height: 1.7;
+        margin: 24px 0;
+    }
+
+    .mission-list {
+        list-style: none;
+        padding: 0;
+        display: grid;
+        gap: 10px;
+    }
+
+    .mission-list li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--wp-text);
+    }
+
+    .mission-list li i {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--wp-accent-soft);
+        color: var(--wp-accent);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        flex-shrink: 0;
+    }
+
+    .mission-image {
+        position: relative;
+    }
+
+    .mission-image img {
+        width: 100%;
+        border-radius: 20px;
+        box-shadow: var(--wp-shadow-lg);
+        object-fit: cover;
+        aspect-ratio: 4/5;
+    }
+
+    .mission-image .floating-badge {
+        position: absolute;
+        bottom: 24px;
+        right: -18px;
+        background: linear-gradient(135deg, var(--wp-accent), var(--wp-accent-hover));
+        color: #fff;
+        padding: 14px 22px;
+        border-radius: 14px;
+        box-shadow: 0 12px 30px rgba(0, 163, 42, 0.35);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        animation: floatBadge 3s ease-in-out infinite;
+    }
+
+    @keyframes floatBadge {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+
+    .mission-image .floating-badge i {
+        font-size: 1.2rem;
+    }
+
+    /* ============================================================
+       SERVICES
+    ============================================================ */
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 26px;
+    }
+
+    .service-card {
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 18px;
+        padding: 34px 28px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .service-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.4s ease;
+    }
+
+    .service-card:hover {
+        transform: translateY(-6px);
+        box-shadow: var(--wp-shadow-lg);
+        border-color: var(--wp-primary-light);
+    }
+
+    .service-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .service-card .icon {
+        width: 62px;
+        height: 62px;
+        border-radius: 16px;
+        background: var(--wp-primary-soft);
+        color: var(--wp-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        margin-bottom: 22px;
+        transition: all 0.3s ease;
+    }
+
+    [data-bs-theme="dark"] .service-card .icon {
+        background: rgba(34, 113, 177, 0.25);
+    }
+
+    .service-card:hover .icon {
+        background: linear-gradient(135deg, var(--wp-primary), var(--wp-primary-hover));
+        color: #fff;
+        transform: rotate(-4deg) scale(1.05);
+    }
+
+    .service-card h4 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: var(--wp-text-strong);
+        letter-spacing: -0.015em;
+    }
+
+    .service-card > p {
+        font-size: 0.93rem;
+        color: var(--wp-text-muted);
+        line-height: 1.7;
+        margin-bottom: 18px;
+    }
+
+    .service-list {
+        font-size: 0.87rem;
+        color: var(--wp-text-muted);
+        padding-left: 0;
+        margin-bottom: 22px;
+    }
+
+    .service-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 8px;
+        line-height: 1.5;
+    }
+
+    .service-list li i {
+        color: var(--wp-accent);
+        font-size: 0.85rem;
+        margin-top: 3px;
+        flex-shrink: 0;
+    }
+
+    .service-card .learn-more {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--wp-primary);
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.25s ease;
+    }
+
+    .service-card .learn-more:hover {
+        color: var(--wp-primary-hover);
+        gap: 12px;
+    }
+
+    /* ============================================================
+       TÉMOIGNAGES
+    ============================================================ */
+    .testimonials-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 26px;
+    }
+
+    .testimonial-card {
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 18px;
+        padding: 32px 28px;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .testimonial-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--wp-shadow-md);
+        border-color: var(--wp-primary-light);
+    }
+
+    .testimonial-card .quote-icon {
+        position: absolute;
+        top: 22px;
+        right: 24px;
+        font-size: 2.4rem;
+        color: var(--wp-primary-soft);
+        opacity: 0.7;
+        line-height: 1;
+    }
+
+    [data-bs-theme="dark"] .testimonial-card .quote-icon {
+        color: rgba(34, 113, 177, 0.20);
+    }
+
+    .testimonial-card > p {
+        font-size: 0.95rem;
+        color: var(--wp-text-muted);
+        line-height: 1.8;
+        margin-bottom: 24px;
+        font-style: italic;
+        position: relative;
+        z-index: 1;
+    }
+
+    .testimonial-card .author {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding-top: 20px;
+        border-top: 1px solid var(--wp-border-light);
+    }
+
+    .testimonial-card .author .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+
+    .avatar-primary {
+        background: linear-gradient(135deg, var(--wp-primary), var(--wp-primary-hover));
+        box-shadow: 0 4px 12px rgba(34, 113, 177, 0.30);
+    }
+
+    .avatar-accent {
+        background: linear-gradient(135deg, var(--wp-accent), var(--wp-accent-hover));
+        box-shadow: 0 4px 12px rgba(0, 163, 42, 0.30);
+    }
+
+    .avatar-warning {
+        background: linear-gradient(135deg, var(--wp-warning), var(--wp-warning-hover));
+        box-shadow: 0 4px 12px rgba(219, 166, 23, 0.30);
+    }
+
+    .testimonial-card .author .info .name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        margin-bottom: 2px;
+    }
+
+    .testimonial-card .author .info .role {
+        font-size: 0.8rem;
+        color: var(--wp-text-light);
+    }
+
+    /* ============================================================
+       ACTUALITÉS — Grille optimisée
+    ============================================================ */
+    .news-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 22px;
+        margin-bottom: 30px;
+    }
+
+    .news-card {
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 14px;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+        box-shadow: var(--wp-shadow-xs);
+    }
+
+    .news-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--wp-shadow-md);
+        border-color: var(--wp-primary-light);
+        color: inherit;
+    }
+
+    .news-card-img {
+        position: relative;
+        aspect-ratio: 16/9;
+        overflow: hidden;
+        background: var(--wp-surface-alt);
+    }
+
+    .news-card-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .news-card:hover .news-card-img img {
+        transform: scale(1.06);
+    }
+
+    .news-card-tag {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(6px);
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    .news-card-body {
+        padding: 16px 18px 18px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    .news-card-date {
+        font-size: 0.7rem;
+        color: var(--wp-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .news-card-date i {
+        color: var(--wp-primary);
+        margin-right: 4px;
+        font-size: 0.65rem;
+    }
+
+    .news-card-title {
+        font-size: 0.98rem;
+        font-weight: 700;
+        line-height: 1.35;
+        color: var(--wp-text-strong);
+        margin-bottom: 8px;
+        letter-spacing: -0.01em;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: calc(1.35em * 2);
+    }
+
+    .news-card:hover .news-card-title {
+        color: var(--wp-primary);
+    }
+
+    .news-card-excerpt {
+        font-size: 0.82rem;
+        color: var(--wp-text-muted);
+        line-height: 1.55;
+        margin-bottom: 12px;
+        flex: 1;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .news-card-link {
+        color: var(--wp-primary);
+        font-weight: 700;
+        font-size: 0.82rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: gap 0.25s ease;
+        margin-top: auto;
+    }
+
+    .news-card:hover .news-card-link {
+        gap: 9px;
+    }
+
+    .news-card-link i {
+        font-size: 0.72rem;
+    }
+
+    .news-empty {
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 14px;
+        padding: 50px 30px;
+        text-align: center;
+        color: var(--wp-text-muted);
+    }
+
+    .news-empty i {
+        font-size: 2.5rem;
+        color: var(--wp-border);
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .news-empty p {
+        font-size: 0.95rem;
+        margin: 0;
+        font-style: italic;
+    }
+
+    .btn-primary-custom {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 28px;
+        background: var(--wp-primary);
+        color: #fff !important;
+        border-radius: 9999px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-decoration: none;
+        border: none;
+        transition: all 0.25s ease;
+        box-shadow: 0 6px 18px rgba(34, 113, 177, 0.30);
+    }
+
+    .btn-primary-custom:hover {
+        background: var(--wp-primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 26px rgba(34, 113, 177, 0.40);
+        color: #fff;
+    }
+
+    /* ============================================================
+       DONS
+    ============================================================ */
+    .donation-section {
+        background: linear-gradient(135deg, #0e4d80 0%, var(--wp-primary) 50%, var(--wp-primary-hover) 100%);
+        padding: clamp(4rem, 7vw, 6rem) 0;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .donation-section::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url('https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1600&q=80') center/cover no-repeat;
+        opacity: 0.06;
+        z-index: 0;
+    }
+
+    .donation-section .container {
+        position: relative;
+        z-index: 2;
+    }
+
+    .section-title-light h2,
+    .section-title-light h2 span {
+        color: #fff;
+    }
+
+    .section-title-light h2 span::after {
+        background: linear-gradient(90deg, var(--wp-accent), #4ade80);
+        opacity: 0.7;
+    }
+
+    .section-title-light p {
+        color: rgba(255, 255, 255, 0.88);
+    }
+
+    .section-title-light .line {
+        background: linear-gradient(90deg, var(--wp-accent), #4ade80);
+    }
+
+    .donation-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.15fr;
+        gap: clamp(2rem, 4vw, 50px);
+        align-items: start;
+    }
+
+    .donation-text h3 {
+        font-size: clamp(1.5rem, 2.5vw, 1.9rem);
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+    }
+
+    .donation-text p {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.8;
+        margin-bottom: 24px;
+    }
+
+    .badge-donation {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(0, 163, 42, 0.20);
+        padding: 8px 20px;
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        color: #86efac;
+        margin-bottom: 20px;
+        border: 1px solid rgba(134, 239, 172, 0.35);
+        font-weight: 600;
+    }
+
+    .donation-benefits {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 0;
+    }
+
+    .donation-benefits li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 13px;
+        font-size: 0.95rem;
+        color: rgba(255, 255, 255, 0.95);
+    }
+
+    .donation-benefits li i {
+        color: #86efac;
+        font-size: 1.05rem;
+        flex-shrink: 0;
+    }
+
+    .donation-card {
+        background: rgba(255, 255, 255, 0.10);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.20);
+        border-radius: 26px;
+        padding: 36px 32px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    }
+
+    .donation-card > h3 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .donation-card > h3 i {
+        color: #86efac;
+    }
+
+    .donation-card .subtitle {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-bottom: 24px;
+    }
+
+    .donation-channel {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 20px;
+        padding: 20px 20px 16px;
+        margin-bottom: 18px;
+    }
+
+    .donation-channel-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 16px;
+        padding-bottom: 14px;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.18);
+    }
+
+    .channel-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+
+    .channel-icon.mobile-money {
+        background: linear-gradient(135deg, var(--wp-accent), var(--wp-accent-hover));
+        color: #fff;
+    }
+
+    .donation-channel-header h4 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin: 0;
+        color: #fff;
+    }
+
+    .channel-tag {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.65);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .donation-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 0;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .donation-info-row .label {
+        font-size: 0.84rem;
+        color: rgba(255, 255, 255, 0.75);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .donation-info-row .label i {
+        color: #86efac;
+        font-size: 0.85rem;
+        width: 16px;
+        text-align: center;
+    }
+
+    .donation-info-row .value-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .donation-info-row .value {
+        font-size: 0.94rem;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: 0.3px;
+    }
+
+    .btn-copy {
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.20);
+        color: #fff;
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .btn-copy:hover {
+        background: var(--wp-accent);
+        border-color: var(--wp-accent);
+        color: #fff;
+        transform: scale(1.08);
+    }
+
+    .btn-copy.copied {
+        background: #10b981;
+        border-color: #10b981;
+        color: #fff;
+    }
+
+    .donation-note {
+        display: flex;
+        gap: 12px;
+        background: rgba(0, 163, 42, 0.12);
+        border: 1px solid rgba(134, 239, 172, 0.30);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-top: 8px;
+    }
+
+    .donation-note i {
+        color: #86efac;
+        font-size: 1.1rem;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    .donation-note p {
+        font-size: 0.84rem;
+        color: rgba(255, 255, 255, 0.92);
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .donation-note a {
+        color: #86efac;
+        font-weight: 600;
+        border-bottom: 1px solid rgba(134, 239, 172, 0.4);
+    }
+
+    .donation-note a:hover {
+        color: #bbf7d0;
+        border-bottom-color: #bbf7d0;
+    }
+
+    .donation-note strong {
+        color: #fff;
+    }
+
+    .donation-secure {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+        font-size: 0.78rem;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+    }
+
+    .donation-secure i {
+        color: #86efac;
+    }
+
+    /* ============================================================
+       PARTENAIRES
+    ============================================================ */
+    .partners-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+    }
+
+    .partner-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 12px;
+        padding: 22px 16px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--wp-text-muted);
+        text-align: center;
+        transition: all 0.3s ease;
+        letter-spacing: 0.2px;
+    }
+
+    .partner-item:hover {
+        transform: translateY(-3px);
+        border-color: var(--wp-primary-light);
+        color: var(--wp-primary);
+        box-shadow: var(--wp-shadow-md);
+    }
+
+    .partner-item i {
+        color: var(--wp-primary-light);
+        font-size: 1.05rem;
+        transition: color 0.3s ease;
+    }
+
+    .partner-item:hover i {
+        color: var(--wp-primary);
+    }
+
+    /* ============================================================
+       NEWSLETTER
+    ============================================================ */
+    .newsletter-section {
+        background: linear-gradient(135deg, var(--wp-primary-hover), var(--wp-primary));
+        padding: clamp(3rem, 5vw, 4.5rem) 0;
+        color: #fff;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .newsletter-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(114, 174, 230, 0.18) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .newsletter-section::after {
+        content: '';
+        position: absolute;
+        bottom: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(114, 174, 230, 0.12) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .newsletter-section .container {
+        position: relative;
+        z-index: 2;
+    }
+
+    .newsletter-section h2 {
+        font-size: clamp(1.5rem, 3vw, 2.1rem);
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 12px;
+        letter-spacing: -0.02em;
+    }
+
+    .newsletter-section p {
+        font-size: clamp(0.92rem, 1.4vw, 1.02rem);
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 26px;
+        max-width: 620px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.7;
+    }
+
+    .newsletter-form {
+        display: flex;
+        gap: 10px;
+        max-width: 560px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.12);
+        padding: 8px;
+        border-radius: 9999px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(8px);
+    }
+
+    .newsletter-form input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 12px 20px;
+        font-size: 0.95rem;
+        color: #fff;
+        outline: none;
+        font-family: inherit;
+        min-width: 0;
+    }
+
+    .newsletter-form input::placeholder {
+        color: rgba(255, 255, 255, 0.65);
+    }
+
+    .newsletter-form button {
+        background: #fff;
+        color: var(--wp-primary);
+        border: none;
+        padding: 12px 26px;
+        border-radius: 9999px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.25s ease;
+        white-space: nowrap;
+        font-family: inherit;
+    }
+
+    .newsletter-form button:hover {
+        background: var(--wp-accent);
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 163, 42, 0.40);
+    }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 1200px) {
+        .news-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .hero-content {
+            grid-template-columns: 1fr;
+            gap: 3rem;
+        }
+
+        .hero {
+            min-height: auto;
+            padding: 5rem 0 4rem;
+        }
+
+        .hero-stats {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .hero-stat-item {
+            padding: 20px 12px;
+        }
+
+        .hero-stat-label {
+            font-size: 0.68rem;
+        }
+
+        .mission-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .mission-image .floating-badge {
+            right: 20px;
+        }
+
+        .donation-grid {
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+
+        .donation-text h3 {
+            font-size: 1.6rem;
+        }
+
+        .news-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .hero {
+            padding: 4rem 0 4.5rem;
+        }
+
+        .hero-stats {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .hero-title {
+            font-size: 2.1rem;
+        }
+
+        .hero-cta {
+            padding: 13px 24px;
+            font-size: 0.9rem;
+        }
+
+        .hero-cta-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .hero-cta {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .hero-scroll {
+            bottom: 16px;
+            width: 38px;
+            height: 38px;
+        }
+
+        .news-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .hero-stat-item {
+            padding: 18px 12px;
+        }
+
+        .hero-stat-number {
+            font-size: 1.6rem;
+        }
+
+        .donation-card {
+            padding: 24px 18px;
+        }
+
+        .donation-channel {
+            padding: 16px 14px 12px;
+        }
+
+        .donation-info-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .donation-info-row .value-group {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .donation-text h3 {
+            font-size: 1.4rem;
+        }
+
+        .newsletter-form {
+            flex-direction: column;
+            border-radius: 18px;
+        }
+
+        .newsletter-form button {
+            width: 100%;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
+        .newsletter-form input {
+            text-align: center;
+        }
+
+        .service-card,
+        .testimonial-card {
+            padding: 24px 20px;
+        }
+
+        .partner-item {
+            font-size: 0.8rem;
+            padding: 18px 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    /* ============================================================
+       COPIE DU NUMÉRO DE DON
+    ============================================================ */
+    function copyToClipboard(elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const text = el.textContent.trim();
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showCopyFeedback(elementId);
+            }).catch(() => {
+                fallbackCopy(text, elementId);
+            });
+        } else {
+            fallbackCopy(text, elementId);
+        }
+    }
+
+    function fallbackCopy(text, elementId) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showCopyFeedback(elementId);
+        } catch (err) {
+            alert('Impossible de copier. Veuillez copier manuellement : ' + text);
+        }
+        document.body.removeChild(textarea);
+    }
+
+    function showCopyFeedback(elementId) {
+        const valueEl = document.getElementById(elementId);
+        if (!valueEl) return;
+        const btn = valueEl.parentElement.querySelector('.btn-copy');
+        if (!btn) return;
+
+        const originalHTML = btn.innerHTML;
+        btn.classList.add('copied');
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        showDonationToast('Copié : ' + valueEl.textContent.trim());
+
+        setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.innerHTML = originalHTML;
+        }, 2000);
+    }
+
+    function showDonationToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, var(--wp-primary), var(--wp-primary-hover));
+            color: #fff;
+            padding: 14px 22px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 8px 24px rgba(34, 113, 177, 0.4);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        `;
+        toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        });
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 2500);
+    }
+
+    /* ============================================================
+       ANIMATION COMPTEURS HERO
+    ============================================================ */
+    (function () {
+        const counters = document.querySelectorAll('.hero-stat-number[data-count]');
+        if (!counters.length) return;
+
+        const animateCount = (el) => {
+            const target = parseInt(el.getAttribute('data-count'), 10);
+            const suffix = el.getAttribute('data-suffix') || '';
+            const duration = 2000;
+            const start = performance.now();
+
+            const step = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const value = Math.floor(eased * target);
+                el.textContent = value.toLocaleString('fr-FR') + suffix;
+                if (progress < 1) requestAnimationFrame(step);
+                else el.textContent = target.toLocaleString('fr-FR') + suffix;
+            };
+            requestAnimationFrame(step);
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCount(entry.target);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.4 });
+
+        counters.forEach(c => observer.observe(c));
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord - Enseignant{% endblock %}
+{% block page_heading %}Tableau de bord{% endblock %}
+{% block page_subtitle %}Classe : {{ classe_nom }}{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Enseignant</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== STATISTIQUES - Ligne 1 ===== -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-xl-4 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_eleves }}</div>
+                    <div class="stat-label">Élèves</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_cours }}</div>
+                    <div class="stat-label">Cours</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_notes }}</div>
+                    <div class="stat-label">Notes saisies</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== STATISTIQUES - Ligne 2 ===== -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-xl-6 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ moyenne_classe|floatformat:2 }}</div>
+                    <div class="stat-label">Moyenne de la classe</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-flag-checkered"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ taux_reussite_classe }}%</div>
+                    <div class="stat-label">Taux de réussite</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== CLASSEMENT DES ÉLÈVES ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-trophy" style="color:var(--wp-primary);"></i> Classement des élèves</h3>
+        <span class="wp-count-badge">{{ eleves_moyennes|length }} élève{{ eleves_moyennes|length|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if eleves_moyennes %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th style="width:70px;">Rang</th>
+                        <th>Élève</th>
+                        <th style="text-align:right;">Moyenne /20</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in eleves_moyennes %}
+                    <tr>
+                        <td data-label="Rang">
+                            {% if forloop.counter == 1 %}
+                                <span class="wp-badge wp-badge-warning" style="font-weight:700;">
+                                    <i class="fas fa-crown"></i> 1
+                                </span>
+                            {% elif forloop.counter == 2 %}
+                                <span class="wp-badge wp-badge-neutral" style="font-weight:700; background:linear-gradient(135deg, #94a3b8, #cbd5e1); color:#fff;">
+                                    <i class="fas fa-medal"></i> 2
+                                </span>
+                            {% elif forloop.counter == 3 %}
+                                <span class="wp-badge wp-badge-neutral" style="font-weight:700; background:linear-gradient(135deg, #b45309, #d97706); color:#fff;">
+                                    <i class="fas fa-award"></i> 3
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-neutral" style="font-weight:700;">
+                                    {{ forloop.counter }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Élève">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-user-graduate" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ item.nom }}
+                            </strong>
+                        </td>
+                        <td data-label="Moyenne" style="text-align:right;">
+                            {% if item.moyenne >= 14 %}
+                                <span class="wp-badge wp-badge-success" style="font-weight:700; font-size:13px;">
+                                    {{ item.moyenne|floatformat:2 }}
+                                </span>
+                            {% elif item.moyenne >= 10 %}
+                                <span class="wp-badge wp-badge-info" style="font-weight:700; font-size:13px;">
+                                    {{ item.moyenne|floatformat:2 }}
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger" style="font-weight:700; font-size:13px;">
+                                    {{ item.moyenne|floatformat:2 }}
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-trophy"></i>
+            <p>Aucune note enregistrée pour cette classe.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .stat-card-modern {
+        position: relative;
+        overflow: hidden;
+        transition: transform var(--wp-transition), box-shadow var(--wp-transition);
+    }
+    .stat-card-modern:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--wp-shadow-md);
+    }
+    .stat-card-modern .stat-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        background: var(--wp-primary-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 22px;
+        color: var(--wp-primary);
+        transition: background var(--wp-transition), color var(--wp-transition), transform var(--wp-transition);
+    }
+    .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary);
+        color: #fff;
+        transform: scale(1.05) rotate(-4deg);
+    }
+    .stat-card-modern .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        line-height: 1.2;
+        letter-spacing: -0.5px;
+    }
+    .stat-card-modern .stat-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--wp-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+    .stat-card-modern .stat-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        opacity: 0.6;
+        transition: height var(--wp-transition), opacity var(--wp-transition);
+    }
+    .stat-card-modern:hover .stat-bar {
+        height: 4px;
+        opacity: 1;
+    }
+    [data-bs-theme="dark"] .stat-card-modern .stat-icon {
+        background: rgba(34, 113, 177, 0.20);
+        color: var(--wp-primary-light);
+    }
+    [data-bs-theme="dark"] .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary);
+        color: #fff;
+    }
+</style>
+{% endblock %}

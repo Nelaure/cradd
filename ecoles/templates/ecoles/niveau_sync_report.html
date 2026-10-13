@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Rapport de synchronisation - Cradd{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'ecoles:dashboard' %}">Tableau de bord</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'ecoles:niveau_list' %}">Niveaux</a></li>
+            <li class="breadcrumb-item active">Rapport</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm mb-4 {% if rapport.success %}border-success{% else %}border-warning{% endif %}">
+        <div class="card-header {% if rapport.success %}bg-success{% else %}bg-warning{% endif %} text-white">
+            <h4 class="mb-0">
+                {% if rapport.instances_traitees == 0 %}
+                    <i class="fas fa-info-circle me-2"></i> Aucune synchronisation nécessaire
+                {% elif rapport.success %}
+                    <i class="fas fa-check-circle me-2"></i> Synchronisation réussie
+                {% else %}
+                    <i class="fas fa-exclamation-triangle me-2"></i> Synchronisation partielle
+                {% endif %}
+            </h4>
+        </div>
+        <div class="card-body">
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="text-muted mb-1">Niveau de référence</h6>
+                    <p class="h5 mb-0">{{ rapport.niveau_ref }}</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <h6 class="text-muted mb-1">Date</h6>
+                    <p class="mb-0">{{ rapport.date_sync|default:"-" }}</p>
+                    {% if rapport.utilisateur %}
+                        <small class="text-muted">Par {{ rapport.utilisateur }}</small>
+                    {% endif %}
+                    {% if rapport.action_source %}
+                        <br><small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Origine : {{ rapport.action_source }}
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ===== BANDEAU PRINCIPAL ===== -->
+            {% if rapport.instances_traitees == 0 %}
+                {# Cas : aucune instance à synchroniser #}
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <i class="fas fa-info-circle fa-2x me-3"></i>
+                    <div>
+                        <h5 class="alert-heading mb-1">Aucune école à synchroniser</h5>
+                        <p class="mb-0">
+                            Cette référence n'a pas encore été affectée à une école.
+                            {% if rapport.message %}
+                                <br><small>{{ rapport.message }}</small>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+            {% elif rapport.nb_ecoles_affectees > 0 %}
+                {# Cas : des modifications ont été appliquées #}
+                <div class="alert alert-primary d-flex align-items-center" role="alert">
+                    <i class="fas fa-school fa-2x me-3"></i>
+                    <div>
+                        <h5 class="alert-heading mb-1">
+                            {{ rapport.nb_ecoles_affectees }} école(s) affectée(s)
+                        </h5>
+                        <p class="mb-0">
+                            Sur <strong>{{ rapport.instances_traitees }}</strong> école(s) traitée(s).
+                            {% if rapport.nb_ecoles_affectees == rapport.instances_traitees %}
+                                <span class="badge bg-success ms-2">
+                                    <i class="fas fa-check"></i> Toutes modifiées
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark ms-2">
+                                    {{ rapport.instances_traitees|add:"-"|add:rapport.nb_ecoles_affectees }} sans changement
+                                </span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+            {% else %}
+                {# Cas : instances traitées mais aucune modification (déjà à jour) #}
+                <div class="alert alert-secondary d-flex align-items-center" role="alert">
+                    <i class="fas fa-check-circle fa-2x me-3"></i>
+                    <div>
+                        <h5 class="alert-heading mb-1">
+                            {{ rapport.instances_traitees }} école(s) déjà à jour
+                        </h5>
+                        <p class="mb-0">
+                            Toutes les instances étaient déjà synchronisées avec la référence.
+                            Aucune modification nécessaire.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if rapport.message and rapport.instances_traitees > 0 %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> {{ rapport.message }}
+                </div>
+            {% endif %}
+
+            {% if rapport.force_delete_used %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Mode force_delete activé</strong> : des notes ont pu être supprimées.
+                </div>
+            {% endif %}
+
+            <h5 class="border-bottom pb-2 mb-3">
+                <i class="fas fa-chart-bar me-2"></i> Statistiques globales
+            </h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-3 col-6">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center py-3">
+                            <h2 class="mb-0">{{ rapport.instances_traitees }}</h2>
+                            <small>École(s) traitée(s)</small>
+                            {% if rapport.instances_traitees > 0 %}
+                            <div style="font-size: 0.7rem; opacity: 0.9; margin-top: 4px;">
+                                {% if rapport.nb_ecoles_affectees == rapport.instances_traitees %}
+                                    <i class="fas fa-check-circle"></i> Toutes affectées
+                                {% else %}
+                                    <i class="fas fa-info-circle"></i> {{ rapport.nb_ecoles_affectees }} affectée(s)
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center py-3">
+                            <h2 class="mb-0">{{ rapport.total_operations }}</h2>
+                            <small>Opération(s)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body text-center py-3">
+                            <h2 class="mb-0">{{ rapport.evaluations_bloquees }}</h2>
+                            <small>Conflit(s) bloqué(s)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body text-center py-3">
+                            <h2 class="mb-0">{{ rapport.doublons_nettoyes }}</h2>
+                            <small>Doublon(s) nettoyé(s)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="border-bottom pb-2 mb-3">
+                <i class="fas fa-list-ul me-2"></i> Détail des opérations
+            </h5>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Catégorie</th>
+                            <th class="text-center">Ajoutés</th>
+                            <th class="text-center">Modifiés</th>
+                            <th class="text-center">Supprimés</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><i class="fas fa-layer-group text-primary me-2"></i> Classes</td>
+                            <td class="text-center"><span class="badge bg-success">{{ rapport.classes_ajoutees }}</span></td>
+                            <td class="text-center"><span class="badge bg-info">{{ rapport.classes_modifiees }}</span></td>
+                            <td class="text-center text-muted">—</td>
+                        </tr>
+                        <tr>
+                            <td><i class="fas fa-book text-primary me-2"></i> Cours</td>
+                            <td class="text-center"><span class="badge bg-success">{{ rapport.cours_ajoutes }}</span></td>
+                            <td class="text-center"><span class="badge bg-info">{{ rapport.cours_modifies }}</span></td>
+                            <td class="text-center text-muted">—</td>
+                        </tr>
+                        <tr>
+                            <td><i class="fas fa-clipboard-check text-primary me-2"></i> Configurations d'évaluation</td>
+                            <td class="text-center"><span class="badge bg-success">{{ rapport.evaluations_ajoutees }}</span></td>
+                            <td class="text-center"><span class="badge bg-info">{{ rapport.evaluations_modifiees }}</span></td>
+                            <td class="text-center"><span class="badge bg-danger">{{ rapport.evaluations_supprimees }}</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            {% if rapport.details_ecoles %}
+                <h5 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-school me-2"></i> Détails par école
+                    ({{ rapport.details_ecoles|length }})
+                </h5>
+
+                <div class="accordion" id="accordionEcoles">
+                    {% for detail in rapport.details_ecoles %}
+                    {% with total_ecole=detail.classes_ajoutees|add:detail.classes_modifiees|add:detail.cours_ajoutes|add:detail.cours_modifies|add:detail.evaluations_ajoutees|add:detail.evaluations_modifiees|add:detail.evaluations_supprimees %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-{{ forloop.counter }}">
+                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#collapse-{{ forloop.counter }}">
+                                <i class="fas fa-school me-2"></i>
+                                <strong>{{ detail.ecole }}</strong>
+                                {% if detail.erreurs %}
+                                    <span class="badge bg-danger ms-2">{{ detail.erreurs|length }} erreur(s)</span>
+                                {% endif %}
+                                {% if total_ecole > 0 %}
+                                    <span class="badge bg-success ms-2">
+                                        <i class="fas fa-check"></i> {{ total_ecole }} modification(s)
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary ms-2">
+                                        <i class="fas fa-minus"></i> Aucun changement
+                                    </span>
+                                {% endif %}
+                            </button>
+                        </h2>
+                        <div id="collapse-{{ forloop.counter }}"
+                             class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                             data-bs-parent="#accordionEcoles">
+                            <div class="accordion-body">
+
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-3 col-6">
+                                        <div class="p-2 border rounded text-center">
+                                            <small class="text-muted">Classes traitées</small>
+                                            <div class="h5 mb-0">{{ detail.classes_traitees }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-6">
+                                        <div class="p-2 border rounded text-center">
+                                            <small class="text-muted">Classes ajoutées</small>
+                                            <div class="h5 mb-0 text-success">+{{ detail.classes_ajoutees }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-6">
+                                        <div class="p-2 border rounded text-center">
+                                            <small class="text-muted">Cours ajoutés</small>
+                                            <div class="h5 mb-0 text-success">+{{ detail.cours_ajoutes }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-6">
+                                        <div class="p-2 border rounded text-center">
+                                            <small class="text-muted">Cours modifiés</small>
+                                            <div class="h5 mb-0 text-info">~{{ detail.cours_modifies }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {% if detail.erreurs %}
+                                    <div class="alert alert-danger mb-0">
+                                        <h6 class="alert-heading">
+                                            <i class="fas fa-exclamation-circle me-1"></i>
+                                            Erreurs :
+                                        </h6>
+                                        <ul class="mb-0">
+                                            {% for erreur in detail.erreurs %}
+                                                <li><small>{{ erreur }}</small></li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% else %}
+                                    <p class="text-success mb-0">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        Aucune erreur.
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a href="{% url 'ecoles:niveau_list' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-1"></i> Retour à la liste
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recherche d'élève - Parent{% endblock %}
+
+{% block page_title %}Rechercher un élève{% endblock %}
+{% block page_subtitle %}Consultez les résultats de votre enfant{% endblock %}
+
+{% block breadcrumb %}
+<span class="text-muted">Recherche</span>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Colonne gauche : formulaire -->
+    <div class="col-lg-4">
+        <div class="card-glass">
+            <div class="card-header"><i class="fas fa-search"></i> Critères de recherche</div>
+            <div class="card-body">
+                <form method="get" action="{% url 'ecoles:parent_recherche' %}">
+                    <div class="mb-3">
+                        <label for="nom_eleve" class="form-label">Nom ou prénom de l'élève</label>
+                        <input type="text" name="nom_eleve" id="nom_eleve" class="form-control" value="{{ nom_eleve }}" placeholder="Saisissez un nom..." required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="annee" class="form-label">Année scolaire</label>
+                        <select name="annee" id="annee" class="form-select">
+                            {% for annee in annees %}
+                            <option value="{{ annee.id }}" {% if annee.id == annee_scolaire.id %}selected{% endif %}>{{ annee.annee }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="periode" class="form-label">Période</label>
+                        <select name="periode" id="periode" class="form-select">
+                            <option value="">Toutes les périodes</option>
+                            <option value="trimestre" {% if periode == 'trimestre' %}selected{% endif %}>Trimestres</option>
+                            <option value="semestre" {% if periode == 'semestre' %}selected{% endif %}>Semestres</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Rechercher</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Colonne droite : résultats -->
+    <div class="col-lg-8">
+        {% if resultats %}
+            <div class="card-glass {% if resultats.reussi %}border-success{% else %}border-danger{% endif %}">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                    <span>
+                        <i class="fas fa-user-graduate"></i> Résultats de {{ resultats.eleve.get_nom_complet }}
+                        <span class="badge {% if resultats.reussi %}bg-success{% else %}bg-danger{% endif %} ms-2">
+                            {% if resultats.reussi %}Réussi{% else %}Échec{% endif %}
+                        </span>
+                    </span>
+                    <span><strong>Année :</strong> {{ resultats.annee.annee }}</span>
+                </div>
+                <div class="card-body">
+                    <!-- Résumé -->
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <strong>Moyenne générale :</strong> {{ resultats.moyenne_generale|floatformat:2 }} / 20
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>Pourcentage :</strong> {{ resultats.pourcentage_general|floatformat:1 }}%
+                        </div>
+                    </div>
+
+                    <!-- Animation 3D améliorée -->
+                    {% if resultats.reussi %}
+                        <div class="text-center my-4 position-relative" style="min-height: 180px;">
+                            <div class="success-animation">
+                                <i class="fas fa-trophy text-warning display-1 animate-float" style="font-size: 4.5rem;"></i>
+                                <div class="confetti-container">
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                    <div class="confetti"></div>
+                                </div>
+                            </div>
+                            <h4 class="text-success mt-3">Félicitations !</h4>
+                            <p class="text-muted">Votre enfant a réussi son année scolaire.</p>
+                        </div>
+                    {% else %}
+                        <div class="text-center my-4">
+                            <i class="fas fa-frown text-danger display-1"></i>
+                            <h4 class="text-danger mt-3">Encouragez-le !</h4>
+                            <p class="text-muted">Il peut faire mieux avec un peu plus de travail.</p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Détail des résultats par cours -->
+                    <h5>Détail des résultats</h5>
+                    {% for cycle_info in resultats.cycles_info %}
+                        <h6 class="text-gold mt-3"><i class="fas fa-sync-alt me-1"></i> Cycle {{ cycle_info.cycle_num }}</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="bg-gold-soft">
+                                    <tr>
+                                        <th>Cours</th>
+                                        {% for periode in cycle_info.periodes %}
+                                        <th class="text-center">Période {{ periode }}</th>
+                                        {% endfor %}
+                                        <th class="text-center">Examen</th>
+                                        <th class="text-center">Total (pts)</th>
+                                        <th class="text-center">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cours_id, cours_data in resultats.resultats_par_cours.items %}
+                                    <tr>
+                                        <td><strong>{{ cours_data.cours_nom }}</strong></td>
+                                        {% for periode in cycle_info.periodes %}
+                                        <td class="text-center">
+                                            {% for eval in cours_data.evaluations %}
+                                                {% if eval.cycle == cycle_info.cycle_num and eval.type == 'periode' and eval.periode == periode %}
+                                                    {% if eval.points_obtenus is not None %}
+                                                        {{ eval.points_obtenus }}/{{ eval.points_max }}
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% empty %}
+                                                -
+                                            {% endfor %}
+                                        </td>
+                                        {% endfor %}
+                                        <td class="text-center">
+                                            {% for eval in cours_data.evaluations %}
+                                                {% if eval.cycle == cycle_info.cycle_num and eval.type == 'examen' %}
+                                                    {% if eval.points_obtenus is not None %}
+                                                        {{ eval.points_obtenus }}/{{ eval.points_max }}
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% empty %}
+                                                -
+                                            {% endfor %}
+                                        </td>
+                                        <!-- Totaux du cycle pour ce cours -->
+                                        <td class="text-center">
+                                            {% for cycle_num, total in cours_data.cycles_totals.items %}
+                                                {% if cycle_num == cycle_info.cycle_num %}
+                                                    {% if total.total_possible > 0 %}
+                                                        {{ total.total_obtenu }}/{{ total.total_possible }}
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% for cycle_num, total in cours_data.cycles_totals.items %}
+                                                {% if cycle_num == cycle_info.cycle_num %}
+                                                    {% if total.total_possible > 0 %}
+                                                        {{ total.pourcentage|floatformat:1 }}%
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+
+                                    <!-- Lignes TOTAL globales -->
+                                    <tr class="table-info">
+                                        <td><strong>Total (pts)</strong></td>
+                                        {% for total in cycle_info.totals_par_periode %}
+                                        <td class="text-center">
+                                            {% if total.total_possible > 0 %}
+                                                {{ total.total_obtenu }}/{{ total.total_possible }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        {% endfor %}
+                                        <td class="text-center">
+                                            {% if cycle_info.totals_examen.total_possible > 0 %}
+                                                {{ cycle_info.totals_examen.total_obtenu }}/{{ cycle_info.totals_examen.total_possible }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if cycle_info.total_cycle_possible > 0 %}
+                                                {{ cycle_info.total_cycle_obtenu }}/{{ cycle_info.total_cycle_possible }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr class="table-secondary">
+                                        <td><strong>Total (%)</strong></td>
+                                        {% for total in cycle_info.totals_par_periode %}
+                                        <td class="text-center">
+                                            {% if total.total_possible > 0 %}
+                                                {{ total.pourcentage|floatformat:1 }}%
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        {% endfor %}
+                                        <td class="text-center">
+                                            {% if cycle_info.totals_examen.total_possible > 0 %}
+                                                {{ cycle_info.totals_examen.pourcentage|floatformat:1 }}%
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td></td>
+                                        <td class="text-center">
+                                            {% if cycle_info.total_cycle_possible > 0 %}
+                                                {{ cycle_info.total_cycle_pourcentage|floatformat:1 }}%
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    {% empty %}
+                        <div class="alert alert-info">Aucune donnée détaillée disponible.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% elif eleve_trouve is None and nom_eleve %}
+            <div class="alert alert-warning">Aucun élève trouvé avec ce nom.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .confetti-container {
+        position: relative;
+        height: 150px;
+        overflow: hidden;
+        margin-top: 10px;
+        width: 100%;
+    }
+    .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        animation: confetti-fall 4s infinite linear;
+        opacity: 0.9;
+    }
+    .confetti:nth-child(1) { left: 5%; background: #f44336; animation-delay: 0s; }
+    .confetti:nth-child(2) { left: 12%; background: #e91e63; animation-delay: 0.5s; }
+    .confetti:nth-child(3) { left: 20%; background: #9c27b0; animation-delay: 1s; }
+    .confetti:nth-child(4) { left: 28%; background: #3f51b5; animation-delay: 1.5s; }
+    .confetti:nth-child(5) { left: 36%; background: #2196f3; animation-delay: 0.2s; }
+    .confetti:nth-child(6) { left: 44%; background: #4caf50; animation-delay: 0.8s; }
+    .confetti:nth-child(7) { left: 52%; background: #ff9800; animation-delay: 1.3s; }
+    .confetti:nth-child(8) { left: 60%; background: #ff5722; animation-delay: 1.8s; }
+    .confetti:nth-child(9) { left: 68%; background: #795548; animation-delay: 0.3s; }
+    .confetti:nth-child(10) { left: 76%; background: #607d8b; animation-delay: 0.9s; }
+    .confetti:nth-child(11) { left: 84%; background: #8bc34a; animation-delay: 1.4s; }
+    .confetti:nth-child(12) { left: 92%; background: #ffeb3b; animation-delay: 1.9s; }
+    .confetti:nth-child(13) { left: 15%; background: #ff6f00; animation-delay: 0.6s; }
+    .confetti:nth-child(14) { left: 45%; background: #d500f9; animation-delay: 1.1s; }
+    .confetti:nth-child(15) { left: 75%; background: #00bcd4; animation-delay: 1.6s; }
+    @keyframes confetti-fall {
+        0% { transform: translateY(-100px) rotate(0deg) scale(0.5); opacity: 1; }
+        100% { transform: translateY(300px) rotate(720deg) scale(1.2); opacity: 0; }
+    }
+    .success-animation {
+        position: relative;
+        display: inline-block;
+    }
+    .animate-float {
+        animation: float 3s ease-in-out infinite;
+        text-shadow: 0 10px 30px rgba(255, 193, 7, 0.5);
+    }
+    @keyframes float {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-30px) scale(1.05); }
+    }
+    .card-glass.border-success {
+        border-color: #2e7d32 !important;
+        border-width: 3px;
+    }
+    .card-glass.border-danger {
+        border-color: #b91c1c !important;
+        border-width: 3px;
+    }
+    .bg-gold-soft {
+        background-color: rgba(46, 125, 50, 0.08);
+    }
+    .text-gold {
+        color: #2e7d32;
+    }
+</style>
+{% endblock %}

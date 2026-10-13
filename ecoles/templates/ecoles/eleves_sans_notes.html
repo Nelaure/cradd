@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Élèves sans notes - CRADD{% endblock %}
+{% block page_heading %}Élèves sans notes{% endblock %}
+{% block page_subtitle %}Liste des élèves n'ayant pas encore de notes pour une évaluation donnée{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Élèves sans notes</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== EN-TÊTE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-user-slash" style="color:var(--wp-primary);"></i>
+                Élèves sans notes
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Identifiez les élèves qui n'ont pas encore de notes pour un cours et une année donnés.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ===== FILTRES ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-filter"></i> Filtres de recherche</h3>
+    </div>
+    <div class="wp-card-body">
+        <form method="get" id="filtreForm">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="cours" class="wp-form-label">
+                        <i class="fas fa-book"></i> Cours <span style="color:var(--wp-danger);">*</span>
+                    </label>
+                    <select name="cours" id="cours" class="wp-select select2" required>
+                        <option value="">--- Sélectionner ---</option>
+                        {% for c in cours_list %}
+                            <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_cours %}selected{% endif %}>
+                                {{ c.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="annee" class="wp-form-label">
+                        <i class="fas fa-calendar-alt"></i> Année scolaire <span style="color:var(--wp-danger);">*</span>
+                    </label>
+                    <select name="annee" id="annee" class="wp-select select2" required>
+                        <option value="">--- Sélectionner ---</option>
+                        {% for a in annees %}
+                            <option value="{{ a.id }}" {% if a.id|stringformat:"s" == selected_annee %}selected{% endif %}>
+                                {{ a.annee }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="classe" class="wp-form-label">
+                        <i class="fas fa-users"></i> Classe <span style="color:var(--wp-text-light); font-weight:400;">(optionnel)</span>
+                    </label>
+                    <select name="classe" id="classe" class="wp-select select2">
+                        <option value="">--- Toutes ---</option>
+                        {% for cl in classes %}
+                            <option value="{{ cl.id }}" {% if cl.id|stringformat:"s" == classe_selected %}selected{% endif %}>
+                                {{ cl.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="evaluation" class="wp-form-label">
+                        <i class="fas fa-clipboard-check"></i> Évaluation
+                    </label>
+                    <select name="evaluation" id="evaluation" class="wp-select select2">
+                        <option value="">--- Toutes les évaluations du cours ---</option>
+                        {% for eval in eval_configs %}
+                            <option value="{{ eval.id }}" {% if selected_evaluation == eval.id|stringformat:"s" %}selected{% endif %}>
+                                Cycle {{ eval.cycle_num }}
+                                {% if eval.type == 'periode' %}
+                                    - Période {{ eval.periode_num }}
+                                {% else %}
+                                    - Examen
+                                {% endif %}
+                                ({{ eval.points_max }} pts)
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div class="wp-form-help">
+                        <i class="fas fa-info-circle"></i>
+                        Sélectionnez un cours d'abord pour voir les évaluations disponibles.
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="wp-form-actions-inline">
+                        <button type="submit" class="wp-btn">
+                            <i class="fas fa-search"></i> Filtrer
+                        </button>
+                        <a href="{% url 'ecoles:eleves_sans_notes' %}" class="wp-btn outline">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== RÉSULTATS ===== -->
+{% if has_filter %}
+    {% if eleves %}
+    <div class="wp-card">
+        <div class="wp-card-header">
+            <h3><i class="fas fa-list"></i> Élèves sans notes</h3>
+            <span class="wp-count-badge">{{ eleves.paginator.count }} élève{{ eleves.paginator.count|pluralize }}</span>
+        </div>
+
+        <div class="wp-card-body" style="padding:0;">
+            <div style="overflow-x:auto;">
+                <table class="wp-table datatable">
+                    <thead>
+                        <tr>
+                            <th>Matricule</th>
+                            <th>Nom complet</th>
+                            <th>Classe</th>
+                            <th>École</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eleve in eleves %}
+                        <tr>
+                            <td data-label="Matricule">
+                                <span class="wp-code">{{ eleve.matricule|default:"—" }}</span>
+                            </td>
+                            <td data-label="Nom complet">
+                                <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                    <i class="fas fa-user-graduate" style="color:var(--wp-primary); font-size:12px;"></i>
+                                    {{ eleve.get_nom_complet }}
+                                </strong>
+                            </td>
+                            <td data-label="Classe">
+                                <span class="wp-badge wp-badge-neutral">
+                                    <i class="fas fa-users"></i> {{ eleve.classe.nom|default:"—" }}
+                                </span>
+                            </td>
+                            <td data-label="École">
+                                <span style="font-size:12.5px;">
+                                    <i class="fas fa-school" style="color:var(--wp-primary); font-size:11px;"></i>
+                                    {{ eleve.ecole.nom|default:"—" }}
+                                </span>
+                            </td>
+                            <td data-label="Actions" style="text-align:right;">
+                                <div class="wp-actions" style="justify-content:flex-end;">
+                                    <a href="{% url 'eleves:eleve_detail' eleve.id %}"
+                                       class="wp-action-btn info"
+                                       title="Voir l'élève">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'ecoles:resultat_create' %}?eleve={{ eleve.id }}&cours={{ selected_cours }}&annee_scolaire={{ selected_annee }}"
+                                       class="wp-action-btn success"
+                                       title="Saisir les notes">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PAGINATION ===== -->
+    {% if eleves.has_other_pages %}
+    <div class="wp-card" style="margin-top:20px;">
+        <div class="wp-card-body">
+            <div class="wp-pagination">
+                {% if eleves.has_previous %}
+                    <a href="?cours={{ selected_cours }}&annee={{ selected_annee }}{% if classe_selected %}&classe={{ classe_selected }}{% endif %}{% if selected_evaluation %}&evaluation={{ selected_evaluation }}{% endif %}&page=1"
+                       class="wp-page-link" title="Première page">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                    <a href="?cours={{ selected_cours }}&annee={{ selected_annee }}{% if classe_selected %}&classe={{ classe_selected }}{% endif %}{% if selected_evaluation %}&evaluation={{ selected_evaluation }}{% endif %}&page={{ eleves.previous_page_number }}"
+                       class="wp-page-link">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                {% else %}
+                    <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                    <span class="wp-page-link disabled"><i class="fas fa-chevron-left"></i></span>
+                {% endif %}
+
+                {% for i in eleves.paginator.page_range %}
+                    {% if eleves.number == i %}
+                        <span class="wp-page-link active">{{ i }}</span>
+                    {% elif i > eleves.number|add:"-3" and i < eleves.number|add:"3" %}
+                        <a href="?cours={{ selected_cours }}&annee={{ selected_annee }}{% if classe_selected %}&classe={{ classe_selected }}{% endif %}{% if selected_evaluation %}&evaluation={{ selected_evaluation }}{% endif %}&page={{ i }}"
+                           class="wp-page-link">{{ i }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if eleves.has_next %}
+                    <a href="?cours={{ selected_cours }}&annee={{ selected_annee }}{% if classe_selected %}&classe={{ classe_selected }}{% endif %}{% if selected_evaluation %}&evaluation={{ selected_evaluation }}{% endif %}&page={{ eleves.next_page_number }}"
+                       class="wp-page-link">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    <a href="?cours={{ selected_cours }}&annee={{ selected_annee }}{% if classe_selected %}&classe={{ classe_selected }}{% endif %}{% if selected_evaluation %}&evaluation={{ selected_evaluation }}{% endif %}&page={{ eleves.paginator.num_pages }}"
+                       class="wp-page-link" title="Dernière page">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                {% else %}
+                    <span class="wp-page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                    <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+                {% endif %}
+            </div>
+            <div style="text-align:center; margin-top:10px; font-size:12px; color:var(--wp-text-light);">
+                Page {{ eleves.number }} sur {{ eleves.paginator.num_pages }}
+                · {{ eleves.paginator.count }} élève{{ eleves.paginator.count|pluralize }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Aucun élève sans note -->
+    <div class="wp-card">
+        <div class="wp-card-body">
+            <div class="wp-empty">
+                <i class="fas fa-check-circle" style="color:var(--wp-success);"></i>
+                <h5 style="font-weight:700; margin:14px 0 10px; color:var(--wp-text-strong);">
+                    Tous les élèves ont des notes
+                </h5>
+                <p style="max-width:500px; margin:0 auto 20px; line-height:1.7;">
+                    Aucun élève ne manque de notes pour cette évaluation.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+{% else %}
+<!-- État initial -->
+<div class="wp-card">
+    <div class="wp-card-body">
+        <div class="wp-empty">
+            <i class="fas fa-filter"></i>
+            <h5 style="font-weight:700; margin:14px 0 10px; color:var(--wp-text-strong);">
+                Sélectionnez des critères
+            </h5>
+            <p style="max-width:500px; margin:0 auto 20px; line-height:1.7;">
+                Veuillez sélectionner un <strong>cours</strong> et une <strong>année</strong>
+                pour voir les élèves qui n'ont pas encore de notes.
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // INITIALISATION SELECT2
+        // ============================================================
+        if (typeof $ !== 'undefined' && $.fn.select2) {
+            $('.select2').select2({
+                theme: 'bootstrap-5',
+                width: '100%'
+            });
+        }
+
+        // ============================================================
+        // RECHARGEMENT AUTOMATIQUE QUAND LE COURS CHANGE
+        // (pour rafraîchir la liste des évaluations disponibles)
+        // ============================================================
+        const coursSelect = document.getElementById('cours');
+        const anneeSelect = document.getElementById('annee');
+        const classeSelect = document.getElementById('classe');
+        const evaluationSelect = document.getElementById('evaluation');
+
+        // Utiliser jQuery pour intercepter le changement de Select2
+        if (typeof $ !== 'undefined' && $('#cours').length) {
+            $('#cours').on('change', function () {
+                const coursId = $(this).val();
+                const anneeId = $('#annee').val();
+                const classeId = $('#classe').val();
+
+                if (coursId) {
+                    // Recharger la page avec les paramètres actuels + le nouveau cours
+                    let url = "{% url 'ecoles:eleves_sans_notes' %}?cours=" + coursId;
+                    if (anneeId) url += "&annee=" + anneeId;
+                    if (classeId) url += "&classe=" + classeId;
+                    window.location.href = url;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

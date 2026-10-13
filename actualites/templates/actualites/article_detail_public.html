@@ -1,0 +1,556 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ article.titre }} - CRADD{% endblock %}
+
+{# ============================================================ #}
+{# Rendu pour les visiteurs non connectés (site public)        #}
+{# ============================================================ #}
+{% block content_public %}
+
+<article class="public-article-page">
+    <!-- ============================================================
+         EN-TÊTE DE L'ARTICLE
+    ============================================================ -->
+    <header class="public-article-header">
+        <div class="container">
+            <div class="public-article-header-inner">
+                <a href="{% url 'ecoles:index' %}#actualites" class="public-article-back">
+                    <i class="fas fa-arrow-left"></i> Retour aux actualités
+                </a>
+
+                {% if article.categorie %}
+                <span class="public-article-tag">
+                    <i class="fas fa-tag"></i> {{ article.categorie.nom }}
+                </span>
+                {% endif %}
+
+                <h1 class="public-article-title">{{ article.titre }}</h1>
+
+                <div class="public-article-meta">
+                    <span>
+                        <i class="fas fa-user"></i>
+                        {{ article.auteur.get_full_name|default:article.auteur.username }}
+                    </span>
+                    <span>
+                        <i class="fas fa-calendar-alt"></i>
+                        {{ article.date_publication|date:"d/m/Y à H:i" }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================================
+         CONTENU DE L'ARTICLE
+    ============================================================ -->
+    <div class="container">
+        <div class="public-article-body">
+
+            {% if article.image %}
+            <figure class="public-article-figure">
+                <img src="{{ article.image.url }}"
+                     alt="{{ article.titre }}"
+                     loading="eager">
+            </figure>
+            {% endif %}
+
+            <div class="public-article-content">
+                {{ article.contenu|safe }}
+            </div>
+
+            <div class="public-article-footer">
+                <a href="{% url 'ecoles:index' %}#actualites" class="hero-cta hero-cta-primary" style="display:inline-flex;">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour aux actualités
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</article>
+
+{% endblock %}
+
+
+{# ============================================================ #}
+{# Rendu pour les utilisateurs connectés (dashboard admin)     #}
+{# ============================================================ #}
+{% block page_heading %}{{ article.titre }}{% endblock %}
+{% block page_subtitle %}Publié le {{ article.date_publication|date:"d/m/Y à H:i" }}{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'actualites:article_list' %}">Actualités</a>
+    <span class="sep">/</span>
+    <span>{{ article.titre|truncatechars:40 }}</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     EN-TÊTE (BOX avec titre + actions)
+============================================================ -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:0;">
+            <h2 style="margin:0 0 6px; font-size:18px; font-weight:700; color:var(--wp-text-strong); line-height:1.3;">
+                <i class="fas fa-newspaper" style="color:var(--wp-primary);"></i>
+                {{ article.titre }}
+            </h2>
+            <div style="font-size:12.5px; color:var(--wp-text-muted); display:flex; flex-wrap:wrap; gap:14px;">
+                <span>
+                    <i class="fas fa-user" style="color:var(--wp-primary);"></i>
+                    {{ article.auteur.get_full_name|default:article.auteur.username }}
+                </span>
+                <span>
+                    <i class="fas fa-calendar-alt" style="color:var(--wp-primary);"></i>
+                    {{ article.date_publication|date:"d/m/Y à H:i" }}
+                </span>
+                {% if article.categorie %}
+                <span>
+                    <i class="fas fa-tag" style="color:var(--wp-primary);"></i>
+                    {{ article.categorie.nom }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="wp-form-actions-inline">
+            <a href="{% url 'actualites:article_list' %}" class="wp-btn secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+            {% if user.is_authenticated %}
+                {% if user.est_editeur or user.est_administrateur %}
+                <a href="{% url 'actualites:article_edit' article.pk %}" class="wp-btn">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
+                <a href="{% url 'actualites:article_delete' article.pk %}" class="wp-btn danger"
+                   onclick="return confirm('Supprimer cet article ?');">
+                    <i class="fas fa-trash"></i> Supprimer
+                </a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     CONTENU DE L'ARTICLE
+============================================================ -->
+<div class="wp-card">
+    <div class="wp-card-body" style="padding:28px;">
+
+        {% if article.image %}
+        <figure style="margin:0 0 24px; text-align:center;">
+            <img src="{{ article.image.url }}"
+                 alt="{{ article.titre }}"
+                 style="max-width:100%; max-height:450px; border-radius:12px; box-shadow:var(--wp-shadow-md);">
+        </figure>
+        {% endif %}
+
+        <div class="article-content">
+            {{ article.contenu|safe }}
+        </div>
+
+    </div>
+
+    <!-- ===== FOOTER avec actions ===== -->
+    <div class="wp-card-footer" style="justify-content:space-between;">
+        <a href="{% url 'actualites:article_list' %}" class="wp-btn secondary">
+            <i class="fas fa-arrow-left"></i> Retour aux actualités
+        </a>
+        {% if user.is_authenticated %}
+            {% if user.est_editeur or user.est_administrateur %}
+            <div class="wp-form-actions-inline">
+                <a href="{% url 'actualites:article_edit' article.pk %}" class="wp-btn">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
+                <a href="{% url 'actualites:article_delete' article.pk %}" class="wp-btn danger"
+                   onclick="return confirm('Supprimer cet article ?');">
+                    <i class="fas fa-trash"></i> Supprimer
+                </a>
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       PARTIE PUBLIQUE — Styles de la page article
+    ============================================================ */
+    .public-article-page {
+        background: var(--wp-bg);
+        padding-bottom: 60px;
+    }
+
+    /* ---------- En-tête ---------- */
+    .public-article-header {
+        background: linear-gradient(135deg, #0e4d80 0%, var(--wp-primary) 50%, var(--wp-primary-hover) 100%);
+        color: #fff;
+        padding: clamp(3rem, 6vw, 5rem) 0 clamp(2.5rem, 5vw, 4rem);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .public-article-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(114, 174, 230, 0.15) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .public-article-header-inner {
+        position: relative;
+        z-index: 2;
+        max-width: 780px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .public-article-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.88rem;
+        font-weight: 600;
+        text-decoration: none;
+        margin-bottom: 24px;
+        transition: all 0.25s ease;
+    }
+
+    .public-article-back:hover {
+        color: #fff;
+        transform: translateX(-3px);
+    }
+
+    .public-article-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.30);
+        color: #fff;
+        padding: 6px 18px;
+        border-radius: 9999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-bottom: 18px;
+        backdrop-filter: blur(8px);
+    }
+
+    .public-article-tag i {
+        color: #86efac;
+    }
+
+    .public-article-title {
+        font-size: clamp(1.6rem, 4vw, 2.6rem);
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.025em;
+        color: #fff;
+        margin-bottom: 22px;
+        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .public-article-meta {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.90);
+    }
+
+    .public-article-meta i {
+        color: #86efac;
+        margin-right: 6px;
+    }
+
+    /* ---------- Contenu ---------- */
+    .public-article-body {
+        max-width: 780px;
+        margin: -40px auto 0;
+        padding: 0 var(--wp-container-padding, 1rem);
+        position: relative;
+        z-index: 3;
+    }
+
+    .public-article-figure {
+        margin: 0 0 30px;
+        text-align: center;
+    }
+
+    .public-article-figure img {
+        max-width: 100%;
+        max-height: 500px;
+        border-radius: 16px;
+        box-shadow: var(--wp-shadow-lg);
+        object-fit: cover;
+    }
+
+    .public-article-content {
+        background: var(--wp-surface);
+        border-radius: 16px;
+        padding: clamp(24px, 4vw, 42px);
+        box-shadow: var(--wp-shadow-md);
+        font-size: 1rem;
+        line-height: 1.85;
+        color: var(--wp-text);
+        border: 1px solid var(--wp-border-light);
+    }
+
+    /* ---------- Typographie article ---------- */
+    .public-article-content h1,
+    .public-article-content h2,
+    .public-article-content h3,
+    .public-article-content h4 {
+        color: var(--wp-text-strong);
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        margin-top: 1.8em;
+        margin-bottom: 0.7em;
+        line-height: 1.3;
+    }
+
+    .public-article-content h1 { font-size: 1.8rem; }
+    .public-article-content h2 { font-size: 1.5rem; }
+    .public-article-content h3 { font-size: 1.25rem; }
+    .public-article-content h4 { font-size: 1.1rem; }
+
+    .public-article-content h2 {
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--wp-primary-soft);
+    }
+
+    .public-article-content p {
+        margin-bottom: 1.2em;
+    }
+
+    .public-article-content strong {
+        color: var(--wp-text-strong);
+        font-weight: 700;
+    }
+
+    .public-article-content a {
+        color: var(--wp-primary);
+        text-decoration: none;
+        border-bottom: 1px solid rgba(34, 113, 177, 0.30);
+        transition: all 0.2s ease;
+    }
+
+    .public-article-content a:hover {
+        color: var(--wp-primary-hover);
+        border-bottom-color: var(--wp-primary-hover);
+    }
+
+    .public-article-content ul,
+    .public-article-content ol {
+        margin-bottom: 1.2em;
+        padding-left: 1.6em;
+    }
+
+    .public-article-content li {
+        margin-bottom: 0.5em;
+        line-height: 1.7;
+    }
+
+    .public-article-content ul li::marker {
+        color: var(--wp-primary);
+    }
+
+    .public-article-content blockquote {
+        background: var(--wp-primary-soft);
+        border-left: 4px solid var(--wp-primary);
+        padding: 16px 22px;
+        border-radius: 0 8px 8px 0;
+        margin: 1.5em 0;
+        font-style: italic;
+        color: var(--wp-text);
+    }
+
+    .public-article-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 10px;
+        margin: 1em 0;
+    }
+
+    .public-article-content hr {
+        border: 0;
+        border-top: 1px dashed var(--wp-border-light);
+        margin: 2em 0;
+    }
+
+    .public-article-content code {
+        background: var(--wp-surface-alt);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 0.9em;
+        color: var(--wp-primary);
+    }
+
+    .public-article-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5em 0;
+    }
+
+    .public-article-content table th,
+    .public-article-content table td {
+        padding: 10px 14px;
+        border: 1px solid var(--wp-border-light);
+        text-align: left;
+    }
+
+    .public-article-content table th {
+        background: var(--wp-surface-alt);
+        font-weight: 700;
+    }
+
+    /* ---------- Footer ---------- */
+    .public-article-footer {
+        margin-top: 30px;
+        text-align: center;
+    }
+
+    /* ============================================================
+       PARTIE ADMIN — Styles article
+    ============================================================ */
+    .article-content {
+        font-size: 14px;
+        line-height: 1.85;
+        color: var(--wp-text);
+    }
+
+    .article-content h1,
+    .article-content h2,
+    .article-content h3,
+    .article-content h4 {
+        color: var(--wp-text-strong);
+        font-weight: 700;
+        margin-top: 1.6em;
+        margin-bottom: 0.6em;
+        line-height: 1.3;
+    }
+
+    .article-content h1 { font-size: 1.7rem; }
+    .article-content h2 { font-size: 1.4rem; }
+    .article-content h3 { font-size: 1.2rem; }
+    .article-content h4 { font-size: 1.05rem; }
+
+    .article-content h2 {
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--wp-primary-soft);
+    }
+
+    .article-content p {
+        margin-bottom: 1.1em;
+    }
+
+    .article-content strong {
+        color: var(--wp-text-strong);
+        font-weight: 700;
+    }
+
+    .article-content a {
+        color: var(--wp-primary);
+        text-decoration: none;
+        border-bottom: 1px solid rgba(34, 113, 177, 0.30);
+    }
+
+    .article-content a:hover {
+        color: var(--wp-primary-hover);
+    }
+
+    .article-content ul,
+    .article-content ol {
+        margin-bottom: 1.1em;
+        padding-left: 1.6em;
+    }
+
+    .article-content li {
+        margin-bottom: 0.4em;
+    }
+
+    .article-content ul li::marker {
+        color: var(--wp-primary);
+    }
+
+    .article-content blockquote {
+        background: var(--wp-primary-soft);
+        border-left: 4px solid var(--wp-primary);
+        padding: 14px 20px;
+        border-radius: 0 8px 8px 0;
+        margin: 1.4em 0;
+        font-style: italic;
+    }
+
+    .article-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 10px;
+        margin: 1em 0;
+    }
+
+    .article-content hr {
+        border: 0;
+        border-top: 1px dashed var(--wp-border-light);
+        margin: 1.8em 0;
+    }
+
+    .article-content code {
+        background: var(--wp-surface-alt);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 0.9em;
+        color: var(--wp-primary);
+    }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 768px) {
+        .public-article-body {
+            margin-top: -30px;
+        }
+
+        .public-article-content {
+            padding: 20px 18px;
+            font-size: 0.95rem;
+        }
+
+        .public-article-content h2 {
+            font-size: 1.3rem;
+        }
+
+        .public-article-content h3 {
+            font-size: 1.1rem;
+        }
+
+        .public-article-meta {
+            gap: 12px;
+            font-size: 0.85rem;
+        }
+
+        .public-article-title {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}

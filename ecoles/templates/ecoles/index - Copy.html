@@ -1,0 +1,2326 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CRADD · Éducation & Développement Durable</title>
+    <!-- Bootstrap 5 + Font Awesome 6 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Google Fonts : Outfit + Cormorant Garamond -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    <style>
+        /* ============================================================
+        VARIABLES – Palette verte / développement durable
+        ============================================================ */
+        :root {
+            --green-dark: #1e4a2b;
+            --green-mid: #2e7d32;
+            --green-light: #66bb6a;
+            --green-pale: #a5d6a7;
+            --green-bg: #e8f5e9;
+            --green-very-pale: #f3faf3;
+            --white: #ffffff;
+            --charcoal: #1f2a1f;
+            --text-dark: #1f2a1f;
+            --text-muted: #4b5e4b;
+            --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 16px 56px rgba(0, 0, 0, 0.12);
+            --radius: 24px;
+            --radius-sm: 14px;
+            --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ============================================================
+        RESET & BASE
+        ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--green-very-pale);
+            color: var(--text-dark);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .section-padding {
+            padding: 90px 0;
+        }
+
+        .section-title {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 48px;
+        }
+
+            .section-title h2 {
+                font-family: 'Cormorant Garamond', serif;
+                font-size: 44px;
+                font-weight: 700;
+                color: var(--charcoal);
+                letter-spacing: -0.3px;
+            }
+
+                .section-title h2 span {
+                    color: var(--green-mid);
+                }
+
+            .section-title p {
+                color: var(--text-muted);
+                font-size: 18px;
+                margin-top: 6px;
+                font-weight: 300;
+            }
+
+            .section-title .line {
+                width: 60px;
+                height: 3px;
+                background: linear-gradient(90deg, var(--green-mid), var(--green-light));
+                margin: 16px auto 0;
+                border-radius: 4px;
+            }
+
+        .bg-cream {
+            background: var(--green-very-pale);
+        }
+
+        .bg-beige {
+            background: var(--green-bg);
+        }
+
+        /* ============================================================
+        NAVBAR
+        ============================================================ */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 74px;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: transparent;
+            transition: all 0.4s ease;
+            border-bottom: 1px solid transparent;
+        }
+
+        .navbar-scrolled {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(14px);
+            box-shadow: var(--shadow-sm);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .brand-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--white);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-scrolled .brand-logo {
+            color: var(--charcoal);
+        }
+
+        .brand-logo span {
+            color: var(--green-pale);
+        }
+
+        .navbar-scrolled .brand-logo span {
+            color: var(--green-mid);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 4px;
+            list-style: none;
+            align-items: center;
+        }
+
+            .nav-links a {
+                text-decoration: none;
+                color: rgba(255, 255, 255, 0.85);
+                padding: 8px 18px;
+                border-radius: 10px;
+                font-weight: 500;
+                font-size: 14px;
+                transition: 0.3s;
+            }
+
+        .navbar-scrolled .nav-links a {
+            color: var(--text-muted);
+        }
+
+        .nav-links a:hover {
+            color: var(--white);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-scrolled .nav-links a:hover {
+            color: var(--charcoal);
+            background: var(--green-bg);
+        }
+
+        .nav-links .btn-login {
+            background: var(--green-mid);
+            color: #fff !important;
+            padding: 10px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(46, 125, 50, 0.3);
+            transition: 0.3s;
+        }
+
+            .nav-links .btn-login:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 30px rgba(46, 125, 50, 0.4);
+                background: var(--green-dark);
+                color: #fff !important;
+            }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--white);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        .navbar-scrolled .menu-toggle {
+            color: var(--charcoal);
+        }
+
+        .menu-toggle:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* ============================================================
+        HERO – avec image de fond
+        ============================================================ */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            padding-top: 74px;
+            /* Image de fond : éducation / environnement */
+            background: linear-gradient(145deg, #1a3a1a 0%, #2a5a2a 50%, #3d7a3d 100%);
+            color: var(--white);
+        }
+
+            .hero::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600&q=80') center/cover no-repeat;
+                opacity: 0.25;
+                mix-blend-mode: overlay;
+                z-index: 0;
+            }
+
+            .hero::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3G fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M50 50v-5h-5v5h-5v5h5v5h5v-5h5v-5h-5zm0-40V5h-5v5h-5v5h5v5h5V15h5v-5h-5zM10 50v-5H5v5H0v5h5v5h5v-5h5v-5H10zM10 10V5H5v5H0v5h5v5h5V15h5v-5H10z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+                pointer-events: none;
+                z-index: 1;
+            }
+
+        .hero-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 40px 24px;
+            max-width: 880px;
+        }
+
+            .hero-content .badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                background: rgba(255, 255, 255, 0.08);
+                backdrop-filter: blur(4px);
+                padding: 8px 24px;
+                border-radius: 50px;
+                font-size: 13px;
+                font-weight: 500;
+                color: var(--green-pale);
+                border: 1px solid rgba(255, 255, 255, 0.06);
+                margin-bottom: 20px;
+                letter-spacing: 0.5px;
+            }
+
+            .hero-content h1 {
+                font-family: 'Cormorant Garamond', serif;
+                font-size: 60px;
+                font-weight: 700;
+                line-height: 1.05;
+                margin-bottom: 12px;
+            }
+
+                .hero-content h1 span {
+                    color: var(--green-pale);
+                }
+
+            .hero-content p {
+                font-size: 18px;
+                color: rgba(255, 255, 255, 0.8);
+                max-width: 600px;
+                margin: 0 auto 32px;
+                font-weight: 300;
+            }
+
+        .hero-search-wrapper {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            max-width: 700px;
+            margin: 0 auto;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero-search-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+            .hero-search-form .input-group {
+                position: relative;
+            }
+
+            .hero-search-form input {
+                width: 100%;
+                padding: 16px 20px;
+                border: none;
+                border-radius: var(--radius-sm);
+                background: rgba(255, 255, 255, 0.9);
+                font-size: 16px;
+                font-family: 'Outfit', sans-serif;
+                color: var(--charcoal);
+                transition: 0.3s;
+                border: 1px solid transparent;
+            }
+
+                .hero-search-form input:focus {
+                    outline: none;
+                    border-color: var(--green-light);
+                    box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.15);
+                    background: #fff;
+                }
+
+                .hero-search-form input::placeholder {
+                    color: var(--text-muted);
+                }
+
+            .hero-search-form .autocomplete-list {
+                position: absolute;
+                top: calc(100% + 6px);
+                left: 0;
+                right: 0;
+                background: #fff;
+                border-radius: var(--radius-sm);
+                max-height: 240px;
+                overflow-y: auto;
+                display: none;
+                box-shadow: var(--shadow-lg);
+                z-index: 100;
+                padding: 6px 0;
+                border: 1px solid rgba(0, 0, 0, 0.06);
+            }
+
+            .hero-search-form .autocomplete-item {
+                padding: 12px 20px;
+                cursor: pointer;
+                border-bottom: 1px solid var(--green-bg);
+                transition: 0.2s;
+                color: var(--text-dark);
+            }
+
+                .hero-search-form .autocomplete-item:last-child {
+                    border-bottom: none;
+                }
+
+                .hero-search-form .autocomplete-item:hover,
+                .hero-search-form .autocomplete-item.active {
+                    background: var(--green-bg);
+                }
+
+                .hero-search-form .autocomplete-item .highlight {
+                    color: var(--green-mid);
+                    font-weight: 700;
+                }
+
+                .hero-search-form .autocomplete-item .sub-info {
+                    display: block;
+                    font-size: 12px;
+                    color: var(--text-muted);
+                    opacity: 0.7;
+                }
+
+            .hero-search-form .btn-search {
+                padding: 16px 32px;
+                background: var(--green-mid);
+                color: #fff;
+                border: none;
+                border-radius: var(--radius-sm);
+                font-weight: 700;
+                font-size: 16px;
+                cursor: pointer;
+                transition: var(--transition);
+                display: inline-flex;
+                align-items: center;
+                gap: 12px;
+                justify-content: center;
+                box-shadow: 0 4px 20px rgba(46, 125, 50, 0.3);
+                font-family: 'Outfit', sans-serif;
+            }
+
+                .hero-search-form .btn-search:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 8px 30px rgba(46, 125, 50, 0.4);
+                    background: var(--green-dark);
+                }
+
+                .hero-search-form .btn-search:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                    transform: none !important;
+                }
+
+            .hero-search-form .error-msg {
+                display: none;
+                background: rgba(231, 76, 60, 0.12);
+                border: 1px solid rgba(231, 76, 60, 0.2);
+                border-radius: var(--radius-sm);
+                padding: 12px 18px;
+                color: #e74c3c;
+                font-size: 14px;
+                text-align: center;
+                align-items: center;
+                gap: 12px;
+                justify-content: center;
+            }
+
+                .hero-search-form .error-msg.visible {
+                    display: flex;
+                }
+
+            .hero-search-form .loading {
+                display: none;
+                text-align: center;
+                padding: 20px 0;
+            }
+
+                .hero-search-form .loading.active {
+                    display: block;
+                }
+
+            .hero-search-form .spinner {
+                width: 36px;
+                height: 36px;
+                border: 3px solid rgba(255, 255, 255, 0.1);
+                border-top-color: var(--green-pale);
+                border-radius: 50%;
+                animation: spin 0.7s linear infinite;
+                margin: 0 auto 10px;
+            }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ============================================================
+        RÉSULTATS DE RECHERCHE (adaptés au vert)
+        ============================================================ */
+        .results-section {
+            display: none;
+            margin-top: 28px;
+            animation: fadeUp 0.5s ease-out forwards;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(8px);
+            border-radius: var(--radius);
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+            .results-section.visible {
+                display: block;
+            }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .student-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .student-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-mid), var(--green-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .student-info h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .student-info .details {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+            .student-info .details strong {
+                color: var(--white);
+            }
+
+            .student-info .details i {
+                color: var(--green-pale);
+                margin-right: 4px;
+            }
+
+        .cycle-table-wrapper {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: var(--radius-sm);
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+        }
+
+        .cycle-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--white);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .cycle-title i {
+                color: var(--green-pale);
+            }
+
+        .cycle-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 480px;
+        }
+
+            .cycle-table th {
+                background: rgba(255, 255, 255, 0.04);
+                padding: 8px 12px;
+                text-align: left;
+                font-weight: 600;
+                color: rgba(255, 255, 255, 0.5);
+                text-transform: uppercase;
+                font-size: 10px;
+                letter-spacing: 0.5px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .cycle-table td {
+                padding: 8px 12px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            .cycle-table .cours-cell {
+                font-weight: 600;
+                color: var(--white);
+            }
+
+            .cycle-table .score-cell {
+                font-weight: 600;
+                text-align: center;
+            }
+
+                .cycle-table .score-cell.high {
+                    color: var(--green-pale);
+                }
+
+                .cycle-table .score-cell.medium {
+                    color: #ffd54f;
+                }
+
+                .cycle-table .score-cell.low {
+                    color: #ef9a9a;
+                }
+
+            .cycle-table .total-row td {
+                background: rgba(46, 125, 50, 0.12);
+                font-weight: 700;
+                border-top: 2px solid var(--green-light);
+                color: var(--white);
+            }
+
+            .cycle-table .periode-total td {
+                background: rgba(46, 125, 50, 0.06);
+                font-weight: 600;
+            }
+
+            .cycle-table .examen-total td {
+                background: rgba(46, 125, 50, 0.06);
+                font-weight: 600;
+            }
+
+        .results-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            background: rgba(46, 125, 50, 0.1);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin-top: 12px;
+        }
+
+            .results-total .total-label {
+                font-weight: 600;
+                color: rgba(255, 255, 255, 0.7);
+            }
+
+                .results-total .total-label i {
+                    color: var(--green-pale);
+                    margin-right: 8px;
+                }
+
+            .results-total .total-score {
+                font-size: 26px;
+                font-weight: 800;
+            }
+
+                .results-total .total-score.success {
+                    color: var(--green-pale);
+                }
+
+                .results-total .total-score.medium {
+                    color: #ffd54f;
+                }
+
+                .results-total .total-score.danger {
+                    color: #ef9a9a;
+                }
+
+        .alert-info {
+            background: rgba(46, 125, 50, 0.08);
+            color: var(--green-pale);
+            border: 1px solid rgba(46, 125, 50, 0.15);
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .not-found {
+            text-align: center;
+            padding: 32px 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: var(--radius-sm);
+            margin-top: 16px;
+        }
+
+            .not-found i {
+                font-size: 44px;
+                color: rgba(255, 255, 255, 0.3);
+                margin-bottom: 8px;
+                display: block;
+            }
+
+            .not-found h3 {
+                color: var(--white);
+                font-size: 18px;
+            }
+
+            .not-found p {
+                color: rgba(255, 255, 255, 0.6);
+            }
+
+        /* ============================================================
+        SECTION MISSION (image)
+        ============================================================ */
+        .mission-section {
+            background: var(--green-very-pale);
+        }
+
+        .mission-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .mission-text h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 44px;
+            font-weight: 700;
+            color: var(--charcoal);
+            letter-spacing: -0.3px;
+        }
+
+            .mission-text h2 span {
+                color: var(--green-mid);
+            }
+
+        .mission-text p {
+            color: var(--text-muted);
+            font-size: 16px;
+            line-height: 1.9;
+            margin: 12px 0 16px;
+        }
+
+        .mission-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .mission-stat {
+            background: var(--white);
+            padding: 20px 22px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--green-bg);
+        }
+
+            .mission-stat .number {
+                font-size: 30px;
+                font-weight: 800;
+                color: var(--green-mid);
+                display: block;
+            }
+
+            .mission-stat .label {
+                font-size: 14px;
+                color: var(--text-muted);
+            }
+
+        .mission-image {
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+            .mission-image img {
+                width: 100%;
+                height: 320px;
+                object-fit: cover;
+                display: block;
+                transition: transform 0.5s ease;
+            }
+
+            .mission-image:hover img {
+                transform: scale(1.02);
+            }
+
+        /* ============================================================
+        SERVICES
+        ============================================================ */
+        .services-section {
+            background: var(--white);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .service-card {
+            background: var(--green-very-pale);
+            border-radius: var(--radius);
+            padding: 36px 30px;
+            text-align: center;
+            border: 1px solid var(--green-bg);
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+            .service-card:hover {
+                transform: translateY(-8px);
+                border-color: var(--green-mid);
+                box-shadow: var(--shadow-md);
+            }
+
+            .service-card .icon {
+                width: 68px;
+                height: 68px;
+                background: rgba(46, 125, 50, 0.06);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 16px;
+                font-size: 28px;
+                color: var(--green-mid);
+                transition: var(--transition);
+            }
+
+            .service-card:hover .icon {
+                background: var(--green-mid);
+                color: var(--white);
+                transform: rotateY(180deg);
+            }
+
+            .service-card h4 {
+                font-family: 'Cormorant Garamond', serif;
+                font-size: 22px;
+                font-weight: 700;
+                color: var(--charcoal);
+                margin-bottom: 8px;
+            }
+
+            .service-card p {
+                font-size: 15px;
+                color: var(--text-muted);
+                line-height: 1.7;
+            }
+
+        /* ============================================================
+        TÉMOIGNAGES (images)
+        ============================================================ */
+        .testimonials-section {
+            background: var(--green-bg);
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .testimonial-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 30px 26px;
+            border: 1px solid var(--green-bg);
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+            .testimonial-card:hover {
+                border-color: var(--green-light);
+                transform: translateY(-4px);
+                box-shadow: var(--shadow-md);
+            }
+
+            .testimonial-card .quote {
+                color: var(--green-mid);
+                font-size: 28px;
+                opacity: 0.3;
+                margin-bottom: 6px;
+            }
+
+            .testimonial-card p {
+                color: var(--text-muted);
+                font-size: 15px;
+                line-height: 1.8;
+                font-style: italic;
+                margin-bottom: 14px;
+            }
+
+            .testimonial-card .author {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+            }
+
+                .testimonial-card .author .avatar {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, var(--green-mid), var(--green-light));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: var(--white);
+                    font-weight: 700;
+                    font-size: 16px;
+                }
+
+                .testimonial-card .author .name {
+                    font-weight: 700;
+                    color: var(--charcoal);
+                }
+
+                .testimonial-card .author .role {
+                    font-size: 13px;
+                    color: var(--text-muted);
+                }
+
+        /* ============================================================
+        BLOG (avec images)
+        ============================================================ */
+        .blog-section {
+            background: var(--white);
+        }
+
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .blog-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--green-bg);
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+            .blog-card:hover {
+                transform: translateY(-8px);
+                border-color: var(--green-mid);
+                box-shadow: var(--shadow-md);
+            }
+
+            .blog-card .img {
+                height: 180px;
+                background: var(--green-bg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 42px;
+                color: rgba(0, 0, 0, 0.04);
+                position: relative;
+                overflow: hidden;
+            }
+
+                .blog-card .img img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .blog-card .img .date {
+                    position: absolute;
+                    bottom: 14px;
+                    right: 18px;
+                    background: rgba(0, 0, 0, 0.6);
+                    backdrop-filter: blur(4px);
+                    color: #fff;
+                    padding: 4px 14px;
+                    border-radius: 30px;
+                    font-size: 12px;
+                    font-weight: 500;
+                }
+
+            .blog-card .content {
+                padding: 22px 24px;
+            }
+
+                .blog-card .content .tag {
+                    display: inline-block;
+                    background: rgba(46, 125, 50, 0.1);
+                    color: var(--green-dark);
+                    font-size: 10px;
+                    font-weight: 700;
+                    padding: 2px 14px;
+                    border-radius: 30px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 6px;
+                }
+
+                .blog-card .content h4 {
+                    font-family: 'Cormorant Garamond', serif;
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: var(--charcoal);
+                    margin-bottom: 6px;
+                }
+
+                .blog-card .content p {
+                    font-size: 14px;
+                    color: var(--text-muted);
+                    line-height: 1.7;
+                    margin-bottom: 12px;
+                }
+
+                .blog-card .content .link {
+                    color: var(--green-mid);
+                    text-decoration: none;
+                    font-weight: 600;
+                    font-size: 14px;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    transition: 0.3s;
+                }
+
+                    .blog-card .content .link:hover {
+                        color: var(--green-dark);
+                    }
+
+                        .blog-card .content .link:hover i {
+                            transform: translateX(6px);
+                        }
+
+        /* ============================================================
+        PARTENAIRES
+        ============================================================ */
+        .partners-section {
+            background: var(--green-bg);
+            border-top: 1px solid var(--green-pale);
+            border-bottom: 1px solid var(--green-pale);
+            padding: 50px 0;
+        }
+
+        .partners-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            align-items: center;
+            justify-items: center;
+        }
+
+        .partner-item {
+            background: var(--white);
+            border-radius: var(--radius-sm);
+            padding: 16px 20px;
+            border: 1px solid var(--green-bg);
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 14px;
+            text-align: center;
+            transition: var(--transition);
+            width: 100%;
+            box-shadow: var(--shadow-sm);
+        }
+
+            .partner-item:hover {
+                border-color: var(--green-mid);
+                color: var(--charcoal);
+                box-shadow: var(--shadow-md);
+                transform: translateY(-3px);
+            }
+
+            .partner-item i {
+                margin-right: 8px;
+                color: var(--green-mid);
+                transition: 0.3s;
+            }
+
+            .partner-item:hover i {
+                transform: scale(1.2) rotate(-5deg);
+            }
+
+        /* ============================================================
+        NEWSLETTER
+        ============================================================ */
+        .newsletter-section {
+            background: var(--green-very-pale);
+            border-top: 1px solid var(--green-bg);
+            padding: 60px 0;
+            text-align: center;
+        }
+
+            .newsletter-section h2 {
+                font-family: 'Cormorant Garamond', serif;
+                font-size: 36px;
+                font-weight: 700;
+                color: var(--charcoal);
+            }
+
+            .newsletter-section p {
+                color: var(--text-muted);
+                font-size: 18px;
+                margin-bottom: 24px;
+            }
+
+        .newsletter-form {
+            display: flex;
+            max-width: 500px;
+            margin: 0 auto;
+            gap: 12px;
+        }
+
+            .newsletter-form input {
+                flex: 1;
+                padding: 14px 20px;
+                border: 1px solid var(--green-bg);
+                border-radius: var(--radius-sm);
+                font-size: 15px;
+                font-family: 'Outfit', sans-serif;
+                color: var(--charcoal);
+                transition: 0.3s;
+                background: var(--white);
+            }
+
+                .newsletter-form input:focus {
+                    outline: none;
+                    border-color: var(--green-mid);
+                    box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.06);
+                    background: var(--white);
+                }
+
+                .newsletter-form input::placeholder {
+                    color: var(--text-muted);
+                }
+
+            .newsletter-form button {
+                padding: 14px 28px;
+                background: var(--green-mid);
+                color: #fff;
+                border: none;
+                border-radius: var(--radius-sm);
+                font-weight: 700;
+                font-size: 15px;
+                cursor: pointer;
+                transition: var(--transition);
+                font-family: 'Outfit', sans-serif;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                white-space: nowrap;
+                box-shadow: 0 4px 20px rgba(46, 125, 50, 0.2);
+            }
+
+                .newsletter-form button:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 30px rgba(46, 125, 50, 0.3);
+                    background: var(--green-dark);
+                }
+
+        /* ============================================================
+        FOOTER
+        ============================================================ */
+        .footer {
+            background: var(--charcoal);
+            color: rgba(255, 255, 255, 0.5);
+            padding: 48px 0 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 32px;
+        }
+
+        .footer-brand .brand-logo {
+            color: var(--white);
+            font-size: 24px;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+            .footer-brand .brand-logo span {
+                color: var(--green-pale);
+            }
+
+        .footer-brand p {
+            font-size: 14px;
+            max-width: 300px;
+            margin-top: 8px;
+            line-height: 1.8;
+        }
+
+        .footer-column h4 {
+            color: var(--white);
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-column ul {
+            list-style: none;
+        }
+
+            .footer-column ul li {
+                margin-bottom: 6px;
+            }
+
+                .footer-column ul li a {
+                    color: rgba(255, 255, 255, 0.5);
+                    text-decoration: none;
+                    transition: 0.3s;
+                    font-size: 14px;
+                }
+
+                    .footer-column ul li a:hover {
+                        color: var(--green-pale);
+                        padding-left: 4px;
+                    }
+
+        .footer-social {
+            display: flex;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+            .footer-social a {
+                color: rgba(255, 255, 255, 0.4);
+                font-size: 18px;
+                transition: var(--transition);
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+                .footer-social a:hover {
+                    color: var(--green-pale);
+                    border-color: var(--green-pale);
+                    transform: translateY(-3px);
+                }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            padding-top: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+            .footer-bottom .cradd {
+                color: var(--green-pale);
+                font-weight: 600;
+            }
+
+        /* ============================================================
+        RESPONSIVE (inchangé)
+        ============================================================ */
+        @media (max-width: 992px) {
+            .mission-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .testimonials-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .blog-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .partners-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 30px;
+            }
+
+            .hero-content h1 {
+                font-size: 46px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 16px;
+                height: 64px;
+            }
+
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 16px;
+                right: 16px;
+                background: var(--white);
+                backdrop-filter: blur(20px);
+                padding: 16px;
+                border-radius: var(--radius-sm);
+                border: 1px solid var(--green-bg);
+                gap: 4px;
+                box-shadow: var(--shadow-md);
+            }
+
+                .nav-links.active {
+                    display: flex;
+                }
+
+                .nav-links a {
+                    color: var(--charcoal) !important;
+                    width: 100%;
+                    justify-content: center;
+                    padding: 10px;
+                }
+
+                .nav-links .btn-login {
+                    background: var(--green-mid);
+                    color: #fff !important;
+                }
+
+            .menu-toggle {
+                display: block;
+                color: var(--white);
+            }
+
+            .navbar-scrolled .menu-toggle {
+                color: var(--charcoal);
+            }
+
+            .hero {
+                min-height: 80vh;
+                padding-top: 64px;
+            }
+
+            .hero-content h1 {
+                font-size: 32px;
+            }
+
+            .hero-content p {
+                font-size: 16px;
+            }
+
+            .hero-search-wrapper {
+                padding: 16px;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .blog-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .partners-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .footer-brand p {
+                max-width: 100%;
+            }
+
+            .footer-social {
+                justify-content: center;
+            }
+
+            .newsletter-form {
+                flex-direction: column;
+                padding: 0 16px;
+            }
+
+                .newsletter-form button {
+                    width: 100%;
+                    justify-content: center;
+                }
+
+            .section-title h2 {
+                font-size: 30px;
+            }
+
+            .student-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .student-info .details {
+                justify-content: center;
+            }
+
+            .cycle-table-wrapper {
+                padding: 12px;
+            }
+
+            .cycle-table {
+                font-size: 12px;
+                min-width: 340px;
+            }
+
+            .results-total {
+                flex-direction: column;
+                gap: 6px;
+                text-align: center;
+            }
+
+            .mission-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .mission-image img {
+                height: 200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-content h1 {
+                font-size: 26px;
+            }
+
+            .partners-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-search-wrapper {
+                padding: 12px;
+            }
+
+            .hero-search-form .btn-search {
+                font-size: 14px;
+                padding: 14px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================
+    NAVBAR
+    ============================ -->
+    <nav class="navbar" id="navbar">
+        <a href="/" class="brand-logo">CRADD<span>.org</span></a>
+        <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="#home">Accueil</a></li>
+            <li><a href="#mission">Mission</a></li>
+            <li><a href="#services">Actions</a></li>
+            <li><a href="#testimonials">Témoignages</a></li>
+            <li><a href="#blog">Actualités</a></li>
+            <li><a href="{% url 'accounts:login' %}" class="btn-login"><i class="fas fa-sign-in-alt"></i> Connexion</a></li>
+        </ul>
+    </nav>
+
+    <!-- ============================
+    HERO
+    ============================ -->
+    <section class="hero" id="home">
+        <canvas class="hero-canvas" id="heroCanvas"></canvas>
+        <div class="hero-content">
+            <span class="badge"><i class="fas fa-leaf"></i> Développement durable</span>
+            <h1>Construisons l'avenir de <span>l'Afrique</span></h1>
+            <p>Chaque enfant congolais mérite une éducation de qualité et un environnement préservé. Ensemble, faisons de l'éducation le moteur du développement durable.</p>
+
+            <div class="hero-search-wrapper">
+                <form class="hero-search-form" id="searchForm" onsubmit="return false;">
+                    <div class="input-group">
+                        <input type="text" id="nomComplet" placeholder="Rechercher un élève (nom, postnom, prénom)" autocomplete="off" required />
+                        <div class="autocomplete-list" id="autocompleteList"></div>
+                    </div>
+                    <button type="button" class="btn-search" id="searchBtn">
+                        <i class="fas fa-search"></i> Consulter les résultats
+                    </button>
+                    <div class="error-msg" id="errorMessage">
+                        <i class="fas fa-exclamation-circle"></i> <span id="errorText">Erreur</span>
+                    </div>
+                    <div class="loading" id="loadingSpinner">
+                        <div class="spinner"></div>
+                        <p style="color:rgba(255,255,255,0.6);">Recherche en cours…</p>
+                    </div>
+
+                    <div class="results-section" id="resultsSection">
+                        <div class="student-card" id="studentCard">
+                            <div class="student-avatar" id="studentAvatar">JD</div>
+                            <div class="student-info">
+                                <h2 id="studentName">Jean Dupont</h2>
+                                <div class="details">
+                                    <span><strong><i class="fas fa-id-card"></i> Matricule :</strong> <span id="studentMatricule">-</span></span>
+                                    <span><strong><i class="fas fa-user-graduate"></i> Classe :</strong> <span id="studentClasse">-</span></span>
+                                    <span><strong><i class="fas fa-school"></i> École :</strong> <span id="studentEcole">-</span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="resultsContainer"></div>
+                    </div>
+
+                    <div class="not-found" id="notFound">
+                        <i class="fas fa-user-slash"></i>
+                        <h3>Aucun élève trouvé</h3>
+                        <p>Vérifiez vos informations et réessayez.</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================
+    MISSION (inchangée)
+    ============================ -->
+    <section class="mission-section section-padding" id="mission">
+        <div class="container">
+            <div class="mission-grid">
+                <div class="mission-text">
+                    <h2>Notre <span>mission</span></h2>
+                    <p>
+                        Le <strong>CRADD</strong> (Centre de Recherche et d'Action pour le Développement Durable)
+                        est une organisation non gouvernementale créée en 2015 pour promouvoir l'éducation inclusive,
+                        la protection de l'environnement et le développement durable en République Démocratique du Congo.
+                    </p>
+                    <p>
+                        Nous croyons que l'éducation et la préservation de notre planète sont les leviers fondamentaux
+                        pour transformer les sociétés et offrir à chaque enfant, quel que soit son origine, les clés de son avenir.
+                    </p>
+                    <div class="mission-stats">
+                        <div class="mission-stat">
+                            <span class="number" data-count="15000">0</span>
+                            <span class="label">Élèves soutenus</span>
+                        </div>
+                        <div class="mission-stat">
+                            <span class="number" data-count="120">0</span>
+                            <span class="label">Écoles partenaires</span>
+                        </div>
+                        <div class="mission-stat">
+                            <span class="number" data-count="8">0</span>
+                            <span class="label">Provinces couvertes</span>
+                        </div>
+                        <div class="mission-stat">
+                            <span class="number" data-count="92">0</span>
+                            <span class="label">% de réussite</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mission-image">
+                    <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?w=800&q=80" alt="Éducation et développement durable" />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================
+    SERVICES (inchangé)
+    ============================ -->
+    <section class="services-section section-padding" id="services">
+        <div class="container">
+            <div class="section-title">
+                <h2>Nos <span>actions</span></h2>
+                <p>Trois piliers pour un développement humain et environnemental durable</p>
+                <div class="line"></div>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="icon"><i class="fas fa-graduation-cap"></i></div>
+                    <h4>Éducation pour tous</h4>
+                    <p>Rendre l'éducation accessible aux enfants et jeunes des communautés rurales et périurbaines à travers la construction d'écoles écologiques et la formation des enseignants.</p>
+                </div>
+                <div class="service-card">
+                    <div class="icon"><i class="fas fa-seedling"></i></div>
+                    <h4>Protection de l'environnement</h4>
+                    <p>Mener des campagnes de reboisement, de gestion des déchets et d'éducation à l'écologie dans les écoles et les communautés pour un avenir plus vert.</p>
+                </div>
+                <div class="service-card">
+                    <div class="icon"><i class="fas fa-hand-holding-heart"></i></div>
+                    <h4>Soutien psychosocial</h4>
+                    <p>Accompagner les élèves et leurs familles avec des programmes de soutien psychologique et social pour favoriser un environnement d'apprentissage serein et résilient.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================
+    TÉMOIGNAGES (inchangé)
+    ============================ -->
+    <section class="testimonials-section section-padding" id="testimonials">
+        <div class="container">
+            <div class="section-title">
+                <h2>Ils <span>témoignent</span></h2>
+                <p>Les voix de ceux qui ont bénéficié de nos actions</p>
+                <div class="line"></div>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="quote"><i class="fas fa-quote-left"></i></div>
+                    <p>"Grâce au CRADD, mon fils a pu reprendre l'école après deux ans d'interruption. Aujourd'hui, il est parmi les meilleurs de sa classe et il participe aux clubs d'écologie."</p>
+                    <div class="author">
+                        <div class="avatar">MM</div>
+                        <div>
+                            <div class="name">Marie Mbuyi</div>
+                            <div class="role">Mère d'élève, Kinshasa</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="quote"><i class="fas fa-quote-left"></i></div>
+                    <p>"Les formations que nous avons reçues sur l'éducation environnementale ont complètement transformé notre approche pédagogique. Les élèves sont plus engagés et conscients des enjeux."</p>
+                    <div class="author">
+                        <div class="avatar">PK</div>
+                        <div>
+                            <div class="name">Paul Kabasele</div>
+                            <div class="role">Enseignant, Lubumbashi</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="quote"><i class="fas fa-quote-left"></i></div>
+                    <p>"Le soutien psychosocial et les activités de reboisement proposés par le CRADD ont permis à de nombreux enfants de surmonter les traumatismes et de retrouver l'espoir."</p>
+                    <div class="author">
+                        <div class="avatar">JM</div>
+                        <div>
+                            <div class="name">Jean Mukendi</div>
+                            <div class="role">Directeur d'école, Goma</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================
+    BLOG (inchangé)
+    ============================ -->
+    <section class="blog-section section-padding" id="blog">
+        <div class="container">
+            <div class="section-title">
+                <h2>Nos <span>actualités</span></h2>
+                <p>Restez informés de nos actions et projets</p>
+                <div class="line"></div>
+            </div>
+            <div class="blog-grid">
+                <div class="blog-card">
+                    <div class="img">
+                        <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?w=800&q=80" alt="École écologique" />
+                        <span class="date">15 Jan 2025</span>
+                    </div>
+                    <div class="content">
+                        <span class="tag">Éducation</span>
+                        <h4>Nouvelle école écologique à Kisangani</h4>
+                        <p>Grâce à vos dons, une nouvelle école construite avec des matériaux durables et équipée de panneaux solaires a été inaugurée, accueillant 300 enfants.</p>
+                        <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                <div class="blog-card">
+                    <div class="img">
+                        <img src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80" alt="Reforestation" />
+                        <span class="date">8 Jan 2025</span>
+                    </div>
+                    <div class="content">
+                        <span class="tag">Environnement</span>
+                        <h4>Campagne de reboisement à Lubumbashi</h4>
+                        <p>Plus de 2 000 arbres plantés avec les élèves et les communautés locales pour lutter contre la déforestation et sensibiliser à la protection de la biodiversité.</p>
+                        <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                <div class="blog-card">
+                    <div class="img">
+                        <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80" alt="Distribution de kits" />
+                        <span class="date">2 Jan 2025</span>
+                    </div>
+                    <div class="content">
+                        <span class="tag">Solidarité</span>
+                        <h4>Distribution de fournitures scolaires à Bunia</h4>
+                        <p>Plus de 1 000 kits scolaires éco-responsables ont été distribués aux enfants vulnérables de la région, leur permettant de débuter l'année sereinement.</p>
+                        <a href="#" class="link">Lire la suite <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================
+    PARTENAIRES (inchangé)
+    ============================ -->
+    <section class="partners-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Nos <span>partenaires</span></h2>
+                <p>Des organisations engagées à nos côtés</p>
+                <div class="line"></div>
+            </div>
+            <div class="partners-grid">
+                <div class="partner-item"><i class="fas fa-university"></i> Ministère de l'Éducation</div>
+                <div class="partner-item"><i class="fas fa-globe-africa"></i> UNESCO</div>
+                <div class="partner-item"><i class="fas fa-hand-holding-usd"></i> UNICEF</div>
+                <div class="partner-item"><i class="fas fa-tree"></i> WWF</div>
+                <div class="partner-item"><i class="fas fa-heart"></i> Croix-Rouge</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================
+    NEWSLETTER (inchangé)
+    ============================ -->
+    <section class="newsletter-section" id="newsletter">
+        <div class="container">
+            <h2>Restez informé</h2>
+            <p>Recevez nos actualités et les rapports de nos actions éducatives et environnementales</p>
+            <form class="newsletter-form" id="newsletterForm" onsubmit="return false;">
+                <input type="email" placeholder="Votre adresse email" required />
+                <button type="button"><i class="fas fa-paper-plane"></i> S'inscrire</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- ============================
+    FOOTER (inchangé)
+    ============================ -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <span class="brand-logo">CRADD<span>.org</span></span>
+                    <p>Organisation non gouvernementale dédiée à l'éducation, à l'environnement et au développement durable en République Démocratique du Congo.</p>
+                    <div class="footer-social">
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>CRADD</h4>
+                    <ul>
+                        <li><a href="#home">Accueil</a></li>
+                        <li><a href="#mission">Mission</a></li>
+                        <li><a href="#services">Nos actions</a></li>
+                        <li><a href="#blog">Actualités</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Accès rapide</h4>
+                    <ul>
+                        <li><a href="#home">Accueil</a></li>
+                        <li><a href="#mission">Chiffres</a></li>
+                        <li><a href="{% url 'accounts:login' %}">Espace enseignant</a></li>
+                        <li><a href="#">Devenir bénévole</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:contact@cradd.org"><i class="fas fa-envelope" style="margin-right:8px;"></i>contact@cradd.org</a></li>
+                        <li><a href="tel:+243123456789"><i class="fas fa-phone" style="margin-right:8px;"></i>+243 12 345 6789</a></li>
+                        <li><a href="#"><i class="fas fa-map-marker-alt" style="margin-right:8px;"></i>Kinshasa, RDC</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 <span class="cradd">CRADD</span> · ONG pour l'Éducation et l'Environnement · Tous droits réservés</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ============================
+    SCRIPTS (corrigés)
+    ============================ -->
+    <script>
+        // ============================================================
+        // CANVAS PARTICLES (inchangé)
+        // ============================================================
+        (function () {
+            const canvas = document.getElementById('heroCanvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            let particles = [];
+            const count = 80;
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            class Particle {
+                constructor() {
+                    this.reset();
+                }
+                reset() {
+                    this.x = Math.random() * width;
+                    this.y = Math.random() * height;
+                    this.size = Math.random() * 2 + 1;
+                    this.speedX = (Math.random() - 0.5) * 0.4;
+                    this.speedY = (Math.random() - 0.5) * 0.4;
+                    this.opacity = Math.random() * 0.3 + 0.1;
+                }
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
+                        this.reset();
+                    }
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(165, 214, 167, ${this.opacity})`;
+                    ctx.fill();
+                }
+            }
+
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle());
+            }
+
+            function drawLines() {
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 150) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(165, 214, 167, ${0.04 * (1 - dist / 150)})`;
+                            ctx.lineWidth = 0.6;
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                drawLines();
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+
+        // ============================================================
+        // CSRF
+        // ============================================================
+        function getCSRFToken() {
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // ============================================================
+        // AUTOCOMPLETE (inchangé)
+        // ============================================================
+        const input = document.getElementById('nomComplet');
+        const list = document.getElementById('autocompleteList');
+        let selected = -1;
+        let timeout;
+
+        input.addEventListener('input', function () {
+            const q = this.value.trim();
+            if (timeout) clearTimeout(timeout);
+            if (q.length < 2) { list.style.display = 'none'; return; }
+            timeout = setTimeout(() => fetchAutocomplete(q), 300);
+        });
+
+        function fetchAutocomplete(q) {
+            fetch(`/autocomplete/?q=${encodeURIComponent(q)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.results && data.results.length) showSuggestions(data.results);
+                    else list.style.display = 'none';
+                })
+                .catch(() => list.style.display = 'none');
+        }
+
+        function showSuggestions(suggestions) {
+            list.innerHTML = '';
+            selected = -1;
+            suggestions.forEach((el, i) => {
+                const div = document.createElement('div');
+                div.className = 'autocomplete-item';
+                div.innerHTML = `
+                        <div><span class="highlight">${el.nom_complet}</span></div>
+                        <span class="sub-info">${el.classe} · ${el.ecole} · ${el.matricule}</span>
+                    `;
+                div.addEventListener('click', () => {
+                    input.value = el.nom_complet;
+                    list.style.display = 'none';
+                    document.getElementById('searchBtn').click();
+                });
+                div.addEventListener('mouseenter', () => {
+                    list.querySelectorAll('.autocomplete-item').forEach(x => x.classList.remove('active'));
+                    div.classList.add('active');
+                    selected = i;
+                });
+                list.appendChild(div);
+            });
+            list.style.display = 'block';
+        }
+
+        input.addEventListener('keydown', function (e) {
+            const items = list.querySelectorAll('.autocomplete-item');
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selected = Math.min(selected + 1, items.length - 1);
+                updateActive(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selected = Math.max(selected - 1, -1);
+                updateActive(items);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selected >= 0 && items[selected]) items[selected].click();
+                else document.getElementById('searchBtn').click();
+            } else if (e.key === 'Escape') {
+                list.style.display = 'none';
+                selected = -1;
+            }
+        });
+
+        function updateActive(items) {
+            items.forEach((el, i) => el.classList.toggle('active', i === selected));
+            if (selected >= 0 && items[selected]) items[selected].scrollIntoView({ block: 'nearest' });
+        }
+
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.hero-search-wrapper')) list.style.display = 'none';
+        });
+
+        // ============================================================
+        // RECHERCHE (CORRIGÉE)
+        // ============================================================
+        function searchResults(query) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.classList.remove('visible');
+            document.getElementById('notFound').style.display = 'none';
+            document.getElementById('resultsSection').classList.remove('visible');
+            document.getElementById('resultsSection').style.display = 'none';
+
+            if (!query.trim()) {
+                showError('Veuillez saisir un nom complet.');
+                input.focus();
+                return;
+            }
+
+            document.getElementById('loadingSpinner').classList.add('active');
+            document.getElementById('searchBtn').disabled = true;
+
+            const params = new URLSearchParams({ nom_complet: query.trim() });
+
+            fetch(`/recherche/?${params}`)
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('loadingSpinner').classList.remove('active');
+                    document.getElementById('searchBtn').disabled = false;
+                    if (data.success) {
+                        displayResults(data);
+                        list.style.display = 'none';
+                    } else {
+                        document.getElementById('notFound').style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('loadingSpinner').classList.remove('active');
+                    document.getElementById('searchBtn').disabled = false;
+                    showError('Une erreur est survenue. Veuillez réessayer.');
+                });
+        }
+
+        document.getElementById('searchBtn').addEventListener('click', function () {
+            searchResults(input.value);
+        });
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !(list.style.display === 'block' && selected >= 0)) {
+                e.preventDefault();
+                document.getElementById('searchBtn').click();
+            }
+        });
+
+        // ============================================================
+        // AFFICHAGE DES RÉSULTATS (VERSION OPTIMISÉE)
+        // ============================================================
+        function displayResults(data) {
+            const eleve = data.eleve;
+            const resultatsParCours = data.resultats_par_cours || {};
+            const resultatAnnuel = data.resultat_annuel;
+
+            // Informations de l'élève
+            const initials = (eleve.prenom.charAt(0) + eleve.nom.charAt(0)).toUpperCase();
+            document.getElementById('studentAvatar').textContent = initials;
+            document.getElementById('studentName').textContent = eleve.nom_complet;
+            document.getElementById('studentMatricule').textContent = eleve.matricule || '-';
+            document.getElementById('studentClasse').textContent = eleve.classe || '-';
+            document.getElementById('studentEcole').textContent = eleve.ecole || '-';
+
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+
+            // Récupérer tous les cycles présents
+            const cyclesSet = new Set();
+            Object.values(resultatsParCours).forEach(cours => {
+                cours.evaluations.forEach(ev => {
+                    if (ev.cycle) cyclesSet.add(ev.cycle);
+                });
+            });
+            const cycles = Array.from(cyclesSet).sort((a, b) => a - b);
+
+            if (cycles.length === 0) {
+                container.innerHTML = `<div class="alert-info"><i class="fas fa-info-circle"></i> Aucun résultat enregistré pour cet élève.</div>`;
+                document.getElementById('resultsSection').style.display = 'block';
+                setTimeout(() => document.getElementById('resultsSection').classList.add('visible'), 50);
+                return;
+            }
+
+            // Pour chaque cycle, construire un tableau
+            cycles.forEach(cycleNum => {
+                // Regrouper les évaluations par cours pour ce cycle
+                const coursMap = {};
+                let periodesSet = new Set();
+                let hasExamen = false;
+
+                Object.keys(resultatsParCours).forEach(coursId => {
+                    const cours = resultatsParCours[coursId];
+                    const evals = cours.evaluations.filter(e => e.cycle === cycleNum);
+                    if (evals.length === 0) return;
+                    coursMap[coursId] = {
+                        nom: cours.cours_nom,
+                        evaluations: evals
+                    };
+                    evals.forEach(e => {
+                        if (e.type === 'periode') periodesSet.add(e.periode);
+                        else if (e.type === 'examen') hasExamen = true;
+                    });
+                });
+
+                if (Object.keys(coursMap).length === 0) return;
+
+                const periodes = Array.from(periodesSet).sort((a, b) => a - b);
+
+                // Créer le wrapper du tableau
+                const wrapper = document.createElement('div');
+                wrapper.className = 'cycle-table-wrapper';
+                let headerHTML = `
+                        <div class="cycle-title"><i class="fas fa-sync-alt"></i> Cycle ${cycleNum}</div>
+                        <table class="cycle-table">
+                            <thead>
+                                <tr>
+                                    <th>Matière</th>
+                                    ${periodes.map(p => `<th>Période ${p}</th>`).join('')}
+                                    ${hasExamen ? '<th>Examen (pts)</th>' : ''}
+                                    ${hasExamen ? '<th>Examen %</th>' : ''}
+                                    <th>Total (pts)</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cycleBody-${cycleNum}"></tbody>
+                        </table>
+                    `;
+                wrapper.innerHTML = headerHTML;
+                const tbody = wrapper.querySelector(`#cycleBody-${cycleNum}`);
+
+                // Totaux par période
+                const totalPeriode = {};
+                periodes.forEach(p => { totalPeriode[p] = { obtenus: 0, max: 0 }; });
+                let totalExamen = { obtenus: 0, max: 0 };
+                let totalCycle = { obtenus: 0, max: 0 };
+
+                // Lignes par cours
+                Object.keys(coursMap).forEach(coursId => {
+                    const cours = coursMap[coursId];
+                    const evals = cours.evaluations;
+                    const notes = {};
+                    evals.forEach(e => {
+                        if (e.type === 'periode') {
+                            notes[`periode_${e.periode}`] = { obtenus: e.points_obtenus, max: e.points_max };
+                        } else if (e.type === 'examen') {
+                            notes['examen'] = { obtenus: e.points_obtenus, max: e.points_max };
+                        }
+                    });
+
+                    let totalCours = { obtenus: 0, max: 0 };
+                    let row = `<tr><td class="cours-cell">${cours.nom}</td>`;
+
+                    periodes.forEach(p => {
+                        const key = `periode_${p}`;
+                        if (notes[key]) {
+                            totalCours.obtenus += notes[key].obtenus;
+                            totalCours.max += notes[key].max;
+                            totalPeriode[p].obtenus += notes[key].obtenus;
+                            totalPeriode[p].max += notes[key].max;
+                            totalCycle.obtenus += notes[key].obtenus;
+                            totalCycle.max += notes[key].max;
+                            row += `<td class="score-cell">${notes[key].obtenus}/${notes[key].max}</td>`;
+                        } else {
+                            row += `<td class="score-cell">-</td>`;
+                        }
+                    });
+
+                    let examenPts = '-', examenPct = '-';
+                    if (hasExamen && notes['examen']) {
+                        totalCours.obtenus += notes['examen'].obtenus;
+                        totalCours.max += notes['examen'].max;
+                        totalExamen.obtenus += notes['examen'].obtenus;
+                        totalExamen.max += notes['examen'].max;
+                        totalCycle.obtenus += notes['examen'].obtenus;
+                        totalCycle.max += notes['examen'].max;
+                        examenPts = `${notes['examen'].obtenus}/${notes['examen'].max}`;
+                        const pct = notes['examen'].max > 0 ? (notes['examen'].obtenus / notes['examen'].max) * 100 : 0;
+                        examenPct = pct.toFixed(1) + '%';
+                    }
+
+                    if (hasExamen) {
+                        row += `<td class="score-cell">${examenPts}</td>`;
+                        row += `<td class="score-cell">${examenPct}</td>`;
+                    }
+
+                    const pctCours = totalCours.max > 0 ? (totalCours.obtenus / totalCours.max) * 100 : 0;
+                    const cls = pctCours >= 70 ? 'high' : (pctCours >= 50 ? 'medium' : 'low');
+                    row += `<td class="score-cell">${totalCours.obtenus}/${totalCours.max}</td>`;
+                    row += `<td class="score-cell ${cls}">${pctCours.toFixed(1)}%</td></tr>`;
+                    tbody.innerHTML += row;
+                });
+
+                // Totaux par période
+                periodes.forEach(p => {
+                    const pct = totalPeriode[p].max > 0 ? (totalPeriode[p].obtenus / totalPeriode[p].max) * 100 : 0;
+                    const cls = pct >= 70 ? 'high' : (pct >= 50 ? 'medium' : 'low');
+                    let row = `<tr class="periode-total"><td>Total Période ${p}</td>`;
+                    periodes.forEach(p2 => {
+                        if (p2 === p) {
+                            row += `<td class="score-cell ${cls}">${pct.toFixed(1)}%</td>`;
+                        } else {
+                            row += `<td></td>`;
+                        }
+                    });
+                    if (hasExamen) { row += `<td></td><td></td>`; }
+                    row += `<td></td><td></td></tr>`;
+                    tbody.innerHTML += row;
+                });
+
+                // Total examen
+                if (hasExamen) {
+                    const pctExamen = totalExamen.max > 0 ? (totalExamen.obtenus / totalExamen.max) * 100 : 0;
+                    const clsExamen = pctExamen >= 70 ? 'high' : (pctExamen >= 50 ? 'medium' : 'low');
+                    let row = `<tr class="examen-total"><td>Total Examen</td>`;
+                    periodes.forEach(() => row += `<td></td>`);
+                    row += `<td>${totalExamen.obtenus}/${totalExamen.max}</td>`;
+                    row += `<td class="score-cell ${clsExamen}">${pctExamen.toFixed(1)}%</td>`;
+                    row += `<td></td><td></td></tr>`;
+                    tbody.innerHTML += row;
+                }
+
+                // Total cycle
+                const pctCycle = totalCycle.max > 0 ? (totalCycle.obtenus / totalCycle.max) * 100 : 0;
+                const clsCycle = pctCycle >= 70 ? 'high' : (pctCycle >= 50 ? 'medium' : 'low');
+                let rowCycle = `<tr class="total-row"><td>Total cycle ${cycleNum}</td>`;
+                periodes.forEach(() => rowCycle += `<td></td>`);
+                if (hasExamen) { rowCycle += `<td></td><td></td>`; }
+                rowCycle += `<td></td>`;
+                rowCycle += `<td class="score-cell ${clsCycle}">${pctCycle.toFixed(1)}%</td></tr>`;
+                tbody.innerHTML += rowCycle;
+
+                container.appendChild(wrapper);
+            });
+
+            // Résultat annuel
+            if (resultatAnnuel && resultatAnnuel.pourcentage_general !== null && resultatAnnuel.pourcentage_general !== undefined) {
+                const gen = resultatAnnuel.pourcentage_general;
+                const clsGen = gen >= 70 ? 'success' : (gen >= 50 ? 'medium' : 'danger');
+                const totalDiv = document.createElement('div');
+                totalDiv.className = 'results-total';
+                totalDiv.innerHTML = `
+                        <span class="total-label"><i class="fas fa-calculator"></i> Pourcentage général</span>
+                        <span class="total-score ${clsGen}">${gen.toFixed(1)}%</span>
+                    `;
+                container.appendChild(totalDiv);
+                if (gen >= 50) launchConfetti();
+            } else {
+                const info = document.createElement('div');
+                info.className = 'alert-info';
+                info.innerHTML = '<i class="fas fa-info-circle"></i> Le pourcentage général n\'est disponible que lorsque tous les cycles sont remplis.';
+                container.appendChild(info);
+            }
+
+            // Afficher la section
+            document.getElementById('resultsSection').style.display = 'block';
+            setTimeout(() => document.getElementById('resultsSection').classList.add('visible'), 50);
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ============================================================
+        // CONFETTIS
+        // ============================================================
+        function launchConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+                setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: { y: 0.5, x: 0.2 } }), 200);
+                setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: { y: 0.5, x: 0.8 } }), 400);
+                setTimeout(() => confetti({ particleCount: 100, spread: 120, origin: { y: 0.4 } }), 600);
+            }
+        }
+
+        // ============================================================
+        // ERREURS
+        // ============================================================
+        function showError(msg) {
+            const err = document.getElementById('errorMessage');
+            document.getElementById('errorText').textContent = msg;
+            err.classList.add('visible');
+        }
+
+        // ============================================================
+        // MENU MOBILE (inchangé)
+        // ============================================================
+        document.getElementById('menuToggle').addEventListener('click', function () {
+            document.getElementById('navLinks').classList.toggle('active');
+        });
+
+        // ============================================================
+        // NEWSLETTER (inchangé)
+        // ============================================================
+        document.querySelector('.newsletter-form button').addEventListener('click', function () {
+            const email = document.querySelector('.newsletter-form input').value.trim();
+            if (email) {
+                alert('Merci pour votre inscription ! Vous recevrez nos prochaines actualités.');
+                document.querySelector('.newsletter-form input').value = '';
+            } else {
+                alert('Veuillez saisir une adresse email valide.');
+            }
+        });
+
+        // ============================================================
+        // SCROLL ANIMATIONS & COUNTERS (inchangé)
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function () {
+            window.addEventListener('scroll', function () {
+                const navbar = document.getElementById('navbar');
+                if (window.scrollY > 20) {
+                    navbar.classList.add('navbar-scrolled');
+                } else {
+                    navbar.classList.remove('navbar-scrolled');
+                }
+            });
+
+            const counters = document.querySelectorAll('.mission-stat .number');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const el = entry.target;
+                        const target = parseInt(el.getAttribute('data-count'));
+                        const duration = 2000;
+                        const step = Math.max(1, Math.floor(target / 60));
+                        let current = 0;
+                        const timer = setInterval(() => {
+                            current += step;
+                            if (current >= target) {
+                                el.textContent = target + (target === 92 ? '%' : '+');
+                                clearInterval(timer);
+                            } else {
+                                el.textContent = current + (target === 92 ? '%' : '+');
+                            }
+                        }, 30);
+                        observer.unobserve(el);
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            counters.forEach(c => observer.observe(c));
+
+            const fadeElems = document.querySelectorAll('.service-card, .testimonial-card, .blog-card, .partner-item');
+            const fadeObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            fadeElems.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                fadeObserver.observe(el);
+            });
+
+            setTimeout(() => input.focus(), 800);
+        });
+    </script>
+</body>
+</html>

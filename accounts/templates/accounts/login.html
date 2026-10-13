@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Connexion · CRADDasbl{% endblock %}
+
+{% block content_public %}
+
+<div class="login-page-wrapper">
+    <div class="login-card">
+
+        <div class="login-header">
+            <div class="login-icon">
+                <i class="fas fa-sign-in-alt"></i>
+            </div>
+            <h1 class="login-title">Bienvenue</h1>
+            <p class="login-subtitle">Connectez-vous pour accéder à votre espace</p>
+        </div>
+
+        {% if form.non_field_errors or error %}
+        <div class="login-alert" role="alert">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>
+                {% if form.non_field_errors %}
+                    {{ form.non_field_errors|first }}
+                {% else %}
+                    {{ error }}
+                {% endif %}
+            </span>
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'accounts:login' %}" novalidate autocomplete="off" class="login-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+
+            <div class="wp-form-group">
+                <label for="username" class="wp-form-label">
+                    <i class="fas fa-user"></i>
+                    Nom d'utilisateur
+                </label>
+                <input type="text"
+                       class="wp-input {% if form.username.errors %}has-error{% endif %}"
+                       id="username"
+                       name="username"
+                       value="{{ username|default:'' }}"
+                       placeholder="Entrez votre nom d'utilisateur"
+                       required
+                       autofocus
+                       autocomplete="username">
+                {% if form.username.errors %}
+                <span class="wp-form-error">{{ form.username.errors|striptags }}</span>
+                {% endif %}
+            </div>
+
+            <div class="wp-form-group">
+                <label for="password" class="wp-form-label">
+                    <i class="fas fa-lock"></i>
+                    Mot de passe
+                </label>
+                <div class="password-wrapper">
+                    <input type="password"
+                           class="wp-input {% if form.password.errors %}has-error{% endif %}"
+                           id="password"
+                           name="password"
+                           placeholder="Entrez votre mot de passe"
+                           required
+                           autocomplete="current-password">
+                    <button type="button"
+                            class="password-toggle"
+                            id="togglePassword"
+                            tabindex="-1"
+                            aria-label="Afficher le mot de passe">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+                {% if form.password.errors %}
+                <span class="wp-form-error">{{ form.password.errors|striptags }}</span>
+                {% endif %}
+            </div>
+
+            <div class="login-forgot">
+                <a href="{% url 'accounts:password_reset_request' %}">
+                    <i class="fas fa-key"></i> Mot de passe oublié ?
+                </a>
+            </div>
+
+            <button type="submit" class="wp-btn lg login-submit">
+                <i class="fas fa-sign-in-alt"></i> Se connecter
+            </button>
+
+            <div class="login-footer">
+                <a href="{% url 'ecoles:index' %}">
+                    <i class="fas fa-arrow-left"></i> Retour à l'accueil
+                </a>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       PAGE DE CONNEXION — Sobre et professionnelle
+    ============================================================ */
+    .login-page-wrapper {
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: calc(70px + 3rem) 1rem 3rem;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        background: var(--wp-surface-alt);
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 440px;
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius-lg);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        padding: 40px 36px 32px;
+        animation: loginCardIn 0.4s ease-out;
+    }
+
+    @keyframes loginCardIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---------- En-tête ---------- */
+    .login-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .login-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 18px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--wp-primary), var(--wp-primary-hover));
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        box-shadow: 0 8px 20px rgba(34, 113, 177, 0.30);
+    }
+
+    .login-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--wp-text-strong);
+        margin: 0 0 6px;
+        letter-spacing: -0.02em;
+    }
+
+    .login-subtitle {
+        font-size: 13.5px;
+        color: var(--wp-text-muted);
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    /* ---------- Alerte ---------- */
+    .login-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+        margin-bottom: 20px;
+        background: var(--wp-danger-soft);
+        border: 1px solid rgba(214, 54, 56, 0.25);
+        border-left: 4px solid var(--wp-danger);
+        border-radius: var(--wp-radius-sm);
+        color: var(--wp-danger-hover);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .login-alert i {
+        flex-shrink: 0;
+        font-size: 15px;
+        margin-top: 1px;
+    }
+
+    .login-alert span {
+        flex: 1;
+        word-break: break-word;
+    }
+
+    /* ---------- Formulaire ---------- */
+    .login-form { margin: 0; }
+
+    .login-form .wp-form-group {
+        margin-bottom: 18px;
+    }
+
+    .login-form .wp-form-label {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--wp-text);
+        margin-bottom: 8px;
+    }
+
+    .login-form .wp-form-label i {
+        color: var(--wp-primary);
+        font-size: 12px;
+        width: 14px;
+        text-align: center;
+    }
+
+    .login-form .wp-input {
+        padding: 12px 14px;
+        font-size: 14px;
+        border-radius: var(--wp-radius-sm);
+        transition: all 0.2s ease;
+    }
+
+    .login-form .wp-input:focus {
+        border-color: var(--wp-primary);
+        box-shadow: 0 0 0 4px rgba(34, 113, 177, 0.12);
+    }
+
+    .login-form .wp-input.has-error {
+        border-color: var(--wp-danger);
+        box-shadow: 0 0 0 3px var(--wp-danger-soft);
+    }
+
+    /* ---------- Champ mot de passe ---------- */
+    .password-wrapper {
+        position: relative;
+    }
+
+    .password-wrapper .wp-input {
+        padding-right: 48px;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: var(--wp-text-light);
+        width: 36px;
+        height: 36px;
+        border-radius: var(--wp-radius-sm);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: all var(--wp-transition);
+    }
+
+    .password-toggle:hover {
+        color: var(--wp-primary);
+        background: var(--wp-primary-soft);
+    }
+
+    /* ---------- Lien mot de passe oublié ---------- */
+    .login-forgot {
+        text-align: right;
+        margin: -4px 0 22px;
+    }
+
+    .login-forgot a {
+        font-size: 12.5px;
+        color: var(--wp-primary);
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: color var(--wp-transition);
+    }
+
+    .login-forgot a:hover {
+        color: var(--wp-primary-hover);
+        text-decoration: underline;
+    }
+
+    .login-forgot a i {
+        font-size: 11px;
+    }
+
+    /* ---------- Bouton ---------- */
+    .login-submit {
+        width: 100%;
+        justify-content: center;
+        padding: 13px 24px;
+        font-size: 14px;
+        font-weight: 700;
+        border-radius: var(--wp-radius-sm);
+        letter-spacing: 0.3px;
+    }
+
+    .login-submit i {
+        font-size: 13px;
+    }
+
+    /* ---------- Pied de carte ---------- */
+    .login-footer {
+        text-align: center;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--wp-border-light);
+    }
+
+    .login-footer a {
+        font-size: 13px;
+        color: var(--wp-text-muted);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        transition: color var(--wp-transition);
+    }
+
+    .login-footer a:hover {
+        color: var(--wp-primary);
+    }
+
+    .login-footer a i {
+        font-size: 12px;
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 576px) {
+        .login-page-wrapper {
+            padding: calc(64px + 2rem) 12px 2rem;
+        }
+
+        .login-card {
+            padding: 30px 22px 24px;
+            border-radius: var(--wp-radius);
+        }
+
+        .login-icon {
+            width: 56px;
+            height: 56px;
+            font-size: 22px;
+            margin-bottom: 14px;
+        }
+
+        .login-title {
+            font-size: 20px;
+        }
+
+        .login-subtitle {
+            font-size: 12.5px;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleBtn = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+        const eyeIcon = document.getElementById('eyeIcon');
+
+        if (toggleBtn && passwordInput && eyeIcon) {
+            toggleBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const isPassword = passwordInput.getAttribute('type') === 'password';
+                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                eyeIcon.classList.toggle('fa-eye', !isPassword);
+                eyeIcon.classList.toggle('fa-eye-slash', isPassword);
+            });
+        }
+    });
+</script>
+{% endblock %}

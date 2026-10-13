@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Journal d'activité - CRADD{% endblock %}
+{% block page_heading %}Journal d'activité{% endblock %}
+{% block page_subtitle %}Historique des actions effectuées sur la plateforme{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Journal d'activité</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     FILTRES
+============================================================ -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-filter" style="color:var(--wp-primary);"></i> Filtres</h3>
+    </div>
+    <div class="wp-card-body">
+        <form method="get">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="id_filter_action" class="wp-form-label">
+                        <i class="fas fa-bolt"></i> Action
+                    </label>
+                    <select name="action" id="id_filter_action" class="wp-select">
+                        <option value="">Toutes</option>
+                        {% for value, label in actions %}
+                            <option value="{{ value }}" {% if selected_action == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="id_filter_user" class="wp-form-label">
+                        <i class="fas fa-user"></i> Utilisateur
+                    </label>
+                    <select name="user" id="id_filter_user" class="wp-select">
+                        <option value="">Tous</option>
+                        {% for u in users %}
+                            <option value="{{ u.id }}" {% if selected_user == u.id|stringformat:"s" %}selected{% endif %}>
+                                {{ u.get_full_name|default:u.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="id_filter_model" class="wp-form-label">
+                        <i class="fas fa-cube"></i> Modèle
+                    </label>
+                    <select name="model" id="id_filter_model" class="wp-select">
+                        <option value="">Tous</option>
+                        {% for value, label in models %}
+                            <option value="{{ value }}" {% if selected_model == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="wp-form-actions-inline" style="width:100%;">
+                        <button type="submit" class="wp-btn" style="flex:1;">
+                            <i class="fas fa-filter"></i> Filtrer
+                        </button>
+                        <a href="{% url 'accounts:audit_log' %}" class="wp-btn outline" title="Réinitialiser">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================
+     TABLEAU DES LOGS
+============================================================ -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3>
+            <i class="fas fa-history" style="color:var(--wp-primary);"></i>
+            Journal d'activité
+        </h3>
+        <span class="wp-count-badge">{{ logs.paginator.count }} entrée{{ logs.paginator.count|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if logs %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Date / Heure</th>
+                        <th>Utilisateur</th>
+                        <th>Action</th>
+                        <th>Modèle</th>
+                        <th>Objet</th>
+                        <th>IP</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td data-label="Date / Heure">
+                            <span style="font-size:12.5px; color:var(--wp-text-muted); white-space:nowrap;">
+                                <i class="fas fa-clock" style="font-size:10px;"></i>
+                                {{ log.timestamp|date:"d/m/Y H:i" }}
+                            </span>
+                        </td>
+                        <td data-label="Utilisateur">
+                            {% if log.utilisateur %}
+                                <span style="display:inline-flex; align-items:center; gap:8px; font-size:13px;">
+                                    <span style="width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg, var(--wp-primary), var(--wp-primary-light)); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:700; flex-shrink:0;">
+                                        {{ log.utilisateur.prenom|slice:":1"|upper }}{{ log.utilisateur.nom|slice:":1"|upper }}
+                                    </span>
+                                    <strong style="color:var(--wp-text-strong);">
+                                        {{ log.utilisateur.get_full_name|default:log.utilisateur.username }}
+                                    </strong>
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic; font-size:12.5px;">
+                                    <i class="fas fa-user-slash"></i> Utilisateur supprimé
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Action">
+                            {% if log.action == 'LOGIN' %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-sign-in-alt"></i> {{ log.get_action_display }}
+                                </span>
+                            {% elif log.action == 'LOGOUT' %}
+                                <span class="wp-badge wp-badge-neutral">
+                                    <i class="fas fa-sign-out-alt"></i> {{ log.get_action_display }}
+                                </span>
+                            {% elif log.action == 'CREATE' %}
+                                <span class="wp-badge wp-badge-primary">
+                                    <i class="fas fa-plus-circle"></i> {{ log.get_action_display }}
+                                </span>
+                            {% elif log.action == 'UPDATE' %}
+                                <span class="wp-badge wp-badge-warning">
+                                    <i class="fas fa-pen"></i> {{ log.get_action_display }}
+                                </span>
+                            {% elif log.action == 'DELETE' %}
+                                <span class="wp-badge wp-badge-danger">
+                                    <i class="fas fa-trash"></i> {{ log.get_action_display }}
+                                </span>
+                            {% elif log.action == 'LOGIN_FAILED' %}
+                                <span class="wp-badge wp-badge-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> {{ log.get_action_display }}
+                                </span>
+                            {% elif log.action == 'VIEW' %}
+                                <span class="wp-badge wp-badge-info">
+                                    <i class="fas fa-eye"></i> {{ log.get_action_display }}
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-info">
+                                    <i class="fas fa-bolt"></i> {{ log.get_action_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Modèle">
+                            {% if log.get_model_name_display %}
+                                <span class="wp-badge wp-badge-neutral">
+                                    <i class="fas fa-cube"></i> {{ log.get_model_name_display }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Objet">
+                            {% if log.object_repr %}
+                                <span style="font-size:12.5px; color:var(--wp-text-muted);">
+                                    {{ log.object_repr|truncatechars:30 }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="IP">
+                            {% if log.ip_address %}
+                                <span class="wp-code" style="font-size:11px;">
+                                    {{ log.ip_address }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Statut">
+                            {% if log.success %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-check"></i> OK
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger">
+                                    <i class="fas fa-times"></i> Échec
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-history"></i>
+            <p>Aucune activité enregistrée pour le moment.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ============================================================
+     PAGINATION
+============================================================ -->
+{% if logs.has_other_pages %}
+<div class="wp-card" style="margin-top:20px;">
+    <div class="wp-card-body">
+        <div class="wp-pagination">
+            {% if logs.has_previous %}
+                <a href="?page=1{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_model %}&model={{ selected_model }}{% endif %}"
+                   class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ logs.previous_page_number }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_model %}&model={{ selected_model }}{% endif %}"
+                   class="wp-page-link">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-left"></i></span>
+            {% endif %}
+
+            {% for num in logs.paginator.page_range %}
+                {% if logs.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > logs.number|add:"-3" and num < logs.number|add:"3" %}
+                    <a href="?page={{ num }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_model %}&model={{ selected_model }}{% endif %}"
+                       class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if logs.has_next %}
+                <a href="?page={{ logs.next_page_number }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_model %}&model={{ selected_model }}{% endif %}"
+                   class="wp-page-link">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="?page={{ logs.paginator.num_pages }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_model %}&model={{ selected_model }}{% endif %}"
+                   class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:12px; color:var(--wp-text-light);">
+            Page {{ logs.number }} sur {{ logs.paginator.num_pages }}
+            · {{ logs.paginator.count }} entrée{{ logs.paginator.count|pluralize }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

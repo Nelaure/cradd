@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Écoles - CRADD{% endblock %}
+{% block page_heading %}Écoles{% endblock %}
+{% block page_subtitle %}Gestion des établissements scolaires{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Écoles</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== EN-TÊTE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-school" style="color:var(--wp-primary);"></i>
+                Écoles
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Liste des établissements scolaires enregistrés.
+            </p>
+        </div>
+        {# ✅ Bouton "Ajouter" réservé à l'Admin #}
+        {% if user.est_administrateur %}
+        <a href="{% url 'ecoles:ecole_create' %}" class="wp-btn">
+            <i class="fas fa-plus"></i> Ajouter une école
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== FILTRES ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-filter"></i> Filtres</h3>
+    </div>
+    <div class="wp-card-body">
+        <form method="get">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="wp-form-label">
+                        <i class="fas fa-search"></i> Recherche
+                    </label>
+                    <input type="text" name="search" id="search" class="wp-input"
+                           placeholder="Nom ou code..." value="{{ request.GET.search|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="province" class="wp-form-label">
+                        <i class="fas fa-map-marker-alt"></i> Province
+                    </label>
+                    <select name="province" id="province" class="wp-select">
+                        <option value="">Toutes les provinces</option>
+                        {% for province in provinces %}
+                            <option value="{{ province.id }}"
+                                    {% if selected_province|stringformat:"s" == province.id|stringformat:"s" %}selected{% endif %}>
+                                {{ province.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="type_gestion" class="wp-form-label">
+                        <i class="fas fa-building"></i> Type gestion
+                    </label>
+                    <select name="type_gestion" id="type_gestion" class="wp-select">
+                        <option value="">Tous</option>
+                        <option value="public" {% if selected_type_gestion == 'public' %}selected{% endif %}>Publique</option>
+                        <option value="prive" {% if selected_type_gestion == 'prive' %}selected{% endif %}>Privée</option>
+                        <option value="conventionne" {% if selected_type_gestion == 'conventionne' %}selected{% endif %}>Conventionné</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="est_active" class="wp-form-label">
+                        <i class="fas fa-toggle-on"></i> Statut
+                    </label>
+                    <select name="est_active" id="est_active" class="wp-select">
+                        <option value="">Tous</option>
+                        <option value="1" {% if selected_est_active == '1' %}selected{% endif %}>Actives</option>
+                        <option value="0" {% if selected_est_active == '0' %}selected{% endif %}>Inactives</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <div class="wp-form-actions-inline" style="width:100%;">
+                        <button type="submit" class="wp-btn" style="flex:1;">
+                            <i class="fas fa-filter"></i> Filtrer
+                        </button>
+                        <a href="{% url 'ecoles:ecole_list' %}" class="wp-btn outline" title="Réinitialiser">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== TABLEAU ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-list"></i> Liste des écoles</h3>
+        <span class="wp-count-badge">{{ ecoles.paginator.count }} école{{ ecoles.paginator.count|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if ecoles %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Code</th>
+                        <th>Province</th>
+                        <th>Type de gestion</th>
+                        <th>Responsable</th>
+                        <th>Téléphone</th>
+                        <th>Statut</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ecole in ecoles %}
+                    <tr>
+                        <td data-label="Nom">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-school" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ ecole.nom }}
+                            </strong>
+                        </td>
+                        <td data-label="Code">
+                            <span class="wp-code">{{ ecole.code }}</span>
+                        </td>
+                        <td data-label="Province">
+                            <span class="wp-badge wp-badge-neutral">
+                                <i class="fas fa-map-marker-alt"></i> {{ ecole.province.nom }}
+                            </span>
+                        </td>
+                        <td data-label="Type de gestion">
+                            {% if ecole.type_gestion == 'public' %}
+                                <span class="wp-badge wp-badge-primary">
+                                    <i class="fas fa-landmark"></i> {{ ecole.get_type_gestion_display }}
+                                </span>
+                            {% elif ecole.type_gestion == 'prive' %}
+                                <span class="wp-badge wp-badge-info">
+                                    <i class="fas fa-user-tie"></i> {{ ecole.get_type_gestion_display }}
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-warning">
+                                    <i class="fas fa-handshake"></i> {{ ecole.get_type_gestion_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Responsable">
+                            {% if ecole.responsable %}
+                                <span style="font-size:12.5px;">{{ ecole.responsable }}</span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Téléphone">
+                            {% if ecole.telephone %}
+                                <span style="font-size:12.5px;">
+                                    <i class="fas fa-phone" style="color:var(--wp-success); font-size:11px;"></i>
+                                    {{ ecole.telephone }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Statut">
+                            {% if ecole.est_active %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-check-circle"></i> Active
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger">
+                                    <i class="fas fa-times-circle"></i> Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+                                {# ✅ Voir détail : Admin, Ministre, Proved, Inspecteur #}
+                                {% if user.est_administrateur or user.est_ministre or user.est_proved or user.est_inspecteur %}
+                                <a href="{% url 'ecoles:ecole_detail' ecole.id %}"
+                                   class="wp-action-btn info"
+                                   title="Voir le détail">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% endif %}
+
+                                {# ✅ Modifier : Admin uniquement #}
+                                {% if user.est_administrateur %}
+                                <a href="{% url 'ecoles:ecole_edit' ecole.id %}"
+                                   class="wp-action-btn edit"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+
+                                {# ✅ Supprimer : Admin uniquement #}
+                                {% if user.est_administrateur %}
+                                <a href="{% url 'ecoles:ecole_delete' ecole.id %}"
+                                   class="wp-action-btn danger"
+                                   title="Supprimer"
+                                   onclick="return confirm('Supprimer l\'école « {{ ecole.nom }} » ?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+
+                                {# Si aucun bouton n'est disponible, afficher un tiret #}
+                                {% if not user.est_administrateur and not user.est_ministre and not user.est_proved and not user.est_inspecteur %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-school"></i>
+            <p>Aucune école trouvée.</p>
+            {% if user.est_administrateur %}
+            <a href="{% url 'ecoles:ecole_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Créer la première école
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== PAGINATION ===== -->
+{% if ecoles.has_other_pages %}
+<div class="wp-card" style="margin-top:20px;">
+    <div class="wp-card-body">
+        <div class="wp-pagination">
+            {% if ecoles.has_previous %}
+                <a href="?page=1{{ query_params }}" class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ ecoles.previous_page_number }}{{ query_params }}" class="wp-page-link">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-left"></i></span>
+            {% endif %}
+
+            {% for num in ecoles.paginator.page_range %}
+                {% if ecoles.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > ecoles.number|add:"-3" and num < ecoles.number|add:"3" %}
+                    <a href="?page={{ num }}{{ query_params }}" class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if ecoles.has_next %}
+                <a href="?page={{ ecoles.next_page_number }}{{ query_params }}" class="wp-page-link">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="?page={{ ecoles.paginator.num_pages }}{{ query_params }}" class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:12px; color:var(--wp-text-light);">
+            Page {{ ecoles.number }} sur {{ ecoles.paginator.num_pages }}
+            · {{ ecoles.paginator.count }} école{{ ecoles.paginator.count|pluralize }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

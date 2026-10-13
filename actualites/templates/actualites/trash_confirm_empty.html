@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Vider la corbeille - CRADD{% endblock %}
+{% block page_heading %}Vider la corbeille{% endblock %}
+{% block page_subtitle %}Confirmation requise{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'actualites:dashboard' %}">Actualités</a>
+    <span class="sep">/</span>
+    <a href="{% url 'actualites:trash_list' %}">Corbeille</a>
+    <span class="sep">/</span>
+    <span>Vider</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="wp-card" style="border-left:4px solid var(--wp-danger);">
+            <div class="wp-card-header">
+                <h3 style="color:var(--wp-danger);">
+                    <i class="fas fa-trash-alt"></i>
+                    Vider la corbeille
+                </h3>
+            </div>
+
+            <div class="wp-card-body" style="text-align:center; padding:32px 24px;">
+
+                <!-- Icône d'avertissement -->
+                <div style="width:80px; height:80px; margin:0 auto 20px; border-radius:50%; background:var(--wp-danger-soft); display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-exclamation-triangle" style="font-size:36px; color:var(--wp-danger);"></i>
+                </div>
+
+                <!-- Titre de confirmation -->
+                <h4 style="margin:0 0 12px; font-size:17px; font-weight:800; color:var(--wp-text-strong);">
+                    Vider la corbeille ?
+                </h4>
+
+                <!-- Message -->
+                <p style="max-width:450px; margin:0 auto 24px; font-size:13.5px; line-height:1.7; color:var(--wp-text-muted);">
+                    Cette action supprimera <strong>définitivement</strong>
+                    <strong style="color:var(--wp-danger); font-size:15px;">{{ articles.count }}</strong>
+                    article{{ articles.count|pluralize }}.
+                    <br>
+                    <span style="display:inline-block; margin-top:8px; padding:6px 12px; background:var(--wp-danger-soft); border-radius:4px; color:var(--wp-danger); font-weight:700; font-size:12.5px;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Cette opération est irréversible.
+                    </span>
+                </p>
+
+                <!-- Boutons d'action -->
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="wp-form-actions" style="justify-content:center; gap:14px; border-top:none; padding-top:0; margin-top:0;">
+                        <a href="{% url 'actualites:trash_list' %}" class="wp-btn secondary">
+                            <i class="fas fa-times"></i> Annuler
+                        </a>
+                        <button type="submit" class="wp-btn danger">
+                            <i class="fas fa-trash"></i> Oui, vider la corbeille
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

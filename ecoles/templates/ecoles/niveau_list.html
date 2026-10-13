@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Niveaux - CRADD{% endblock %}
+{% block page_heading %}Gestion des niveaux{% endblock %}
+{% block page_subtitle %}Niveaux de référence et instances par école{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Niveaux</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== EN-TÊTE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-layer-group" style="color:var(--wp-primary);"></i>
+                Niveaux
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Gérez les niveaux de référence et leurs instances dans les écoles.
+            </p>
+        </div>
+        {% if user.est_administrateur %}
+            <a href="{% url 'ecoles:niveau_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Créer un niveau de référence
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== FILTRE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body">
+        <form method="get">
+            <div class="wp-form-grid">
+                <div>
+                    <label for="id_section_filter" class="wp-form-label">
+                        <i class="fas fa-stream"></i> Section
+                    </label>
+                    <select name="section" id="id_section_filter" class="wp-select" onchange="this.form.submit()">
+                        <option value="">Toutes les sections</option>
+                        {% for section in sections %}
+                            <option value="{{ section.id }}" {% if selected_section == section.id|stringformat:"s" %}selected{% endif %}>
+                                {{ section.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="wp-form-actions-inline">
+                    <button type="submit" class="wp-btn secondary">
+                        <i class="fas fa-filter"></i> Filtrer
+                    </button>
+                    {% if selected_section %}
+                        <a href="{% url 'ecoles:niveau_list' %}" class="wp-btn outline">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== TABLEAU ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3>
+            <i class="fas fa-list"></i> Liste des niveaux
+        </h3>
+        <span class="wp-count-badge">{{ niveaux.paginator.count }} niveau{{ niveaux.paginator.count|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if niveaux %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Section</th>
+                        <th>École</th>
+                        <th>Type</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for niveau in niveaux %}
+                    <tr>
+                        <td data-label="Nom">
+                            <div style="display:flex; flex-direction:column; gap:3px;">
+                                <strong style="color:var(--wp-text-strong);">{{ niveau.nom }}</strong>
+                                {% if niveau.description %}
+                                    <small style="color:var(--wp-text-light); font-size:11.5px;">
+                                        {{ niveau.description|truncatechars:60 }}
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td data-label="Section">
+                            {% if niveau.section %}
+                                <span class="wp-badge wp-badge-neutral">
+                                    <i class="fas fa-stream"></i> {{ niveau.section.nom }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light);">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="École">
+                            {% if niveau.ecole %}
+                                <span style="font-size:13px;">
+                                    <i class="fas fa-school" style="color:var(--wp-primary);"></i>
+                                    {{ niveau.ecole.nom }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light);">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Type">
+                            {% if niveau.est_reference %}
+                                <span class="wp-badge wp-badge-primary">
+                                    <i class="fas fa-star"></i> Référence
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-info">
+                                    <i class="fas fa-copy"></i> Instance
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+
+                                {# Bouton Synchroniser (admin, référence uniquement) #}
+                                {% if niveau.est_reference and user.est_administrateur %}
+                                    <a href="{% url 'ecoles:synchroniser_niveau' niveau.pk %}"
+                                       class="wp-action-btn warning"
+                                       title="Synchroniser ce niveau vers toutes ses instances"
+                                       onclick="return confirm('Synchroniser le niveau « {{ niveau.nom }} » vers toutes ses instances ?');">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </a>
+                                {% endif %}
+
+                                {# Bouton Affecter (agent/enseignant sur référence) #}
+                                {% if niveau.est_reference and not user.est_administrateur %}
+                                    {% if user.est_agent or user.est_enseignant %}
+                                        <a href="{% url 'ecoles:niveau_affecter' niveau.pk %}"
+                                           class="wp-action-btn success"
+                                           title="Affecter à mon école">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+
+                                {# Modifier #}
+                                <a href="{% url 'ecoles:niveau_edit' niveau.pk %}"
+                                   class="wp-action-btn edit"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+
+                                {# Supprimer #}
+                                <a href="{% url 'ecoles:niveau_delete' niveau.pk %}"
+                                   class="wp-action-btn danger"
+                                   title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-inbox"></i>
+            <p>Aucun niveau trouvé.</p>
+            {% if user.est_administrateur %}
+                <a href="{% url 'ecoles:niveau_create' %}" class="wp-btn">
+                    <i class="fas fa-plus"></i> Créer le premier niveau
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== PAGINATION ===== -->
+{% if niveaux.has_other_pages %}
+<div class="wp-card" style="margin-top:20px;">
+    <div class="wp-card-body">
+        <div class="wp-pagination">
+            {% if niveaux.has_previous %}
+                <a href="?page=1{% if selected_section %}&section={{ selected_section }}{% endif %}"
+                   class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ niveaux.previous_page_number }}{% if selected_section %}&section={{ selected_section }}{% endif %}"
+                   class="wp-page-link">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-left"></i></span>
+            {% endif %}
+
+            {% for num in niveaux.paginator.page_range %}
+                {% if niveaux.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > niveaux.number|add:"-3" and num < niveaux.number|add:"3" %}
+                    <a href="?page={{ num }}{% if selected_section %}&section={{ selected_section }}{% endif %}"
+                       class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if niveaux.has_next %}
+                <a href="?page={{ niveaux.next_page_number }}{% if selected_section %}&section={{ selected_section }}{% endif %}"
+                   class="wp-page-link">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="?page={{ niveaux.paginator.num_pages }}{% if selected_section %}&section={{ selected_section }}{% endif %}"
+                   class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:12px; color:var(--wp-text-light);">
+            Page {{ niveaux.number }} sur {{ niveaux.paginator.num_pages }}
+            · {{ niveaux.paginator.count }} niveau{{ niveaux.paginator.count|pluralize }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

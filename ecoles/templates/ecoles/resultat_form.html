@@ -1,0 +1,998 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Saisie des résultats - CRADD{% endblock %}
+{% block page_heading %}Saisie des résultats{% endblock %}
+{% block page_subtitle %}Sélectionnez un élève, un cours et une année pour saisir les notes{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'ecoles:resultat_list' %}">Résultats</a>
+    <span class="sep">/</span>
+    <span>Saisie</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11 col-lg-10">
+        <div class="wp-card">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-pen" style="color:var(--wp-primary);"></i>
+                    Saisie des résultats
+                </h3>
+            </div>
+
+            <div class="wp-card-body">
+
+                {% if not form %}
+                <!-- ============================================================
+                     MODE SÉLECTION
+                ============================================================ -->
+                <form method="get" id="selectionForm" novalidate>
+
+                    <!-- ============================================================
+                         RECHERCHE RAPIDE ÉLÈVE (autocomplete filtrée par rôle)
+                    ============================================================ -->
+                    <div style="background:var(--wp-primary-soft); border-left:4px solid var(--wp-primary); border-radius:8px; padding:16px 20px; margin-bottom:24px;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                            <i class="fas fa-bolt" style="color:var(--wp-primary); font-size:1.1rem;"></i>
+                            <div>
+                                <strong style="color:var(--wp-text-strong); font-size:14px;">
+                                    Recherche rapide d'un élève
+                                </strong>
+                                <div style="font-size:11.5px; color:var(--wp-text-muted); margin-top:2px;">
+                                    {% if user.est_enseignant %}
+                                        Tapez un nom d'élève de <strong>votre classe</strong>.
+                                    {% elif user.est_agent or user.est_inspecteur %}
+                                        Tapez un nom d'élève de <strong>votre école</strong>.
+                                    {% elif user.est_proved %}
+                                        Tapez un nom d'élève de <strong>votre province</strong>.
+                                    {% else %}
+                                        Tapez le nom, prénom ou matricule. Cliquez sur un résultat pour pré-remplir automatiquement.
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="position:relative;">
+                            <input type="text"
+                                   id="quickSearchInput"
+                                   class="wp-input"
+                                   placeholder="🔍 Tapez un nom d'élève..."
+                                   autocomplete="off">
+                            <div id="quickSearchResults"
+                                 style="display:none; position:absolute; top:100%; left:0; right:0; z-index:100;
+                                        background:var(--wp-surface); border:1px solid var(--wp-border-light);
+                                        border-radius:8px; box-shadow:var(--wp-shadow-lg); margin-top:4px;
+                                        max-height:320px; overflow-y:auto;"></div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================
+                         SÉLECTION EN CASCADE
+                    ============================================================ -->
+                    <h5 style="color:var(--wp-primary); margin-bottom:16px; font-size:14px;">
+                        <i class="fas fa-filter"></i> Sélection manuelle
+                    </h5>
+
+                    <div class="row g-3">
+                        {% for field in selection_form %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}" class="wp-form-label">
+                                {% if field.name == 'ecole' %}<i class="fas fa-school"></i>
+                                {% elif field.name == 'niveau' %}<i class="fas fa-layer-group"></i>
+                                {% elif field.name == 'classe' %}<i class="fas fa-users"></i>
+                                {% elif field.name == 'eleve' %}<i class="fas fa-user-graduate"></i>
+                                {% elif field.name == 'cours' %}<i class="fas fa-book"></i>
+                                {% elif field.name == 'annee_scolaire' %}<i class="fas fa-calendar-alt"></i>
+                                {% else %}<i class="fas fa-tag"></i>
+                                {% endif %}
+                                {{ field.label }}
+                                {% if field.field.required %}<span style="color:var(--wp-danger);">*</span>{% endif %}
+                            </label>
+
+                            {{ field }}
+
+                            {% if field.errors %}
+                                <div class="wp-form-error">{{ field.errors|striptags }}</div>
+                            {% endif %}
+
+                            {% if field.name == 'niveau' %}
+                                <div id="section_display" class="wp-form-help">
+                                    <i class="fas fa-tag"></i>
+                                    Section : <span id="section_name" style="font-weight:600; color:var(--wp-primary);">—</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+
+                        <div class="col-12">
+                            <div class="wp-form-actions-inline">
+                                <button type="submit" class="wp-btn" id="submitBtn">
+                                    <i class="fas fa-arrow-right"></i> Saisir les notes
+                                </button>
+                                <a href="{% url 'ecoles:resultat_list' %}" class="wp-btn outline">
+                                    <i class="fas fa-times"></i> Annuler
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                {% else %}
+                <!-- ============================================================
+                     MODE SAISIE
+                ============================================================ -->
+
+                <!-- Info élève / cours / année -->
+                <div class="row g-3" style="margin-bottom:24px;">
+                    <div class="col-md-4">
+                        <div style="background:var(--wp-primary-soft); padding:14px 18px; border-radius:8px; border-left:4px solid var(--wp-primary);">
+                            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; color:var(--wp-text-light); margin-bottom:6px;">
+                                <i class="fas fa-user-graduate"></i> Élève
+                            </div>
+                            <strong style="color:var(--wp-text-strong); font-size:14px;">
+                                {{ eleve.get_nom_complet }}
+                            </strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div style="background:var(--wp-primary-soft); padding:14px 18px; border-radius:8px; border-left:4px solid var(--wp-primary);">
+                            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; color:var(--wp-text-light); margin-bottom:6px;">
+                                <i class="fas fa-book"></i> Cours
+                            </div>
+                            <strong style="color:var(--wp-text-strong); font-size:14px;">
+                                {{ cours.nom }}
+                            </strong>
+                            <div style="font-size:11.5px; color:var(--wp-text-muted); margin-top:2px;">
+                                Coefficient {{ cours.coefficient }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div style="background:var(--wp-primary-soft); padding:14px 18px; border-radius:8px; border-left:4px solid var(--wp-primary);">
+                            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; color:var(--wp-text-light); margin-bottom:6px;">
+                                <i class="fas fa-calendar-alt"></i> Année
+                            </div>
+                            <strong style="color:var(--wp-text-strong); font-size:14px;">
+                                {{ annee.annee }}
+                            </strong>
+                            <div style="font-size:11.5px; color:var(--wp-text-muted); margin-top:2px;">
+                                Cycle : {{ cours.cycle_evaluation.get_type_cycle_display|default:"Non défini" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Résultats déjà saisis -->
+                {% if resultats_existants %}
+                <div style="margin-bottom:24px;">
+                    <h5 style="color:var(--wp-primary); margin-bottom:12px; font-size:14px; border-bottom:1px dashed var(--wp-border-light); padding-bottom:8px;">
+                        <i class="fas fa-history"></i> Notes déjà saisies
+                    </h5>
+
+                    <div style="overflow-x:auto;">
+                        <table class="wp-table">
+                            <thead>
+                                <tr>
+                                    <th>Cycle</th>
+                                    <th>Évaluation</th>
+                                    <th>Note / Max</th>
+                                    <th>%</th>
+                                    <th>Date de saisie</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in resultats_existants %}
+                                <tr>
+                                    <td data-label="Cycle">
+                                        <span class="wp-badge wp-badge-neutral">
+                                            Cycle {{ r.evaluation_config.cycle_num }}
+                                        </span>
+                                    </td>
+                                    <td data-label="Évaluation">
+                                        {% if r.evaluation_config.type == 'periode' %}
+                                            Période {{ r.evaluation_config.periode_num }}
+                                        {% else %}
+                                            <span class="wp-badge wp-badge-warning">
+                                                <i class="fas fa-clipboard-check"></i> Examen
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td data-label="Note">
+                                        <strong style="color:var(--wp-primary);">
+                                            {{ r.points_obtenus }}
+                                        </strong>
+                                        <span style="color:var(--wp-text-light);">
+                                            / {{ r.evaluation_config.points_max }}
+                                        </span>
+                                    </td>
+                                    <td data-label="%">
+                                        {% if r.pourcentage >= 50 %}
+                                            <span class="wp-badge wp-badge-success">
+                                                {{ r.pourcentage|floatformat:1 }}%
+                                            </span>
+                                        {% else %}
+                                            <span class="wp-badge wp-badge-danger">
+                                                {{ r.pourcentage|floatformat:1 }}%
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td data-label="Date">
+                                        <span style="font-size:12px; color:var(--wp-text-muted);">
+                                            {{ r.date_saisie|date:"d/m/Y H:i" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <hr style="margin:24px 0; border:0; border-top:1px dashed var(--wp-border-light);">
+                {% else %}
+                <div style="background:var(--wp-primary-soft); border-left:4px solid var(--wp-primary); border-radius:4px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px;">
+                    <i class="fas fa-info-circle" style="color:var(--wp-primary); font-size:1.1rem; margin-top:2px;"></i>
+                    <p style="margin:0; font-size:0.88rem; line-height:1.6;">
+                        Aucune note saisie pour ce cours. Vous pouvez commencer la saisie ci-dessous.
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- Formulaire de saisie -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.fields %}
+                        {% regroup form.visible_fields by field.cycle_num as fields_by_cycle %}
+
+                        {% for cycle_group in fields_by_cycle %}
+                            {% if cycle_group.grouper is not None %}
+                            <div style="background:var(--wp-surface-alt); border-left:4px solid var(--wp-primary); border-radius:8px; padding:16px 20px; margin-bottom:20px;">
+                                <h6 style="color:var(--wp-primary); margin:0 0 16px; font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Cycle {{ cycle_group.grouper }}
+                                </h6>
+                                <div class="row g-3">
+                                    {% for field in cycle_group.list %}
+                                    <div class="col-md-4">
+                                        <label for="{{ field.id_for_label }}" class="wp-form-label">
+                                            {{ field.label }}
+                                            {% if field.field.points_max %}
+                                                <span style="color:var(--wp-text-light); font-weight:400; font-size:11px;">
+                                                    (max {{ field.field.points_max }})
+                                                </span>
+                                            {% endif %}
+                                        </label>
+                                        {{ field }}
+                                        {% if field.errors %}
+                                            <div class="wp-form-error">{{ field.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% empty %}
+                            <div class="wp-empty">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Aucune évaluation configurée pour ce cours.</p>
+                                <p style="font-size:12px;">Veuillez configurer le cycle d'évaluation dans la modification du cours.</p>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="wp-empty">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Aucun champ d'évaluation disponible.</p>
+                        </div>
+                    {% endif %}
+
+                    <div class="wp-form-actions" style="justify-content:flex-end;">
+                        <a href="{% url 'ecoles:resultat_list' %}" class="wp-btn secondary">
+                            <i class="fas fa-times"></i> Annuler
+                        </a>
+                        <button type="submit" class="wp-btn">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+
+                {% endif %} {# fin if not form #}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       STYLING DES WIDGETS DJANGO
+    ============================================================ */
+    .wp-card-body input[type="text"],
+    .wp-card-body input[type="date"],
+    .wp-card-body input[type="email"],
+    .wp-card-body input[type="number"],
+    .wp-card-body input[type="tel"],
+    .wp-card-body input[type="password"],
+    .wp-card-body input[type="search"],
+    .wp-card-body select,
+    .wp-card-body textarea {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-family: inherit;
+        color: var(--wp-text);
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius-sm);
+        outline: none;
+        transition: all var(--wp-transition);
+        line-height: 1.5;
+    }
+
+    .wp-card-body input:focus,
+    .wp-card-body select:focus,
+    .wp-card-body textarea:focus {
+        border-color: var(--wp-primary);
+        box-shadow: 0 0 0 3px var(--wp-primary-soft);
+    }
+
+    /* ============================================================
+       RECHERCHE RAPIDE
+    ============================================================ */
+    #quickSearchInput {
+        font-size: 14px;
+        padding: 12px 16px;
+        padding-left: 42px;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2350575e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='11' cy='11' r='8'/%3e%3cpath d='m21 21-4.35-4.35'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: 14px center;
+        background-size: 18px;
+    }
+
+    #quickSearchResults .quick-result {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        border-bottom: 1px solid var(--wp-border-light);
+        text-decoration: none;
+        color: var(--wp-text);
+    }
+
+    #quickSearchResults .quick-result:last-child {
+        border-bottom: none;
+    }
+
+    #quickSearchResults .quick-result:hover,
+    #quickSearchResults .quick-result.active {
+        background: var(--wp-primary-soft);
+    }
+
+    #quickSearchResults .quick-result-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--wp-primary), var(--wp-primary-light));
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    #quickSearchResults .quick-result-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    #quickSearchResults .quick-result-name {
+        font-weight: 600;
+        font-size: 13.5px;
+        color: var(--wp-text-strong);
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #quickSearchResults .quick-result-meta {
+        font-size: 11.5px;
+        color: var(--wp-text-light);
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    #quickSearchResults .quick-result-meta i {
+        color: var(--wp-primary);
+        font-size: 10px;
+        margin-right: 2px;
+    }
+
+    #quickSearchResults .quick-empty,
+    #quickSearchResults .quick-loading,
+    #quickSearchResults .quick-error {
+        padding: 20px;
+        text-align: center;
+        color: var(--wp-text-light);
+        font-size: 13px;
+    }
+
+    #quickSearchResults .quick-loading i {
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* ============================================================
+       FEEDBACK VISUEL PENDANT LE PRÉ-REMPLISSAGE
+    ============================================================ */
+    .auto-filled {
+        animation: highlightField 1.5s ease;
+    }
+
+    @keyframes highlightField {
+        0% { background-color: var(--wp-primary-soft); box-shadow: 0 0 0 3px var(--wp-primary-soft); }
+        100% { background-color: var(--wp-surface); box-shadow: none; }
+    }
+
+    /* ============================================================
+       DIVERS
+    ============================================================ */
+    .wp-form-help kbd {
+        background: var(--wp-surface-alt);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 3px;
+        padding: 0 5px;
+        font-size: 10.5px;
+        font-family: monospace;
+    }
+
+    .wp-card-body input.is-invalid,
+    .wp-card-body select.is-invalid {
+        border-color: var(--wp-danger) !important;
+        box-shadow: 0 0 0 3px var(--wp-danger-soft) !important;
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ============================================================
+        // RÉCUPÉRATION DES ÉLÉMENTS
+        // ============================================================
+        const ecoleSelect = document.getElementById('id_ecole');
+        const niveauSelect = document.getElementById('id_niveau');
+        const classeSelect = document.getElementById('id_classe');
+        const eleveSelect = document.getElementById('id_eleve');
+        const coursSelect = document.getElementById('id_cours');
+        const anneeSelect = document.getElementById('id_annee_scolaire');
+        const sectionSpan = document.getElementById('section_name');
+
+        const quickSearchInput = document.getElementById('quickSearchInput');
+        const quickSearchResults = document.getElementById('quickSearchResults');
+        const selectionForm = document.getElementById('selectionForm');
+
+        const isSelectionMode = !!coursSelect;
+        if (!isSelectionMode) return;
+
+        // ============================================================
+        // ÉTAT UTILISATEUR (injecté par Django)
+        // ============================================================
+        const USER_ROLE = '{{ user.role }}';
+        const IS_ADMIN = {{ user.est_administrateur|yesno:"true,false" }};
+        const IS_TEACHER = {{ user.est_enseignant|yesno:"true,false" }};
+
+        // ============================================================
+        // HELPERS : feedback visuel sur les champs pré-remplis
+        // ============================================================
+        function flashField(el) {
+            if (!el) return;
+            el.classList.add('auto-filled');
+            setTimeout(() => el.classList.remove('auto-filled'), 1500);
+        }
+
+        /**
+         * Remplit un select avec une valeur donnée si l'option existe.
+         * Retourne true si l'option a été trouvée et sélectionnée.
+         */
+        function setSelectValue(selectEl, value, { flash = true } = {}) {
+            if (!selectEl || value === null || value === undefined) return false;
+            const strValue = String(value);
+            for (let i = 0; i < selectEl.options.length; i++) {
+                if (String(selectEl.options[i].value) === strValue) {
+                    selectEl.selectedIndex = i;
+                    if (flash) flashField(selectEl);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * Attend qu'un select soit peuplé (par une requête AJAX précédente).
+         * Utilise un polling court (max 2s).
+         */
+        function waitForOption(selectEl, value, callback, timeout = 2000) {
+            if (!selectEl) { callback(false); return; }
+            const start = Date.now();
+            const tick = () => {
+                for (let i = 0; i < selectEl.options.length; i++) {
+                    if (String(selectEl.options[i].value) === String(value)) {
+                        selectEl.selectedIndex = i;
+                        flashField(selectEl);
+                        callback(true);
+                        return;
+                    }
+                }
+                if (Date.now() - start > timeout) {
+                    callback(false);
+                    return;
+                }
+                setTimeout(tick, 80);
+            };
+            tick();
+        }
+
+        // ============================================================
+        // ============================================================
+        // 🔍 RECHERCHE RAPIDE D'ÉLÈVE (AUTOCOMPLETE)
+        // ============================================================
+        // ============================================================
+
+        let searchTimeout = null;
+        let selectedIndex = -1;
+        let currentResults = [];
+
+        function showResults(html) {
+            quickSearchResults.innerHTML = html;
+            quickSearchResults.style.display = 'block';
+        }
+
+        function hideResults() {
+            quickSearchResults.style.display = 'none';
+            selectedIndex = -1;
+            currentResults = [];
+        }
+
+        function renderResults(data) {
+            if (!data.results || data.results.length === 0) {
+                showResults('<div class="quick-empty"><i class="fas fa-search-minus"></i> Aucun élève trouvé</div>');
+                return;
+            }
+
+            currentResults = data.results;
+            let html = '';
+            data.results.forEach((eleve, idx) => {
+                const initiales = (eleve.nom_complet || '').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                html += `
+                    <div class="quick-result"
+                         data-index="${idx}"
+                         data-id="${eleve.id}"
+                         data-nom="${eleve.nom_complet}"
+                         data-ecole-id="${eleve.ecole_id || ''}"
+                         data-niveau-id="${eleve.niveau_id || ''}"
+                         data-classe-id="${eleve.classe_id || ''}">
+                        <div class="quick-result-avatar">${initiales}</div>
+                        <div class="quick-result-content">
+                            <div class="quick-result-name">${eleve.nom_complet}</div>
+                            <div class="quick-result-meta">
+                                ${eleve.classe ? `<span><i class="fas fa-users"></i>${eleve.classe}</span>` : ''}
+                                ${eleve.ecole ? `<span><i class="fas fa-school"></i>${eleve.ecole}</span>` : ''}
+                                ${eleve.matricule && eleve.matricule !== '-' ? `<span><i class="fas fa-id-card"></i>${eleve.matricule}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            showResults(html);
+        }
+
+        function performSearch(query) {
+            showResults('<div class="quick-loading"><i class="fas fa-spinner"></i> Recherche...</div>');
+
+            fetch(`/autocomplete/?q=${encodeURIComponent(query)}`)
+                .then(r => r.json())
+                .then(data => renderResults(data))
+                .catch(err => {
+                    console.error('Erreur recherche:', err);
+                    showResults('<div class="quick-error"><i class="fas fa-exclamation-triangle"></i> Erreur de recherche</div>');
+                });
+        }
+
+        /**
+         * Sélectionne un élève et, si admin, pré-remplit École → Niveau → Classe.
+         */
+        function selectEleveFromSearch(data) {
+            const { id, nom, ecoleId, niveauId, classeId } = data;
+
+            if (!id) {
+                console.warn('Élève sans ID, impossible de pré-remplir.');
+                return;
+            }
+
+            // ---- 1) Sélectionner l'école (si admin) ----
+            const afterEcole = () => {
+                // ---- 2) Sélectionner le niveau ----
+                const afterNiveau = () => {
+                    // ---- 3) Sélectionner la classe ----
+                    const afterClasse = () => {
+                        // ---- 4) Charger les élèves de cette classe puis sélectionner l'élève ----
+                        if (classeSelect && classeSelect.value) {
+                            fetch(`{% url "ecoles:api_get_eleves" %}?classe_id=${classeSelect.value}`)
+                                .then(r => r.json())
+                                .then(list => {
+                                    eleveSelect.innerHTML = '<option value="">---------</option>';
+                                    list.forEach(item => {
+                                        const opt = document.createElement('option');
+                                        opt.value = item.id;
+                                        opt.textContent = item.nom_complet || `${item.nom} ${item.prenom || ''}`;
+                                        eleveSelect.appendChild(opt);
+                                    });
+                                    if (setSelectValue(eleveSelect, id)) {
+                                        updateCours();
+                                    }
+                                })
+                                .catch(err => console.error('Erreur chargement élèves:', err));
+                        }
+                    };
+
+                    if (niveauId && niveauSelect) {
+                        // Charger les classes du niveau sélectionné
+                        let url = '{% url "ecoles:api_get_classes" %}';
+                        let params = `niveau_id=${niveauId}`;
+                        if (ecoleSelect && ecoleSelect.value) params += `&ecole_id=${ecoleSelect.value}`;
+                        fetch(`${url}?${params}`)
+                            .then(r => r.json())
+                            .then(list => {
+                                classeSelect.innerHTML = '<option value="">---------</option>';
+                                list.forEach(item => {
+                                    const opt = document.createElement('option');
+                                    opt.value = item.id;
+                                    opt.textContent = item.nom;
+                                    classeSelect.appendChild(opt);
+                                });
+                                if (setSelectValue(classeSelect, classeId)) {
+                                    afterClasse();
+                                }
+                            })
+                            .catch(err => console.error('Erreur chargement classes:', err));
+                    } else if (classeId && classeSelect) {
+                        setSelectValue(classeSelect, classeId);
+                        afterClasse();
+                    } else {
+                        afterClasse();
+                    }
+                };
+
+                if (niveauId && niveauSelect) {
+                    // Charger les niveaux de l'école sélectionnée
+                    let url = '{% url "ecoles:api_get_niveaux" %}';
+                    let params = ecoleSelect && ecoleSelect.value ? `ecole_id=${ecoleSelect.value}` : '';
+                    if (!params) {
+                        afterNiveau();
+                        return;
+                    }
+                    fetch(`${url}?${params}`)
+                        .then(r => r.json())
+                        .then(list => {
+                            niveauSelect.innerHTML = '<option value="">---------</option>';
+                            list.forEach(item => {
+                                const opt = document.createElement('option');
+                                opt.value = item.id;
+                                opt.textContent = item.nom;
+                                niveauSelect.appendChild(opt);
+                            });
+                            if (setSelectValue(niveauSelect, niveauId)) {
+                                afterNiveau();
+                            }
+                        })
+                        .catch(err => console.error('Erreur chargement niveaux:', err));
+                } else {
+                    afterNiveau();
+                }
+            };
+
+            // Admin : on peut changer l'école
+            if (ecoleId && ecoleSelect && !ecoleSelect.disabled) {
+                // Charger les niveaux de cette école AVANT de sélectionner
+                setSelectValue(ecoleSelect, ecoleId);
+                // Déclencher l'événement change pour rafraîchir les niveaux/classes
+                ecoleSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+                // Attendre que les niveaux soient chargés puis continuer
+                setTimeout(afterEcole, 400);
+            } else {
+                // Enseignant/agent : l'école est déjà fixée, on continue directement
+                afterEcole();
+            }
+        }
+
+        // ---- Écoute de la saisie dans la barre de recherche ----
+        if (quickSearchInput) {
+            quickSearchInput.addEventListener('input', function () {
+                const query = this.value.trim();
+                clearTimeout(searchTimeout);
+
+                if (query.length < 2) {
+                    hideResults();
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => performSearch(query), 300);
+            });
+
+            // Navigation clavier
+            quickSearchInput.addEventListener('keydown', function (e) {
+                const items = quickSearchResults.querySelectorAll('.quick-result');
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                    items.forEach((it, i) => it.classList.toggle('active', i === selectedIndex));
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedIndex = Math.max(selectedIndex - 1, 0);
+                    items.forEach((it, i) => it.classList.toggle('active', i === selectedIndex));
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (selectedIndex >= 0 && items[selectedIndex]) {
+                        const el = items[selectedIndex];
+                        selectEleveFromSearch({
+                            id: el.dataset.id,
+                            nom: el.dataset.nom,
+                            ecoleId: el.dataset.ecoleId,
+                            niveauId: el.dataset.niveauId,
+                            classeId: el.dataset.classeId,
+                        });
+                        hideResults();
+                        quickSearchInput.value = el.dataset.nom;
+                    }
+                } else if (e.key === 'Escape') {
+                    hideResults();
+                }
+            });
+
+            // Clic sur un résultat
+            quickSearchResults.addEventListener('click', function (e) {
+                const result = e.target.closest('.quick-result');
+                if (!result) return;
+                selectEleveFromSearch({
+                    id: result.dataset.id,
+                    nom: result.dataset.nom,
+                    ecoleId: result.dataset.ecoleId,
+                    niveauId: result.dataset.niveauId,
+                    classeId: result.dataset.classeId,
+                });
+                hideResults();
+                quickSearchInput.value = result.dataset.nom;
+            });
+
+            // Fermer au clic extérieur
+            document.addEventListener('click', function (e) {
+                if (!quickSearchInput.contains(e.target) && !quickSearchResults.contains(e.target)) {
+                    hideResults();
+                }
+            });
+
+            // Rouvrir les résultats au focus si déjà une recherche
+            quickSearchInput.addEventListener('focus', function () {
+                if (this.value.trim().length >= 2) {
+                    performSearch(this.value.trim());
+                }
+            });
+        }
+
+        // ============================================================
+        // AFFICHAGE DE LA SECTION DU NIVEAU
+        // ============================================================
+        if (niveauSelect && sectionSpan) {
+            function updateSection() {
+                const selected = niveauSelect.options[niveauSelect.selectedIndex];
+                if (selected && selected.value) {
+                    const text = selected.text;
+                    const parts = text.split(' - ');
+                    if (parts.length > 1) {
+                        sectionSpan.textContent = parts[1];
+                    } else {
+                        sectionSpan.textContent = 'Aucune section';
+                    }
+                } else {
+                    sectionSpan.textContent = '—';
+                }
+            }
+            niveauSelect.addEventListener('change', updateSection);
+            updateSection();
+        }
+
+        // ============================================================
+        // FONCTIONS AJAX DE CASCADE
+        // ============================================================
+        function updateSelect(url, parentElement, targetSelect, paramName) {
+            if (!targetSelect || !parentElement) return;
+            const value = parentElement.value;
+            if (!value) {
+                targetSelect.innerHTML = '<option value="">---------</option>';
+                return;
+            }
+            return fetch(`${url}?${paramName}=${value}`)
+                .then(response => response.json())
+                .then(data => {
+                    targetSelect.innerHTML = '<option value="">---------</option>';
+                    data.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.nom_complet || item.nom || `${item.nom} ${item.prenom || ''}`;
+                        targetSelect.appendChild(opt);
+                    });
+                })
+                .catch(error => console.error('Erreur AJAX:', error));
+        }
+
+        function updateCours() {
+            if (!coursSelect) return;
+
+            const niveauId = niveauSelect ? niveauSelect.value : '';
+            const classeId = classeSelect ? classeSelect.value : '';
+            const ecoleId = ecoleSelect ? ecoleSelect.value : '';
+
+            if (!niveauId && !classeId && !ecoleId) {
+                coursSelect.innerHTML = '<option value="">---------</option>';
+                return;
+            }
+
+            let url = '{% url "ecoles:api_get_cours" %}';
+            let params = [];
+            if (niveauId) params.push(`niveau_id=${niveauId}`);
+            if (classeId) params.push(`classe_id=${classeId}`);
+            if (ecoleId) params.push(`ecole_id=${ecoleId}`);
+            const query = params.join('&');
+
+            fetch(`${url}?${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    coursSelect.innerHTML = '<option value="">---------</option>';
+                    data.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.nom;
+                        coursSelect.appendChild(opt);
+                    });
+                })
+                .catch(error => console.error('Erreur AJAX (cours):', error));
+        }
+
+        // ============================================================
+        // ÉVÉNEMENTS EN CASCADE
+        // ============================================================
+        if (ecoleSelect) {
+            ecoleSelect.addEventListener('change', function () {
+                if (niveauSelect) niveauSelect.innerHTML = '<option value="">---------</option>';
+                if (classeSelect) classeSelect.innerHTML = '<option value="">---------</option>';
+                if (eleveSelect) eleveSelect.innerHTML = '<option value="">---------</option>';
+                if (coursSelect) coursSelect.innerHTML = '<option value="">---------</option>';
+                if (sectionSpan) sectionSpan.textContent = '—';
+
+                updateSelect('{% url "ecoles:api_get_niveaux" %}', this, niveauSelect, 'ecole_id');
+                updateSelect('{% url "ecoles:api_get_classes" %}', this, classeSelect, 'ecole_id');
+            });
+        }
+
+        if (niveauSelect) {
+            niveauSelect.addEventListener('change', function () {
+                const ecoleId = ecoleSelect ? ecoleSelect.value : '';
+                const niveauId = this.value;
+
+                if (classeSelect) classeSelect.innerHTML = '<option value="">---------</option>';
+                if (eleveSelect) eleveSelect.innerHTML = '<option value="">---------</option>';
+
+                if (niveauId) {
+                    let url = '{% url "ecoles:api_get_classes" %}';
+                    let params = `niveau_id=${niveauId}`;
+                    if (ecoleId) params += `&ecole_id=${ecoleId}`;
+                    fetch(`${url}?${params}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (classeSelect) {
+                                classeSelect.innerHTML = '<option value="">---------</option>';
+                                data.forEach(item => {
+                                    const opt = document.createElement('option');
+                                    opt.value = item.id;
+                                    opt.textContent = item.nom;
+                                    classeSelect.appendChild(opt);
+                                });
+                            }
+                        });
+                }
+                updateCours();
+            });
+        }
+
+        if (classeSelect) {
+            classeSelect.addEventListener('change', function () {
+                const value = this.value;
+
+                if (eleveSelect) eleveSelect.innerHTML = '<option value="">---------</option>';
+
+                if (!value) {
+                    updateCours();
+                    return;
+                }
+
+                fetch(`{% url "ecoles:api_get_eleves" %}?classe_id=${value}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (eleveSelect) {
+                            eleveSelect.innerHTML = '<option value="">---------</option>';
+                            data.forEach(item => {
+                                const opt = document.createElement('option');
+                                opt.value = item.id;
+                                opt.textContent = item.nom_complet || `${item.nom} ${item.prenom || ''}`;
+                                eleveSelect.appendChild(opt);
+                            });
+                        }
+                    });
+
+                updateCours();
+            });
+        }
+
+        if (niveauSelect && niveauSelect.value) {
+            updateCours();
+        } else if (classeSelect && classeSelect.value) {
+            updateCours();
+        }
+
+        // ============================================================
+        // VALIDATION DU FORMULAIRE
+        // ============================================================
+        if (selectionForm) {
+            selectionForm.addEventListener('submit', function (e) {
+                const coursVal = coursSelect ? coursSelect.value : '';
+                const eleveVal = eleveSelect ? eleveSelect.value : '';
+
+                let errors = [];
+
+                if (!coursVal) {
+                    e.preventDefault();
+                    if (coursSelect) coursSelect.classList.add('is-invalid');
+                    errors.push('Veuillez sélectionner un cours.');
+                } else {
+                    if (coursSelect) coursSelect.classList.remove('is-invalid');
+                }
+
+                if (!eleveVal) {
+                    if (eleveSelect) eleveSelect.classList.add('is-invalid');
+                    errors.push('Veuillez sélectionner un élève.');
+                } else {
+                    if (eleveSelect) eleveSelect.classList.remove('is-invalid');
+                }
+
+                if (errors.length > 0) {
+                    e.preventDefault();
+                    alert(errors.join('\n'));
+                }
+            });
+        }
+
+    });
+</script>
+{% endblock %}

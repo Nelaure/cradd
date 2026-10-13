@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mon profil - CRADD{% endblock %}
+{% block page_heading %}Mon profil{% endblock %}
+{% block page_subtitle %}Consultez et modifiez vos informations personnelles{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Mon profil</span>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+    <!-- ============================================================
+         CARTE D'IDENTITÉ
+    ============================================================ -->
+    <div class="col-md-4">
+        <div class="wp-card" style="height:100%;">
+            <div class="wp-card-body" style="text-align:center; padding:28px 20px; display:flex; flex-direction:column; align-items:center;">
+
+                <!-- Avatar avec initiales -->
+                <div style="width:110px; height:110px; margin-bottom:18px; border-radius:50%; background:linear-gradient(135deg, var(--wp-primary), var(--wp-primary-light)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:42px; font-weight:800; box-shadow:var(--wp-shadow-md);">
+                    {{ user.prenom|slice:":1"|upper }}{{ user.nom|slice:":1"|upper }}
+                </div>
+
+                <!-- Nom complet -->
+                <h4 style="margin:0 0 6px; font-size:17px; font-weight:800; color:var(--wp-text-strong);">
+                    {{ user.get_full_name|default:user.username }}
+                </h4>
+
+                <!-- Nom d'utilisateur -->
+                <div style="font-size:12.5px; color:var(--wp-text-light); margin-bottom:12px;">
+                    <i class="fas fa-at"></i> {{ user.username }}
+                </div>
+
+                <!-- Rôle -->
+                <div style="margin-bottom:14px;">
+                    {% if user.est_administrateur %}
+                        <span class="wp-badge wp-badge-danger">
+                            <i class="fas fa-crown"></i> {{ user.get_role_display }}
+                        </span>
+                    {% elif user.est_ministre %}
+                        <span class="wp-badge wp-badge-warning">
+                            <i class="fas fa-landmark"></i> {{ user.get_role_display }}
+                        </span>
+                    {% elif user.est_proved %}
+                        <span class="wp-badge wp-badge-primary">
+                            <i class="fas fa-map-marker-alt"></i> {{ user.get_role_display }}
+                        </span>
+                    {% elif user.est_agent %}
+                        <span class="wp-badge wp-badge-info">
+                            <i class="fas fa-user-tie"></i> {{ user.get_role_display }}
+                        </span>
+                    {% elif user.est_enseignant %}
+                        <span class="wp-badge wp-badge-success">
+                            <i class="fas fa-chalkboard-teacher"></i> {{ user.get_role_display }}
+                        </span>
+                    {% elif user.est_inspecteur %}
+                        <span class="wp-badge wp-badge-neutral">
+                            <i class="fas fa-search"></i> {{ user.get_role_display }}
+                        </span>
+                    {% elif user.est_parent %}
+                        <span class="wp-badge wp-badge-neutral">
+                            <i class="fas fa-user-friends"></i> {{ user.get_role_display }}
+                        </span>
+                    {% else %}
+                        <span class="wp-badge wp-badge-neutral">
+                            {{ user.get_role_display }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- École d'affectation -->
+                {% if user.ecole_affectation %}
+                    <div style="font-size:12.5px; color:var(--wp-text-muted); margin-bottom:8px;">
+                        <i class="fas fa-school" style="color:var(--wp-primary);"></i>
+                        {{ user.ecole_affectation.nom }}
+                    </div>
+                {% endif %}
+
+                <!-- Province d'affectation -->
+                {% if user.province_affectation %}
+                    <div style="font-size:12.5px; color:var(--wp-text-muted); margin-bottom:8px;">
+                        <i class="fas fa-map-marker-alt" style="color:var(--wp-primary);"></i>
+                        {{ user.province_affectation.nom }}
+                    </div>
+                {% endif %}
+
+                <!-- Classe d'affectation -->
+                {% if user.classe_affectation %}
+                    <div style="font-size:12.5px; color:var(--wp-text-muted); margin-bottom:8px;">
+                        <i class="fas fa-users" style="color:var(--wp-primary);"></i>
+                        {{ user.classe_affectation.nom }}
+                    </div>
+                {% endif %}
+
+                <hr style="width:100%; margin:18px 0; border:0; border-top:1px dashed var(--wp-border-light);">
+
+                <!-- Actions -->
+                <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
+                    <a href="{% url 'accounts:user_edit' user.id %}" class="wp-btn" style="justify-content:center;">
+                        <i class="fas fa-edit"></i> Modifier mon profil
+                    </a>
+                    <a href="{% url 'accounts:change_password' %}" class="wp-btn secondary" style="justify-content:center;">
+                        <i class="fas fa-key"></i> Changer mon mot de passe
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         DÉTAILS
+    ============================================================ -->
+    <div class="col-md-8">
+        <div class="wp-card">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-info-circle" style="color:var(--wp-primary);"></i>
+                    Informations personnelles
+                </h3>
+            </div>
+
+            <div class="wp-card-body" style="padding:0;">
+                <div style="overflow-x:auto;">
+                    <table class="wp-table">
+                        <tbody>
+                            <tr>
+                                <td style="width:35%; background:var(--wp-surface-alt); font-weight:700; color:var(--wp-text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fas fa-user" style="color:var(--wp-primary); margin-right:6px;"></i> Nom
+                                </td>
+                                <td>
+                                    <strong style="color:var(--wp-text-strong);">{{ user.nom|default:"—" }}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:var(--wp-surface-alt); font-weight:700; color:var(--wp-text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fas fa-signature" style="color:var(--wp-primary); margin-right:6px;"></i> Postnom
+                                </td>
+                                <td>
+                                    <span style="color:var(--wp-text);">{{ user.postnom|default:"—" }}</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:var(--wp-surface-alt); font-weight:700; color:var(--wp-text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fas fa-signature" style="color:var(--wp-primary); margin-right:6px;"></i> Prénom
+                                </td>
+                                <td>
+                                    <strong style="color:var(--wp-text-strong);">{{ user.prenom|default:"—" }}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:var(--wp-surface-alt); font-weight:700; color:var(--wp-text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fas fa-envelope" style="color:var(--wp-primary); margin-right:6px;"></i> Email
+                                </td>
+                                <td>
+                                    {% if user.email %}
+                                        <a href="mailto:{{ user.email }}" style="color:var(--wp-primary); text-decoration:none; font-weight:500;">
+                                            {{ user.email }}
+                                        </a>
+                                    {% else %}
+                                        <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:var(--wp-surface-alt); font-weight:700; color:var(--wp-text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fas fa-phone" style="color:var(--wp-primary); margin-right:6px;"></i> Téléphone
+                                </td>
+                                <td>
+                                    {% if user.telephone %}
+                                        <a href="tel:{{ user.telephone }}" style="color:var(--wp-primary); text-decoration:none; font-weight:500;">
+                                            {{ user.telephone }}
+                                        </a>
+                                    {% else %}
+                                        <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:var(--wp-surface-alt); font-weight:700; color:var(--wp-text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fas fa-user-tag" style="color:var(--wp-primary); margin-right:6px;"></i> Rôle
+                                </td>
+                                <td>
+                                    {% if user.est_administrateur %}
+                                        <span class="wp-badge wp-badge-danger">
+                                            <i class="fas fa-crown"></i> {{ user.get_role_display }}
+                                        </span>
+                                    {% elif user.est_ministre %}
+                                        <span class="wp-badge wp-badge-warning">
+                                            <i class="fas fa-landmark"></i> {{ user.get_role_display }}
+                                        </span>
+                                    {% elif user.est_proved %}
+                                        <span class="wp-badge wp-badge-primary">
+                                            <i class="fas fa-map-marker-alt"></i> {{ user.get_role_display }}
+                                        </span>
+                                    {% elif user.est_agent %}
+                                        <span class="wp-badge wp-badge-info">
+                                            <i class="fas fa-user-tie"></i> {{ user.get_role_display }}
+                                        </span>
+                                    {% elif user.est_enseignant %}
+                                        <span class="wp-badge wp-badge-success">
+                                            <i class="fas fa-chalkboard-teacher"></i> {{ user.get_role_display }}
+                                        </span>
+                                    {% elif user.est_inspecteur %}
+                                        <span class="wp-badge wp-badge-neutral">
+                                            <i class="fas fa-search"></i> {{ user.get_role_display }}
+                                        </span>
+                                    {% elif user.est_parent %}
+                                        <span class="wp-badge wp-badge-neutral">
+                                            <i class="fas fa-user-friends"></i> {{ user.get_role_display }}
+                                        </span>
+                                    {% else %}
+                                        <span class="wp-badge wp-badge-neutral">
+                                            {{ user.get_role_display }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:var(--wp-surface-alt); font-weight:700; color:var(--wp-text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fas fa-check-circle" style="color:var(--wp-primary); margin-right:6px;"></i> Statut
+                                </td>
+                                <td>
+                                    {% if user.est_actif %}
+                                        <span class="wp-badge wp-badge-success">
+                                            <i class="fas fa-check"></i> Actif
+                                        </span>
+                                    {% else %}
+                                        <span class="wp-badge wp-badge-danger">
+                                            <i class="fas fa-times"></i> Inactif
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:var(--wp-surface-alt); font-weight:700; color:var(--wp-text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fas fa-calendar-plus" style="color:var(--wp-primary); margin-right:6px;"></i> Date d'inscription
+                                </td>
+                                <td>
+                                    <span style="color:var(--wp-text);">
+                                        {{ user.date_creation|date:"d/m/Y à H:i"|default:"—" }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:var(--wp-surface-alt); font-weight:700; color:var(--wp-text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fas fa-sign-in-alt" style="color:var(--wp-primary); margin-right:6px;"></i> Dernière connexion
+                                </td>
+                                <td>
+                                    {% if user.last_login %}
+                                        <span style="color:var(--wp-text);">
+                                            {{ user.last_login|date:"d/m/Y à H:i" }}
+                                        </span>
+                                    {% else %}
+                                        <span style="color:var(--wp-text-light); font-style:italic;">Jamais</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

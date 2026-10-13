@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mes articles - CRADD{% endblock %}
+{% block page_heading %}Mes articles{% endblock %}
+{% block page_subtitle %}Gérez vos publications et suivez leur audience{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'actualites:dashboard' %}">Actualités</a>
+    <span class="sep">/</span>
+    <span>Mes articles</span>
+{% endblock %}
+
+{# ← Retrait du block header_actions #}
+
+{% block content %}
+
+<!-- ============================================================
+     EN-TÊTE DE PAGE (BOX avec titre + boutons)
+============================================================ -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-newspaper" style="color:var(--wp-primary);"></i>
+                Mes articles
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Gérez vos publications et suivez leur audience.
+            </p>
+        </div>
+        <div class="wp-form-actions-inline">
+            <a href="{% url 'actualites:article_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Nouvel article
+            </a>
+            <a href="{% url 'actualites:categorie_list' %}" class="wp-btn secondary">
+                <i class="fas fa-tags"></i> Catégories
+            </a>
+            <a href="{% url 'actualites:trash_list' %}" class="wp-btn danger">
+                <i class="fas fa-trash-alt"></i> Corbeille
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     STATISTIQUES RÉSUMÉES
+============================================================ -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-newspaper"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ articles_count|default:0 }}</div>
+                    <div class="stat-label">Total articles</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light));"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ published_count|default:0 }}</div>
+                    <div class="stat-label">Publiés</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-success), #4ade80);"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-pencil-alt"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ draft_count|default:0 }}</div>
+                    <div class="stat-label">Brouillons</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, var(--wp-warning), #fbbf24);"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="stat-number">{{ total_views|default:0 }}</div>
+                    <div class="stat-label">Vues totales</div>
+                </div>
+                <div class="stat-bar" style="background:linear-gradient(90deg, #8b5cf6, #a78bfa);"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     TABLEAU DES ARTICLES
+============================================================ -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3>
+            <i class="fas fa-list-ul" style="color:var(--wp-primary);"></i>
+            Liste des articles
+        </h3>
+        <span class="wp-count-badge">{{ articles.paginator.count|default:articles|length }} article{{ articles.paginator.count|default:articles|length|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if articles %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Titre</th>
+                        <th>Catégorie</th>
+                        <th>Statut</th>
+                        <th>Publié le</th>
+                        <th style="text-align:center;">Visibilité</th>
+                        <th style="text-align:center;">
+                            <i class="fas fa-eye" title="Vues"></i>
+                        </th>
+                        <th>Pays</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in articles %}
+                    <tr>
+                        <td data-label="Titre">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-newspaper" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ article.titre }}
+                            </strong>
+                            {% if article.statut == 'BROUILLON' %}
+                                <span class="wp-badge wp-badge-warning" style="margin-left:6px;">
+                                    <i class="fas fa-pencil-alt"></i> Brouillon
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Catégorie">
+                            {% if article.categorie %}
+                                <span class="wp-badge wp-badge-neutral">
+                                    <i class="fas fa-tag"></i> {{ article.categorie.nom }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Statut">
+                            {% if article.statut == 'PUBLIE' %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-check-circle"></i> {{ article.get_statut_display }}
+                                </span>
+                            {% elif article.statut == 'BROUILLON' %}
+                                <span class="wp-badge wp-badge-warning">
+                                    <i class="fas fa-pencil-alt"></i> {{ article.get_statut_display }}
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-neutral">
+                                    {{ article.get_statut_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Publié le">
+                            {% if article.date_publication %}
+                                <span style="font-size:12.5px; color:var(--wp-text-muted);">
+                                    <i class="fas fa-clock" style="font-size:10px;"></i>
+                                    {{ article.date_publication|date:"d/m/Y H:i" }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Visibilité" style="text-align:center;">
+                            {% if article.est_visible %}
+                                <span class="wp-badge wp-badge-success" title="Visible">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger" title="Masqué">
+                                    <i class="fas fa-eye-slash"></i>
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Vues" style="text-align:center;">
+                            <span class="wp-badge wp-badge-info" style="font-weight:700;">
+                                <i class="fas fa-eye"></i> {{ article.views_count|default:0 }}
+                            </span>
+                        </td>
+                        <td data-label="Pays">
+                            {% if article.top_countries %}
+                                <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                                    {% for country in article.top_countries|slice:":3" %}
+                                        <span class="wp-badge wp-badge-neutral" style="font-size:10.5px;">
+                                            <i class="fas fa-map-pin" style="color:var(--wp-primary);"></i> {{ country }}
+                                        </span>
+                                    {% endfor %}
+                                    {% if article.top_countries|length > 3 %}
+                                        <span class="wp-badge wp-badge-primary" style="font-size:10.5px;">
+                                            +{{ article.top_countries|length|add:"-3" }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+                                <a href="{% url 'actualites:article_detail' article.slug %}"
+                                   class="wp-action-btn info"
+                                   target="_blank"
+                                   title="Voir sur le site">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'actualites:article_edit' article.pk %}"
+                                   class="wp-action-btn edit"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'actualites:article_delete' article.pk %}"
+                                   class="wp-action-btn danger"
+                                   title="Supprimer"
+                                   onclick="return confirm('Supprimer cet article ?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-file-alt"></i>
+            <h5 style="font-weight:700; margin:14px 0 10px; color:var(--wp-text-strong);">
+                Aucun article pour le moment
+            </h5>
+            <p style="max-width:500px; margin:0 auto 20px; line-height:1.7;">
+                Commencez par créer votre premier article pour partager vos actualités.
+            </p>
+            <a href="{% url 'actualites:article_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Créer mon premier article
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ============================================================
+         PAGINATION
+    ============================================================ -->
+    {% if articles.has_other_pages %}
+    <div class="wp-card-footer">
+        <div class="wp-pagination" style="width:100%;">
+            {% if articles.has_previous %}
+                <a href="?page=1" class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ articles.previous_page_number }}" class="wp-page-link" title="Précédente">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-left"></i></span>
+            {% endif %}
+
+            {% for num in articles.paginator.page_range %}
+                {% if articles.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
+                    <a href="?page={{ num }}" class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if articles.has_next %}
+                <a href="?page={{ articles.next_page_number }}" class="wp-page-link" title="Suivante">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?page={{ articles.paginator.num_pages }}" class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       STAT CARD MODERN — Adapté à la palette wp-*
+       ============================================================ */
+    .stat-card-modern {
+        position: relative;
+        overflow: hidden;
+        transition: transform var(--wp-transition), box-shadow var(--wp-transition);
+        cursor: default;
+    }
+    .stat-card-modern:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--wp-shadow-md);
+    }
+    .stat-card-modern .stat-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        background: var(--wp-primary-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 22px;
+        color: var(--wp-primary);
+        transition: background var(--wp-transition), color var(--wp-transition), transform var(--wp-transition);
+    }
+    .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary);
+        color: #fff;
+        transform: scale(1.05) rotate(-4deg);
+    }
+    .stat-card-modern .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        line-height: 1.2;
+        letter-spacing: -0.5px;
+    }
+    .stat-card-modern .stat-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--wp-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+    .stat-card-modern .stat-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        opacity: 0.6;
+        transition: height var(--wp-transition), opacity var(--wp-transition);
+    }
+    .stat-card-modern:hover .stat-bar {
+        height: 4px;
+        opacity: 1;
+    }
+
+    [data-bs-theme="dark"] .stat-card-modern .stat-icon {
+        background: rgba(34, 113, 177, 0.20);
+        color: var(--wp-primary-light);
+    }
+    [data-bs-theme="dark"] .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary);
+        color: #fff;
+    }
+
+    @media (max-width: 576px) {
+        .stat-card-modern .stat-icon {
+            width: 44px;
+            height: 44px;
+            font-size: 18px;
+        }
+        .stat-card-modern .stat-number {
+            font-size: 1.4rem;
+        }
+        .stat-card-modern .stat-label {
+            font-size: 0.65rem;
+        }
+    }
+</style>
+{% endblock %}

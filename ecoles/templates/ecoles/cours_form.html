@@ -1,0 +1,666 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - CRADD{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:cours_list' %}"><i class="fas fa-book"></i> Cours</a>
+    <span class="sep">/</span>
+    <span>{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11 col-lg-10">
+        <div class="wp-card">
+            <div class="wp-card-header">
+                <h3>
+                    <i class="fas fa-book" style="color:var(--wp-primary);"></i>
+                    {{ title }}
+                </h3>
+                <span class="wp-badge wp-badge-neutral">
+                    {{ form.instance.code|default:"Nouveau" }}
+                </span>
+            </div>
+
+            <div class="wp-card-body">
+                <form method="post" id="coursForm" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="wp-toast error" style="position:static; margin-bottom:16px;">
+                            <span class="wp-toast-icon"><i class="fas fa-exclamation-circle"></i></span>
+                            <div class="wp-toast-body">
+                                <div class="wp-toast-title">Erreur</div>
+                                <div class="wp-toast-message">
+                                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <h5 style="color:var(--wp-primary); margin-bottom:16px;">
+                        <i class="fas fa-info-circle"></i> Informations générales
+                    </h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.nom.id_for_label }}" class="wp-form-label">
+                                <i class="fas fa-pencil-alt"></i> {{ form.nom.label }}
+                            </label>
+                            {{ form.nom }}
+                            {% if form.nom.errors %}
+                                <div class="wp-form-error">{{ form.nom.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.code.id_for_label }}" class="wp-form-label">
+                                <i class="fas fa-barcode"></i> {{ form.code.label }}
+                            </label>
+                            {{ form.code }}
+                            {% if form.code.errors %}
+                                <div class="wp-form-error">{{ form.code.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.coefficient.id_for_label }}" class="wp-form-label">
+                                <i class="fas fa-hashtag"></i> {{ form.coefficient.label }}
+                            </label>
+                            {{ form.coefficient }}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.niveau.id_for_label }}" class="wp-form-label">
+                                <i class="fas fa-layer-group"></i> {{ form.niveau.label }}
+                            </label>
+                            {{ form.niveau }}
+                            <div class="wp-form-help">
+                                <i class="fas fa-info-circle"></i> Sélectionnez un niveau pour voir ses classes et domaines
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.ecole.id_for_label }}" class="wp-form-label">
+                                <i class="fas fa-school"></i> {{ form.ecole.label }}
+                            </label>
+                            {{ form.ecole }}
+                        </div>
+                        <div class="col-12">
+                            <label for="{{ form.description.id_for_label }}" class="wp-form-label">
+                                <i class="fas fa-align-left"></i> {{ form.description.label }}
+                            </label>
+                            {{ form.description }}
+                        </div>
+                        {% if form.est_reference %}
+                        <div class="col-12">
+                            <div class="wp-check">
+                                {{ form.est_reference }}
+                                <label for="{{ form.est_reference.id_for_label }}">
+                                    <i class="fas fa-star" style="color:var(--wp-warning);"></i>
+                                    {{ form.est_reference.label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <hr style="margin:24px 0;">
+
+                    <h5 style="color:var(--wp-primary); margin-bottom:16px;">
+                        <i class="fas fa-layer-group"></i> Classes & Domaines concernés
+                    </h5>
+
+                    {% if is_edit %}
+                    <div style="background:var(--wp-warning-soft); border-left:4px solid var(--wp-warning); border-radius:4px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px;">
+                        <i class="fas fa-exclamation-triangle" style="color:var(--wp-warning); font-size:1.1rem; margin-top:2px;"></i>
+                        <p style="margin:0; font-size:0.88rem; line-height:1.6;">
+                            <strong>Mode édition</strong> : La <strong>première</strong> classe et le <strong>premier</strong>
+                            domaine sélectionnés mettront à jour ce cours. Les <strong>autres combinaisons</strong>
+                            créeront de <strong>nouveaux cours</strong> avec le même cycle d'évaluation.
+                        </p>
+                    </div>
+                    {% else %}
+                    <div style="background:var(--wp-primary-soft); border-left:4px solid var(--wp-primary); border-radius:4px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px;">
+                        <i class="fas fa-info-circle" style="color:var(--wp-primary); font-size:1.1rem; margin-top:2px;"></i>
+                        <p style="margin:0; font-size:0.88rem; line-height:1.6;">
+                            {% if is_reference_form %}
+                                <strong>Mode référence</strong> : seules les <strong>classes de référence</strong> sont affichées.
+                                Le cours sera propagé à toutes les instances de chaque classe sélectionnée.
+                            {% else %}
+                                Sélectionnez <strong>plusieurs classes</strong> et <strong>plusieurs domaines</strong>
+                                en maintenant <kbd>Ctrl</kbd> (Windows) ou <kbd>Cmd</kbd> (Mac).
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <div id="selectionStatus" style="display:none; margin-bottom:16px;">
+                        <div style="background:var(--wp-primary-soft); border-radius:4px; padding:10px 14px; font-size:0.85rem;">
+                            <i class="fas fa-spinner fa-spin" style="color:var(--wp-primary);"></i>
+                            <span id="statusMessage">Chargement des classes et domaines...</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.classe.id_for_label }}" class="wp-form-label">
+                                <i class="fas fa-users"></i> {{ form.classe.label }}
+                                <span id="classeCount" style="display:inline-block; background:var(--wp-primary); color:#fff; padding:2px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; margin-left:6px; min-width:24px; text-align:center;">0</span>
+                            </label>
+                            {{ form.classe }}
+                            {% if form.classe.errors %}
+                                <div class="wp-form-error">{{ form.classe.errors|striptags }}</div>
+                            {% endif %}
+                            <div class="wp-form-help">
+                                <i class="fas fa-hand-pointer"></i> Maintenez <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> pour sélectionner plusieurs classes
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.domaine.id_for_label }}" class="wp-form-label">
+                                <i class="fas fa-tags"></i> {{ form.domaine.label }}
+                                <span id="domaineCount" style="display:inline-block; background:var(--wp-primary); color:#fff; padding:2px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; margin-left:6px; min-width:24px; text-align:center;">0</span>
+                            </label>
+                            {{ form.domaine }}
+                            {% if form.domaine.errors %}
+                                <div class="wp-form-error">{{ form.domaine.errors|striptags }}</div>
+                            {% endif %}
+                            <div class="wp-form-help">
+                                <i class="fas fa-hand-pointer"></i> Maintenez <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> pour sélectionner plusieurs domaines
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if not is_edit %}
+                    <div id="recapBox" style="display:none; background:rgba(13,148,136,0.08); border:1.5px solid rgba(13,148,136,0.3); border-radius:8px; padding:18px 20px; margin-top:20px;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; color:#0d9488; font-size:0.95rem;">
+                            <i class="fas fa-list-check"></i>
+                            <strong>Aperçu des cours qui seront créés :</strong>
+                        </div>
+                        <ul id="recapList" style="list-style:none; padding:0; margin:0; display:flex; flex-wrap:wrap; gap:8px;"></ul>
+                    </div>
+                    {% endif %}
+
+                    {% if not is_edit and cycle_config_form %}
+                    <hr style="margin:24px 0;">
+                    {{ cycle_config_form.config_active }}
+
+                    <div style="background:var(--wp-warning-soft); border:1px solid rgba(219,166,23,0.25); border-radius:4px; padding:16px 20px; margin-bottom:20px;">
+                        <div class="wp-check">
+                            <input type="checkbox" id="toggleCycleConfig">
+                            <label for="toggleCycleConfig">
+                                <i class="fas fa-sync-alt" style="color:var(--wp-warning);"></i>
+                                <strong>Personnaliser la configuration du cycle d'évaluation</strong>
+                                <small style="color:var(--wp-text-light); margin-left:8px;">(facultatif — laisser désactivé pour la config par défaut)</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="cycleConfigSection" style="display:none; background:var(--wp-surface-alt); border:1px solid var(--wp-border-light); border-radius:8px; padding:24px; margin-bottom:24px;">
+                        <div style="background:var(--wp-primary-soft); border-left:4px solid var(--wp-primary); border-radius:4px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px;">
+                            <i class="fas fa-info-circle" style="color:var(--wp-primary); font-size:1.1rem; margin-top:2px;"></i>
+                            <p style="margin:0; font-size:0.88rem; line-height:1.6;">
+                                Ces paramètres seront appliqués à <strong>tous les cours</strong> créés.
+                                ⚠️ <strong>L'examen vaut automatiquement le DOUBLE des points par période.</strong>
+                            </p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ cycle_config_form.type_cycle.id_for_label }}" class="wp-form-label">
+                                    <i class="fas fa-calendar-alt"></i> {{ cycle_config_form.type_cycle.label }}
+                                </label>
+                                {{ cycle_config_form.type_cycle }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ cycle_config_form.nombre_cycles.id_for_label }}" class="wp-form-label">
+                                    <i class="fas fa-layer-group"></i> {{ cycle_config_form.nombre_cycles.label }}
+                                </label>
+                                {{ cycle_config_form.nombre_cycles }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ cycle_config_form.periodes_par_cycle.id_for_label }}" class="wp-form-label">
+                                    <i class="fas fa-list-ol"></i> {{ cycle_config_form.periodes_par_cycle.label }}
+                                </label>
+                                {{ cycle_config_form.periodes_par_cycle }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ cycle_config_form.points_max.id_for_label }}" class="wp-form-label">
+                                    <i class="fas fa-star"></i> {{ cycle_config_form.points_max.label }}
+                                </label>
+                                {{ cycle_config_form.points_max }}
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="wp-check">
+                                    {{ cycle_config_form.inclure_examen }}
+                                    <label for="{{ cycle_config_form.inclure_examen.id_for_label }}">
+                                        <i class="fas fa-clipboard-check"></i>
+                                        {{ cycle_config_form.inclure_examen.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if is_edit and cycle_form and formset %}
+                    <hr style="margin:24px 0;">
+                    <h5 style="color:var(--wp-primary); margin-bottom:16px;">
+                        <i class="fas fa-sync-alt"></i> Configuration du cycle d'évaluation
+                    </h5>
+                    <div class="row g-3">
+                        {% for field in cycle_form %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}" class="wp-form-label">
+                                <i class="fas fa-calendar-alt"></i> {{ field.label }}
+                            </label>
+                            {{ field }}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <h6 style="margin-top:20px; font-weight:700; color:var(--wp-primary);">
+                        <i class="fas fa-list-ul"></i> Détails des évaluations
+                    </h6>
+                    {{ formset.management_form }}
+                    <div style="overflow-x:auto; margin-top:8px;">
+                        <table class="wp-table">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-sync-alt"></i> Cycle</th>
+                                    <th><i class="fas fa-calendar-day"></i> Période</th>
+                                    <th><i class="fas fa-tag"></i> Type</th>
+                                    <th><i class="fas fa-star"></i> Points max</th>
+                                    <th><i class="fas fa-sort"></i> Ordre</th>
+                                    <th style="text-align:center;"><i class="fas fa-trash-alt"></i> Suppr.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for f in formset %}
+                                <tr>
+                                    <td>{{ f.cycle_num }}</td>
+                                    <td>{{ f.periode_num }}</td>
+                                    <td>{{ f.type }}</td>
+                                    <td>{{ f.points_max }}</td>
+                                    <td>{{ f.ordre }}</td>
+                                    <td style="text-align:center;">
+                                        <div class="wp-check" style="justify-content:center;">
+                                            {{ f.DELETE }}
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="6" style="background:var(--wp-surface-alt); padding:4px 8px;">
+                                        {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+                                        {% if f.errors %}
+                                        <div class="wp-form-error">
+                                            {% for error in f.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+
+                    <div class="wp-form-actions" style="justify-content:flex-end;">
+                        <a href="{% url 'ecoles:cours_list' %}" class="wp-btn secondary">
+                            <i class="fas fa-times"></i> Annuler
+                        </a>
+                        <button type="submit" class="wp-btn">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    select[multiple] {
+        width: 100% !important;
+        min-height: 180px;
+        padding: 8px;
+        border-radius: var(--wp-radius-sm);
+        border: 1.5px solid var(--wp-border-light);
+        background: var(--wp-surface);
+        color: var(--wp-text);
+        font-size: 13px;
+        outline: none;
+        transition: border-color var(--wp-transition), box-shadow var(--wp-transition);
+    }
+
+    select[multiple]:focus {
+        border-color: var(--wp-primary);
+        box-shadow: 0 0 0 3px var(--wp-primary-soft);
+    }
+
+    select[multiple] option {
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 2px;
+    }
+
+    select[multiple] option:checked {
+        background: var(--wp-primary);
+        color: #fff !important;
+    }
+
+    .wp-form-label {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--wp-text);
+        margin-bottom: 6px;
+    }
+
+    .wp-form-label i {
+        color: var(--wp-primary);
+        font-size: 12px;
+        margin-right: 2px;
+    }
+
+    .wp-form-help {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11.5px;
+        color: var(--wp-text-light);
+        margin-top: 5px;
+    }
+
+    .wp-form-help i { color: var(--wp-warning); }
+
+    .wp-form-help kbd {
+        background: var(--wp-surface-alt);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 3px;
+        padding: 0 5px;
+        font-size: 10.5px;
+        font-family: monospace;
+    }
+
+    .wp-form-error {
+        display: block;
+        font-size: 12px;
+        color: var(--wp-danger);
+        margin-top: 5px;
+        font-weight: 500;
+    }
+
+    #recapList li {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--wp-surface);
+        border: 1px solid rgba(13,148,136,0.3);
+        border-radius: 999px;
+        padding: 5px 14px;
+        font-size: 12.5px;
+        color: var(--wp-text-strong);
+        font-weight: 500;
+    }
+
+    #recapList li i {
+        color: #0d9488;
+        font-size: 11px;
+    }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const niveauSelect = document.getElementById('id_niveau');
+        const classeSelect = document.getElementById('id_classe');
+        const domaineSelect = document.getElementById('id_domaine');
+        const ecoleSelect  = document.getElementById('id_ecole');
+
+        const recapBox = document.getElementById('recapBox');
+        const recapList = document.getElementById('recapList');
+        const classeCount = document.getElementById('classeCount');
+        const domaineCount = document.getElementById('domaineCount');
+        const selectionStatus = document.getElementById('selectionStatus');
+        const statusMessage = document.getElementById('statusMessage');
+
+        const isEdit = {{ is_edit|yesno:"true,false" }};
+        const isReference = {{ is_reference_form|yesno:"true,false" }};
+
+        const URL_CLASSES_PAR_NIVEAU = "{% url 'ecoles:api_get_classes_by_niveau' %}";
+        const URL_DOMAINES_PAR_NIVEAU = "{% url 'ecoles:api_get_domaines_by_niveau' %}";
+
+        console.log('=== COURS FORM DEBUG ===');
+        console.log('Mode édition :', isEdit);
+        console.log('Mode référence :', isReference);
+
+        if (classeSelect && !classeSelect.multiple) {
+            classeSelect.setAttribute('multiple', 'multiple');
+            classeSelect.setAttribute('size', '8');
+        }
+        if (domaineSelect && !domaineSelect.multiple) {
+            domaineSelect.setAttribute('multiple', 'multiple');
+            domaineSelect.setAttribute('size', '8');
+        }
+
+        function showStatus(message) {
+            if (selectionStatus && statusMessage) {
+                selectionStatus.style.display = 'block';
+                statusMessage.textContent = message;
+            }
+        }
+
+        function hideStatus() {
+            if (selectionStatus) selectionStatus.style.display = 'none';
+        }
+
+        function updateCounters() {
+            if (classeCount && classeSelect) {
+                const count = classeSelect.selectedOptions.length;
+                classeCount.textContent = count;
+                classeCount.style.background = count > 0 ? '#0d9488' : 'var(--wp-primary)';
+            }
+            if (domaineCount && domaineSelect) {
+                const count = domaineSelect.selectedOptions.length;
+                domaineCount.textContent = count;
+                domaineCount.style.background = count > 0 ? '#0d9488' : 'var(--wp-primary)';
+            }
+        }
+
+        function updateRecap() {
+            if (!recapBox || !recapList || isEdit) return;
+
+            const classes = classeSelect ? Array.from(classeSelect.selectedOptions) : [];
+            const domaines = domaineSelect ? Array.from(domaineSelect.selectedOptions) : [];
+
+            if (classes.length === 0 || domaines.length === 0) {
+                recapBox.style.display = 'none';
+                return;
+            }
+
+            const combinations = [];
+            classes.forEach(c => {
+                domaines.forEach(d => {
+                    combinations.push({ classe: c.textContent, domaine: d.textContent });
+                });
+            });
+
+            const displayLimit = 20;
+            const total = combinations.length;
+            const displayed = combinations.slice(0, displayLimit);
+
+            let html = '';
+            displayed.forEach(combo => {
+                html += `<li><i class="fas fa-check-circle"></i> ${combo.classe} <span style="color:var(--wp-text-light);">×</span> ${combo.domaine}</li>`;
+            });
+
+            if (total > displayLimit) {
+                html += `<li style="background:var(--wp-primary-soft); border-color:var(--wp-primary);"><i class="fas fa-plus-circle"></i> et ${total - displayLimit} autre(s)…</li>`;
+            }
+
+            recapList.innerHTML = html;
+            recapBox.style.display = 'block';
+        }
+
+        function loadClassesAndDomaines(niveauId, forceReload = false) {
+            const ecoleId = ecoleSelect ? ecoleSelect.value : '';
+
+            if (!niveauId) {
+                if (classeSelect) classeSelect.innerHTML = '';
+                if (domaineSelect) domaineSelect.innerHTML = '';
+                updateCounters();
+                updateRecap();
+                return;
+            }
+
+            if (isEdit && !forceReload) {
+                console.log('⏭️ Skip reload (mode édition)');
+                updateCounters();
+                return;
+            }
+
+            const selectedClasses = classeSelect
+                ? Array.from(classeSelect.selectedOptions).map(o => o.value)
+                : [];
+            const selectedDomaines = domaineSelect
+                ? Array.from(domaineSelect.selectedOptions).map(o => o.value)
+                : [];
+
+            showStatus('Chargement...');
+
+            // ============ CLASSES ============
+            if (classeSelect) {
+                classeSelect.innerHTML = '<option disabled>Chargement...</option>';
+
+                const params = new URLSearchParams();
+                params.append('niveau_id', niveauId);
+                if (ecoleId) params.append('ecole_id', ecoleId);
+                if (isReference) params.append('reference', '1');
+
+                const url = `${URL_CLASSES_PAR_NIVEAU}?${params.toString()}`;
+                console.log('🔍 Fetch classes:', url);
+
+                fetch(url)
+                    .then(r => r.json())
+                    .then(data => {
+                        console.log('📥 Classes reçues:', data);
+                        classeSelect.innerHTML = '';
+                        if (!Array.isArray(data) || data.length === 0) {
+                            const opt = document.createElement('option');
+                            opt.disabled = true;
+                            opt.textContent = isReference
+                                ? 'Aucune classe de référence disponible'
+                                : 'Aucune classe disponible';
+                            classeSelect.appendChild(opt);
+                        } else {
+                            data.forEach(classe => {
+                                const option = document.createElement('option');
+                                option.value = classe.id;
+                                option.textContent = classe.nom;
+                                if (selectedClasses.includes(String(classe.id))) {
+                                    option.selected = true;
+                                }
+                                classeSelect.appendChild(option);
+                            });
+                        }
+                        updateCounters();
+                        updateRecap();
+                    })
+                    .catch(err => {
+                        console.error('❌ Erreur classes:', err);
+                        classeSelect.innerHTML = `<option disabled>Erreur : ${err.message}</option>`;
+                    });
+            }
+
+            // ============ DOMAINES ============
+            if (domaineSelect) {
+                domaineSelect.innerHTML = '<option disabled>Chargement...</option>';
+
+                const params = new URLSearchParams();
+                params.append('niveau_id', niveauId);
+                if (ecoleId) params.append('ecole_id', ecoleId);
+                if (isReference) params.append('reference', '1');
+
+                const url = `${URL_DOMAINES_PAR_NIVEAU}?${params.toString()}`;
+                console.log('🔍 Fetch domaines:', url);
+
+                fetch(url)
+                    .then(r => r.json())
+                    .then(data => {
+                        console.log('📥 Domaines reçus:', data);
+                        domaineSelect.innerHTML = '';
+                        if (!Array.isArray(data) || data.length === 0) {
+                            const opt = document.createElement('option');
+                            opt.disabled = true;
+                            opt.textContent = isReference
+                                ? 'Aucun domaine de référence disponible'
+                                : 'Aucun domaine disponible';
+                            domaineSelect.appendChild(opt);
+                        } else {
+                            data.forEach(domaine => {
+                                const option = document.createElement('option');
+                                option.value = domaine.id;
+                                option.textContent = domaine.nom;
+                                if (selectedDomaines.includes(String(domaine.id))) {
+                                    option.selected = true;
+                                }
+                                domaineSelect.appendChild(option);
+                            });
+                        }
+                        updateCounters();
+                        updateRecap();
+                    })
+                    .catch(err => {
+                        console.error('❌ Erreur domaines:', err);
+                        domaineSelect.innerHTML = `<option disabled>Erreur : ${err.message}</option>`;
+                    });
+            }
+
+            setTimeout(hideStatus, 800);
+        }
+
+        if (niveauSelect) {
+            niveauSelect.addEventListener('change', function () {
+                loadClassesAndDomaines(this.value, true);
+            });
+        }
+        if (classeSelect) {
+            classeSelect.addEventListener('change', function () {
+                updateCounters();
+                updateRecap();
+            });
+        }
+        if (domaineSelect) {
+            domaineSelect.addEventListener('change', function () {
+                updateCounters();
+                updateRecap();
+            });
+        }
+
+        if (isEdit) {
+            console.log('🎯 Mode édition : listes non rechargées');
+            updateCounters();
+        } else if (niveauSelect && niveauSelect.value) {
+            loadClassesAndDomaines(niveauSelect.value, true);
+        } else {
+            updateCounters();
+            updateRecap();
+        }
+
+        // Configuration cycle
+        const toggleCycleConfig = document.getElementById('toggleCycleConfig');
+        const cycleConfigSection = document.getElementById('cycleConfigSection');
+        const configActiveInput = document.getElementById('id_config_active');
+
+        if (toggleCycleConfig && cycleConfigSection) {
+            toggleCycleConfig.addEventListener('change', function () {
+                cycleConfigSection.style.display = this.checked ? 'block' : 'none';
+                if (configActiveInput) configActiveInput.value = this.checked ? '1' : '';
+            });
+        }
+    });
+</script>
+{% endblock %}

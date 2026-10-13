@@ -1,0 +1,650 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Actualités - CRADD{% endblock %}
+
+{# ============================================================ #}
+{# Rendu pour les visiteurs non connectés (site public)        #}
+{# ============================================================ #}
+{% block content_public %}
+
+<section class="public-news-page">
+
+    <!-- ============================================================
+         EN-TÊTE DE LA PAGE
+    ============================================================ -->
+    <header class="public-news-header">
+        <div class="container">
+            <div class="public-news-header-inner">
+                <span class="public-news-badge">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Actualités & annonces</span>
+                </span>
+                <h1 class="public-news-title">Nos actualités</h1>
+                <p class="public-news-subtitle">
+                    Restez informés de nos actions, projets et événements
+                    pour un développement durable en République Démocratique du Congo.
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================================
+         LISTE DES ARTICLES
+    ============================================================ -->
+    <div class="container">
+        <div class="public-news-body">
+
+            {% if articles %}
+            <div class="public-news-grid">
+                {% for article in articles %}
+                <a href="{% url 'actualites:article_detail' article.slug %}" class="public-news-card">
+                    <div class="public-news-card-img">
+                        {% if article.image %}
+                        <img src="{{ article.image.url }}"
+                             alt="{{ article.titre }}"
+                             loading="lazy">
+                        {% else %}
+                        <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80"
+                             alt="Image par défaut"
+                             loading="lazy">
+                        {% endif %}
+                        {% if article.categorie %}
+                        <span class="public-news-card-tag">{{ article.categorie.nom }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="public-news-card-body">
+                        <div class="public-news-card-date">
+                            <i class="fas fa-calendar-alt"></i>
+                            {{ article.date_publication|date:"d M Y" }}
+                        </div>
+                        <h3 class="public-news-card-title">{{ article.titre }}</h3>
+                        <p class="public-news-card-excerpt">
+                            {{ article.contenu|striptags|safe|truncatechars:140 }}
+                        </p>
+                        <div class="public-news-card-footer">
+                            <span class="public-news-card-author">
+                                <i class="fas fa-user"></i>
+                                {{ article.auteur.get_full_name|default:article.auteur.username }}
+                            </span>
+                            <span class="public-news-card-link">
+                                Lire la suite <i class="fas fa-arrow-right"></i>
+                            </span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="public-news-empty">
+                <i class="fas fa-newspaper"></i>
+                <h3>Aucune actualité disponible</h3>
+                <p>Revenez bientôt pour découvrir nos dernières publications.</p>
+                <a href="{% url 'ecoles:index' %}" class="hero-cta hero-cta-primary" style="display:inline-flex;">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour à l'accueil
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- ============================================================
+                 PAGINATION
+            ============================================================ -->
+            {% if articles.has_other_pages %}
+            <div class="public-news-pagination">
+                {% if articles.has_previous %}
+                    <a href="?page=1" class="public-news-page-link" title="Première page">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                    <a href="?page={{ articles.previous_page_number }}" class="public-news-page-link" title="Précédente">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                {% else %}
+                    <span class="public-news-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                    <span class="public-news-page-link disabled"><i class="fas fa-angle-left"></i></span>
+                {% endif %}
+
+                {% for num in articles.paginator.page_range %}
+                    {% if articles.number == num %}
+                        <span class="public-news-page-link active">{{ num }}</span>
+                    {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
+                        <a href="?page={{ num }}" class="public-news-page-link">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if articles.has_next %}
+                    <a href="?page={{ articles.next_page_number }}" class="public-news-page-link" title="Suivante">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                    <a href="?page={{ articles.paginator.num_pages }}" class="public-news-page-link" title="Dernière page">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                {% else %}
+                    <span class="public-news-page-link disabled"><i class="fas fa-angle-right"></i></span>
+                    <span class="public-news-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+</section>
+
+{% endblock %}
+
+
+{# ============================================================ #}
+{# Rendu pour les utilisateurs connectés (dashboard admin)     #}
+{# ============================================================ #}
+{% block page_heading %}Actualités{% endblock %}
+{% block page_subtitle %}Toutes les actualités et annonces{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Actualités</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     EN-TÊTE (BOX avec titre + bouton)
+============================================================ -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-newspaper" style="color:var(--wp-primary);"></i>
+                Actualités
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Parcourez toutes les actualités publiées.
+            </p>
+        </div>
+        <div class="wp-form-actions-inline">
+            <a href="{% url 'actualites:dashboard' %}" class="wp-btn secondary">
+                <i class="fas fa-tachometer-alt"></i> Tableau de bord
+            </a>
+            {% if user.est_editeur or user.est_administrateur %}
+            <a href="{% url 'actualites:article_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Nouvel article
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     LISTE DES ARTICLES
+============================================================ -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3>
+            <i class="fas fa-list" style="color:var(--wp-primary);"></i>
+            Liste des articles
+        </h3>
+        <span class="wp-count-badge">{{ articles.paginator.count|default:articles|length }} article{{ articles.paginator.count|default:articles|length|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:24px;">
+        {% if articles %}
+        <div class="row g-3">
+            {% for article in articles %}
+            <div class="col-md-6 col-lg-4">
+                <div class="wp-card" style="height:100%; margin-bottom:0;">
+                    {% if article.image %}
+                    <div style="aspect-ratio:16/10; overflow:hidden; border-radius:var(--wp-radius) var(--wp-radius) 0 0;">
+                        <img src="{{ article.image.url }}"
+                             alt="{{ article.titre }}"
+                             style="width:100%; height:100%; object-fit:cover;">
+                    </div>
+                    {% endif %}
+                    <div class="wp-card-body" style="padding:18px;">
+                        {% if article.categorie %}
+                        <span class="wp-badge wp-badge-primary" style="margin-bottom:10px; display:inline-block;">
+                            <i class="fas fa-tag"></i> {{ article.categorie.nom }}
+                        </span>
+                        {% endif %}
+
+                        <h4 style="margin:6px 0 10px; font-size:15px; font-weight:700; color:var(--wp-text-strong); line-height:1.35;">
+                            {{ article.titre|truncatechars:70 }}
+                        </h4>
+
+                        <p style="font-size:12.5px; color:var(--wp-text-muted); line-height:1.6; margin-bottom:14px;">
+                            {{ article.contenu|striptags|safe|truncatechars:110 }}
+                        </p>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding-top:12px; border-top:1px dashed var(--wp-border-light);">
+                            <span style="font-size:11px; color:var(--wp-text-light);">
+                                <i class="fas fa-calendar-alt"></i>
+                                {{ article.date_publication|date:"d/m/Y" }}
+                            </span>
+                            <a href="{% url 'actualites:article_detail' article.slug %}"
+                               class="wp-btn sm"
+                               style="text-decoration:none;">
+                                Lire <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-newspaper"></i>
+            <h5 style="font-weight:700; margin:14px 0 10px; color:var(--wp-text-strong);">
+                Aucune actualité pour le moment
+            </h5>
+            <p style="max-width:500px; margin:0 auto 20px; line-height:1.7;">
+                Publiez votre premier article pour partager vos actualités.
+            </p>
+            {% if user.est_editeur or user.est_administrateur %}
+            <a href="{% url 'actualites:article_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Créer un article
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ============================================================
+         PAGINATION
+    ============================================================ -->
+    {% if articles.has_other_pages %}
+    <div class="wp-card-footer">
+        <div class="wp-pagination" style="width:100%;">
+            {% if articles.has_previous %}
+                <a href="?page=1" class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ articles.previous_page_number }}" class="wp-page-link" title="Précédente">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-left"></i></span>
+            {% endif %}
+
+            {% for num in articles.paginator.page_range %}
+                {% if articles.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
+                    <a href="?page={{ num }}" class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if articles.has_next %}
+                <a href="?page={{ articles.next_page_number }}" class="wp-page-link" title="Suivante">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?page={{ articles.paginator.num_pages }}" class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       PARTIE PUBLIQUE — Styles de la page actualités
+    ============================================================ */
+    .public-news-page {
+        background: var(--wp-bg);
+        padding-bottom: 80px;
+    }
+
+    /* ---------- En-tête ---------- */
+    .public-news-header {
+        background: linear-gradient(135deg, #0e4d80 0%, var(--wp-primary) 50%, var(--wp-primary-hover) 100%);
+        color: #fff;
+        padding: clamp(3rem, 6vw, 5rem) 0 clamp(2.5rem, 5vw, 4rem);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .public-news-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(114, 174, 230, 0.15) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .public-news-header::after {
+        content: '';
+        position: absolute;
+        bottom: -50%;
+        left: -20%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(0, 163, 42, 0.10) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .public-news-header-inner {
+        position: relative;
+        z-index: 2;
+        max-width: 780px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .public-news-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.30);
+        color: #fff;
+        padding: 7px 20px;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+        margin-bottom: 20px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+
+    .public-news-badge i {
+        color: #86efac;
+        font-size: 0.85rem;
+    }
+
+    .public-news-title {
+        font-size: clamp(1.8rem, 4.5vw, 2.8rem);
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.025em;
+        color: #fff;
+        margin-bottom: 18px;
+        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .public-news-subtitle {
+        font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+        color: rgba(255, 255, 255, 0.90);
+        line-height: 1.7;
+        max-width: 620px;
+        margin: 0 auto;
+    }
+
+    /* ---------- Corps ---------- */
+    .public-news-body {
+        margin-top: -50px;
+        position: relative;
+        z-index: 3;
+    }
+
+    /* ---------- Grille de cartes ---------- */
+    .public-news-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 26px;
+        margin-bottom: 40px;
+    }
+
+    .public-news-card {
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 18px;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+        box-shadow: var(--wp-shadow-sm);
+    }
+
+    .public-news-card:hover {
+        transform: translateY(-6px);
+        box-shadow: var(--wp-shadow-lg);
+        border-color: var(--wp-primary-light);
+        color: inherit;
+    }
+
+    .public-news-card-img {
+        position: relative;
+        aspect-ratio: 16/10;
+        overflow: hidden;
+        background: var(--wp-surface-alt);
+    }
+
+    .public-news-card-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .public-news-card:hover .public-news-card-img img {
+        transform: scale(1.06);
+    }
+
+    .public-news-card-tag {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: #fff;
+        padding: 5px 14px;
+        border-radius: 9999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .public-news-card-body {
+        padding: 22px 22px 24px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    .public-news-card-date {
+        font-size: 0.78rem;
+        color: var(--wp-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .public-news-card-date i {
+        color: var(--wp-primary);
+        margin-right: 5px;
+    }
+
+    .public-news-card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1.35;
+        color: var(--wp-text-strong);
+        margin-bottom: 12px;
+        letter-spacing: -0.015em;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .public-news-card:hover .public-news-card-title {
+        color: var(--wp-primary);
+    }
+
+    .public-news-card-excerpt {
+        font-size: 0.9rem;
+        color: var(--wp-text-muted);
+        line-height: 1.65;
+        margin-bottom: 18px;
+        flex: 1;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .public-news-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding-top: 14px;
+        border-top: 1px dashed var(--wp-border-light);
+        font-size: 0.8rem;
+    }
+
+    .public-news-card-author {
+        color: var(--wp-text-light);
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .public-news-card-author i {
+        color: var(--wp-primary);
+    }
+
+    .public-news-card-link {
+        color: var(--wp-primary);
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        transition: gap 0.25s ease;
+    }
+
+    .public-news-card:hover .public-news-card-link {
+        gap: 9px;
+    }
+
+    /* ---------- Empty state ---------- */
+    .public-news-empty {
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 18px;
+        padding: 70px 30px;
+        text-align: center;
+        box-shadow: var(--wp-shadow-sm);
+    }
+
+    .public-news-empty i {
+        font-size: 3.2rem;
+        color: var(--wp-border);
+        margin-bottom: 20px;
+        display: block;
+    }
+
+    .public-news-empty h3 {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--wp-text-strong);
+        margin-bottom: 10px;
+    }
+
+    .public-news-empty p {
+        font-size: 0.95rem;
+        color: var(--wp-text-muted);
+        margin-bottom: 26px;
+    }
+
+    /* ---------- Pagination publique ---------- */
+    .public-news-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+    }
+
+    .public-news-page-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 40px;
+        height: 40px;
+        padding: 0 12px;
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: 10px;
+        color: var(--wp-text);
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        box-shadow: var(--wp-shadow-xs);
+    }
+
+    .public-news-page-link:hover {
+        background: var(--wp-primary-soft);
+        border-color: var(--wp-primary);
+        color: var(--wp-primary);
+        transform: translateY(-2px);
+    }
+
+    .public-news-page-link.active {
+        background: var(--wp-primary);
+        border-color: var(--wp-primary);
+        color: #fff;
+        pointer-events: none;
+        box-shadow: 0 4px 12px rgba(34, 113, 177, 0.30);
+    }
+
+    .public-news-page-link.disabled {
+        opacity: 0.4;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 768px) {
+        .public-news-body {
+            margin-top: -35px;
+        }
+
+        .public-news-grid {
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+
+        .public-news-title {
+            font-size: 1.7rem;
+        }
+
+        .public-news-card-title {
+            font-size: 1rem;
+        }
+
+        .public-news-page-link {
+            min-width: 36px;
+            height: 36px;
+            font-size: 0.85rem;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Utilisateurs - CRADD{% endblock %}
+{% block page_heading %}Liste des utilisateurs{% endblock %}
+{% block page_subtitle %}Gestion des comptes et des rôles{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <span>Utilisateurs</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== EN-TÊTE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-users-cog" style="color:var(--wp-primary);"></i>
+                Utilisateurs
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Gérez les comptes, rôles et affectations des utilisateurs.
+            </p>
+        </div>
+        <a href="{% url 'accounts:user_create' %}" class="wp-btn">
+            <i class="fas fa-plus"></i> Ajouter un utilisateur
+        </a>
+    </div>
+</div>
+
+<!-- ===== TABLEAU ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-list"></i> Liste des utilisateurs</h3>
+        <span class="wp-count-badge">{{ users.paginator.count }} utilisateur{{ users.paginator.count|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if users %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Nom complet</th>
+                        <th>Nom d'utilisateur</th>
+                        <th>Email</th>
+                        <th>Rôle</th>
+                        <th>École</th>
+                        <th>Statut</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td data-label="Nom complet">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="wp-list-avatar" style="background:linear-gradient(135deg, var(--wp-primary), var(--wp-primary-light));">
+                                    {{ u.prenom|slice:":1"|upper }}{{ u.nom|slice:":1"|upper }}
+                                </span>
+                                <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                    {{ u.get_full_name|default:u.username }}
+                                </strong>
+                            </div>
+                        </td>
+                        <td data-label="Nom d'utilisateur">
+                            <span class="wp-code">{{ u.username }}</span>
+                        </td>
+                        <td data-label="Email">
+                            {% if u.email %}
+                                <span style="font-size:12.5px;">
+                                    <i class="fas fa-envelope" style="color:var(--wp-text-light); font-size:11px;"></i>
+                                    {{ u.email }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Rôle">
+                            {% if u.est_administrateur %}
+                                <span class="wp-badge wp-badge-danger">
+                                    <i class="fas fa-crown"></i> {{ u.get_role_display }}
+                                </span>
+                            {% elif u.est_ministre %}
+                                <span class="wp-badge wp-badge-warning">
+                                    <i class="fas fa-landmark"></i> {{ u.get_role_display }}
+                                </span>
+                            {% elif u.est_proved %}
+                                <span class="wp-badge wp-badge-primary">
+                                    <i class="fas fa-map-marker-alt"></i> {{ u.get_role_display }}
+                                </span>
+                            {% elif u.est_agent %}
+                                <span class="wp-badge wp-badge-info">
+                                    <i class="fas fa-user-tie"></i> {{ u.get_role_display }}
+                                </span>
+                            {% elif u.est_enseignant %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-chalkboard-teacher"></i> {{ u.get_role_display }}
+                                </span>
+                            {% elif u.est_inspecteur %}
+                                <span class="wp-badge wp-badge-neutral">
+                                    <i class="fas fa-search"></i> {{ u.get_role_display }}
+                                </span>
+                            {% elif u.est_parent %}
+                                <span class="wp-badge wp-badge-neutral">
+                                    <i class="fas fa-user-friends"></i> {{ u.get_role_display }}
+                                </span>
+                            {% elif u.est_editeur %}
+                                <span class="wp-badge wp-badge-primary">
+                                    <i class="fas fa-pen-nib"></i> {{ u.get_role_display }}
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-neutral">
+                                    {{ u.get_role_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="École">
+                            {% if u.ecole_affectation %}
+                                <span style="font-size:12.5px;">
+                                    <i class="fas fa-school" style="color:var(--wp-primary); font-size:11px;"></i>
+                                    {{ u.ecole_affectation.nom }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Statut">
+                            {% if u.est_actif %}
+                                <span class="wp-badge wp-badge-success">
+                                    <i class="fas fa-check-circle"></i> Actif
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger">
+                                    <i class="fas fa-times-circle"></i> Inactif
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+                                <a href="{% url 'accounts:user_edit' u.id %}"
+                                   class="wp-action-btn edit"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'accounts:user_delete' u.id %}"
+                                   class="wp-action-btn danger"
+                                   title="Supprimer"
+                                   onclick="return confirm('Supprimer l\'utilisateur « {{ u.get_full_name|default:u.username }} » ?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-users-cog"></i>
+            <p>Aucun utilisateur enregistré.</p>
+            <a href="{% url 'accounts:user_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Créer le premier utilisateur
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== PAGINATION ===== -->
+{% if users.has_other_pages %}
+<div class="wp-card" style="margin-top:20px;">
+    <div class="wp-card-body">
+        <div class="wp-pagination">
+            {% if users.has_previous %}
+                <a href="?page=1" class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ users.previous_page_number }}" class="wp-page-link">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-left"></i></span>
+            {% endif %}
+
+            {% for num in users.paginator.page_range %}
+                {% if users.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > users.number|add:"-3" and num < users.number|add:"3" %}
+                    <a href="?page={{ num }}" class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if users.has_next %}
+                <a href="?page={{ users.next_page_number }}" class="wp-page-link">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="?page={{ users.paginator.num_pages }}" class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:12px; color:var(--wp-text-light);">
+            Page {{ users.number }} sur {{ users.paginator.num_pages }}
+            · {{ users.paginator.count }} utilisateur{{ users.paginator.count|pluralize }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

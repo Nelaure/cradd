@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ ecole.nom }} - Détail{% endblock %}
+{% block page_heading %}{{ ecole.nom }}{% endblock %}
+{% block page_subtitle %}{{ ecole.province.nom }} · {{ ecole.get_type_gestion_display }}{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'ecoles:ecole_list' %}">Écoles</a>
+    <span class="sep">/</span>
+    <span>{{ ecole.nom }}</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== EN-TÊTE AVEC BOUTONS D'ACTION ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+            <div style="width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg, var(--wp-primary), var(--wp-primary-light)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; box-shadow: 0 4px 12px rgba(34,113,177,0.30);">
+                <i class="fas fa-school"></i>
+            </div>
+            <div style="min-width:0;">
+                <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong); line-height:1.2;">
+                    {{ ecole.nom }}
+                </h2>
+                <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                    Détail complet de l'établissement scolaire.
+                </p>
+            </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="{% url 'ecoles:ecole_list' %}" class="wp-btn outline">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </a>
+            {% if user_can_edit %}
+            <a href="{% url 'ecoles:ecole_edit' ecole.id %}" class="wp-btn">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ===== CARTE IDENTITÉ ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-info-circle" style="color:var(--wp-primary);"></i> Informations générales</h3>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="wp-badge wp-badge-neutral">
+                <i class="fas fa-hashtag"></i> {{ ecole.code }}
+            </span>
+            {% if ecole.type_gestion == 'public' %}
+                <span class="wp-badge wp-badge-primary">
+                    <i class="fas fa-landmark"></i> {{ ecole.get_type_gestion_display }}
+                </span>
+            {% elif ecole.type_gestion == 'prive' %}
+                <span class="wp-badge wp-badge-info">
+                    <i class="fas fa-user-tie"></i> {{ ecole.get_type_gestion_display }}
+                </span>
+            {% else %}
+                <span class="wp-badge wp-badge-warning">
+                    <i class="fas fa-handshake"></i> {{ ecole.get_type_gestion_display }}
+                </span>
+            {% endif %}
+            {% if ecole.est_active %}
+                <span class="wp-badge wp-badge-success">
+                    <i class="fas fa-check-circle"></i> Active
+                </span>
+            {% else %}
+                <span class="wp-badge wp-badge-danger">
+                    <i class="fas fa-times-circle"></i> Inactive
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="wp-card-body">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div style="display:flex; gap:10px; align-items:start;">
+                            <i class="fas fa-map-marker-alt" style="color:var(--wp-primary); margin-top:3px;"></i>
+                            <div>
+                                <div style="font-size:11px; text-transform:uppercase; color:var(--wp-text-light); font-weight:700; letter-spacing:0.5px;">Province</div>
+                                <div style="font-size:13.5px; color:var(--wp-text);">{{ ecole.province.nom }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div style="display:flex; gap:10px; align-items:start;">
+                            <i class="fas fa-user-tie" style="color:var(--wp-primary); margin-top:3px;"></i>
+                            <div>
+                                <div style="font-size:11px; text-transform:uppercase; color:var(--wp-text-light); font-weight:700; letter-spacing:0.5px;">Responsable</div>
+                                <div style="font-size:13.5px; color:var(--wp-text);">
+                                    {{ ecole.responsable|default:"—" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div style="display:flex; gap:10px; align-items:start;">
+                            <i class="fas fa-phone" style="color:var(--wp-success); margin-top:3px;"></i>
+                            <div>
+                                <div style="font-size:11px; text-transform:uppercase; color:var(--wp-text-light); font-weight:700; letter-spacing:0.5px;">Téléphone</div>
+                                <div style="font-size:13.5px; color:var(--wp-text);">
+                                    {{ ecole.telephone|default:"—" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div style="display:flex; gap:10px; align-items:start;">
+                            <i class="fas fa-envelope" style="color:var(--wp-primary); margin-top:3px;"></i>
+                            <div>
+                                <div style="font-size:11px; text-transform:uppercase; color:var(--wp-text-light); font-weight:700; letter-spacing:0.5px;">Email</div>
+                                <div style="font-size:13.5px; color:var(--wp-text); word-break:break-all;">
+                                    {{ ecole.email|default:"—" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if ecole.adresse %}
+                    <div class="col-12">
+                        <div style="display:flex; gap:10px; align-items:start;">
+                            <i class="fas fa-map-pin" style="color:var(--wp-warning); margin-top:3px;"></i>
+                            <div>
+                                <div style="font-size:11px; text-transform:uppercase; color:var(--wp-text-light); font-weight:700; letter-spacing:0.5px;">Adresse</div>
+                                <div style="font-size:13.5px; color:var(--wp-text);">{{ ecole.adresse }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Bandeau latéral : performance globale -->
+            <div class="col-lg-4">
+                <div style="background:linear-gradient(135deg, var(--wp-primary-soft), rgba(34,113,177,0.03)); border-radius:12px; padding:20px; border:1px solid var(--wp-border-light); height:100%;">
+                    <div style="font-size:11px; text-transform:uppercase; color:var(--wp-text-light); font-weight:700; letter-spacing:0.5px; margin-bottom:12px;">
+                        <i class="fas fa-chart-line"></i> Performance {{ annee_actuelle.annee|default:"" }}
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:14px;">
+                        <div>
+                            <div style="font-size:11px; color:var(--wp-text-muted); margin-bottom:3px;">Moyenne générale</div>
+                            <div style="font-size:28px; font-weight:800; color:var(--wp-primary); line-height:1.1;">
+                                {{ moyenne_generale|floatformat:2 }}<span style="font-size:14px; color:var(--wp-text-light); font-weight:600;">/20</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size:11px; color:var(--wp-text-muted); margin-bottom:3px;">Taux de réussite</div>
+                            <div style="font-size:28px; font-weight:800; line-height:1.1; {% if taux_reussite >= 70 %}color:var(--wp-success);{% elif taux_reussite >= 50 %}color:var(--wp-warning);{% else %}color:var(--wp-danger);{% endif %}">
+                                {{ taux_reussite }}<span style="font-size:14px; font-weight:600;">%</span>
+                            </div>
+                        </div>
+                        <div style="font-size:11.5px; color:var(--wp-text-muted); border-top:1px solid var(--wp-border-light); padding-top:10px;">
+                            <i class="fas fa-info-circle"></i>
+                            Basé sur {{ total_resultats }} résultat{{ total_resultats|pluralize }} annuel{{ total_resultats|pluralize }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== STATISTIQUES STRUCTURELLES ===== -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <!-- Sections -->
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon" style="background:var(--wp-primary-soft); color:var(--wp-primary); width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+                    <i class="fas fa-stream"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:1.8rem; font-weight:700; color:var(--wp-text-strong); line-height:1.2; letter-spacing:-0.5px;">{{ total_sections }}</div>
+                    <div style="font-size:0.7rem; font-weight:600; color:var(--wp-text-light); text-transform:uppercase; letter-spacing:0.8px;">Section{{ total_sections|pluralize }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Niveaux -->
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon" style="background:var(--wp-primary-soft); color:var(--wp-primary); width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:1.8rem; font-weight:700; color:var(--wp-text-strong); line-height:1.2; letter-spacing:-0.5px;">{{ total_niveaux }}</div>
+                    <div style="font-size:0.7rem; font-weight:600; color:var(--wp-text-light); text-transform:uppercase; letter-spacing:0.8px;">Niveaux</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Classes -->
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon" style="background:var(--wp-accent-soft); color:var(--wp-accent); width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:1.8rem; font-weight:700; color:var(--wp-text-strong); line-height:1.2; letter-spacing:-0.5px;">{{ total_classes }}</div>
+                    <div style="font-size:0.7rem; font-weight:600; color:var(--wp-text-light); text-transform:uppercase; letter-spacing:0.8px;">Classes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Élèves -->
+    <div class="col-xl-3 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon" style="background:rgba(100,116,139,0.12); color:var(--wp-secondary); width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:1.8rem; font-weight:700; color:var(--wp-text-strong); line-height:1.2; letter-spacing:-0.5px;">{{ total_eleves }}</div>
+                    <div style="font-size:0.7rem; font-weight:600; color:var(--wp-text-light); text-transform:uppercase; letter-spacing:0.8px;">Élèves</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== LIGNE 2 : COURS ET DOMAINES ===== -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <div class="col-xl-6 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon" style="background:var(--wp-warning-soft); color:var(--wp-warning); width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:1.8rem; font-weight:700; color:var(--wp-text-strong); line-height:1.2; letter-spacing:-0.5px;">{{ total_cours }}</div>
+                    <div style="font-size:0.7rem; font-weight:600; color:var(--wp-text-light); text-transform:uppercase; letter-spacing:0.8px;">Cours</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6 col-md-6">
+        <div class="wp-card stat-card-modern" style="margin-bottom:0;">
+            <div class="wp-card-body" style="display:flex; align-items:center; gap:18px; padding:20px 24px;">
+                <div class="stat-icon" style="background:rgba(219,166,23,0.12); color:var(--wp-warning); width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:1.8rem; font-weight:700; color:var(--wp-text-strong); line-height:1.2; letter-spacing:-0.5px;">{{ total_domaines }}</div>
+                    <div style="font-size:0.7rem; font-weight:600; color:var(--wp-text-light); text-transform:uppercase; letter-spacing:0.8px;">Domaines</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== RÉPARTITION ÉLÈVES ===== -->
+<div class="row g-3" style="margin-bottom:20px;">
+    <!-- Par sexe -->
+    <div class="col-lg-6">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3><i class="fas fa-venus-mars" style="color:var(--wp-primary);"></i> Répartition par sexe</h3>
+                <span class="wp-count-badge">{{ total_eleves }} élève{{ total_eleves|pluralize }}</span>
+            </div>
+            <div class="wp-card-body">
+                {% if sexe_stats %}
+                    {% for stat in sexe_stats %}
+                    <div style="margin-bottom:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span style="font-size:13.5px; font-weight:600; color:var(--wp-text);">
+                                <i class="fas {% if stat.label == 'Masculin' %}fa-male{% else %}fa-female{% endif %}" style="color:var(--wp-primary); margin-right:5px;"></i>
+                                {{ stat.label }}
+                            </span>
+                            <span class="wp-badge wp-badge-primary" style="font-weight:700;">
+                                {{ stat.count }}
+                            </span>
+                        </div>
+                        <div style="height:8px; background:var(--wp-surface-alt); border-radius:4px; overflow:hidden;">
+                            {% if total_eleves > 0 %}
+                            <div style="height:100%; width:{% widthratio stat.count total_eleves 100 %}%; background:linear-gradient(90deg, var(--wp-primary), var(--wp-primary-light)); border-radius:4px; transition: width 0.5s ease;"></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="wp-empty" style="padding:30px 10px;">
+                        <i class="fas fa-users"></i>
+                        <p>Aucun élève enregistré.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Par niveau -->
+    <div class="col-lg-6">
+        <div class="wp-card" style="margin-bottom:0; height:100%;">
+            <div class="wp-card-header">
+                <h3><i class="fas fa-chart-bar" style="color:var(--wp-accent);"></i> Effectif par niveau</h3>
+                <span class="wp-count-badge">{{ niveau_stats|length }} niveau{{ niveau_stats|length|pluralize }}</span>
+            </div>
+            <div class="wp-card-body">
+                {% if niveau_stats %}
+                    {% for stat in niveau_stats %}
+                    <div style="margin-bottom:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span style="font-size:13.5px; font-weight:600; color:var(--wp-text);">
+                                <i class="fas fa-layer-group" style="color:var(--wp-accent); margin-right:5px;"></i>
+                                {{ stat.label }}
+                            </span>
+                            <span class="wp-badge wp-badge-success" style="font-weight:700;">
+                                {{ stat.count }}
+                            </span>
+                        </div>
+                        <div style="height:8px; background:var(--wp-surface-alt); border-radius:4px; overflow:hidden;">
+                            {% if total_eleves > 0 %}
+                            <div style="height:100%; width:{% widthratio stat.count total_eleves 100 %}%; background:linear-gradient(90deg, var(--wp-accent), #34d058); border-radius:4px; transition: width 0.5s ease;"></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="wp-empty" style="padding:30px 10px;">
+                        <i class="fas fa-chart-bar"></i>
+                        <p>Aucune donnée disponible.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SECTIONS DE L'ÉCOLE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-stream" style="color:var(--wp-primary);"></i> Sections de l'école</h3>
+        <span class="wp-count-badge">{{ total_sections }} section{{ total_sections|pluralize }}</span>
+    </div>
+    <div class="wp-card-body" style="padding:0;">
+        {% if sections_list %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nom de la section</th>
+                        <th>Code</th>
+                        <th>Ordre</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for section in sections_list %}
+                    <tr>
+                        <td data-label="#">
+                            <span class="wp-badge wp-badge-neutral" style="font-weight:700;">{{ forloop.counter }}</span>
+                        </td>
+                        <td data-label="Nom">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-stream" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ section.nom|default:"MAXIMA" }}
+                            </strong>
+                        </td>
+                        <td data-label="Code">
+                            {% if section.code %}
+                                <span class="wp-code">{{ section.code }}</span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Ordre">
+                            <span class="wp-badge wp-badge-neutral" style="font-weight:700;">{{ section.ordre }}</span>
+                        </td>
+                        <td data-label="Description">
+                            {% if section.description %}
+                                <span style="font-size:12.5px; color:var(--wp-text-muted);">{{ section.description|truncatechars:80 }}</span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-stream"></i>
+            <p>Aucune section enregistrée dans le système.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== PERFORMANCE PAR CLASSE ===== -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-trophy" style="color:var(--wp-warning);"></i> Performance par classe</h3>
+        <span class="wp-count-badge">{{ stats_par_classe|length }} classe{{ stats_par_classe|length|pluralize }}</span>
+    </div>
+    <div class="wp-card-body" style="padding:0;">
+        {% if stats_par_classe %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Classe</th>
+                        <th>Niveau</th>
+                        <th>Effectif</th>
+                        <th>Réussis</th>
+                        <th>Moyenne</th>
+                        <th>Taux</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in stats_par_classe %}
+                    <tr>
+                        <td data-label="Classe">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-users" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ stat.nom }}
+                            </strong>
+                        </td>
+                        <td data-label="Niveau">
+                            <span class="wp-badge wp-badge-neutral">
+                                <i class="fas fa-layer-group"></i> {{ stat.niveau }}
+                            </span>
+                        </td>
+                        <td data-label="Effectif">
+                            <span class="wp-badge wp-badge-neutral" style="font-weight:700;">{{ stat.total }}</span>
+                        </td>
+                        <td data-label="Réussis">
+                            <span class="wp-badge wp-badge-success" style="font-weight:700;">{{ stat.reussis }}</span>
+                        </td>
+                        <td data-label="Moyenne">
+                            <span class="wp-badge wp-badge-primary" style="font-weight:700;">{{ stat.moyenne|floatformat:2 }}/20</span>
+                        </td>
+                        <td data-label="Taux">
+                            {% if stat.taux >= 70 %}
+                                <span class="wp-badge wp-badge-success" style="font-weight:700;">
+                                    <i class="fas fa-arrow-up"></i> {{ stat.taux }}%
+                                </span>
+                            {% elif stat.taux >= 50 %}
+                                <span class="wp-badge wp-badge-warning" style="font-weight:700;">
+                                    <i class="fas fa-minus"></i> {{ stat.taux }}%
+                                </span>
+                            {% else %}
+                                <span class="wp-badge wp-badge-danger" style="font-weight:700;">
+                                    <i class="fas fa-arrow-down"></i> {{ stat.taux }}%
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-chart-bar"></i>
+            <p>Aucune classe enregistrée pour cette école.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== NIVEAUX STRUCTURELS ===== -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3><i class="fas fa-layer-group" style="color:var(--wp-primary);"></i> Niveaux structurels</h3>
+        <span class="wp-count-badge">{{ niveaux_list|length }} niveau{{ niveaux_list|length|pluralize }}</span>
+    </div>
+    <div class="wp-card-body" style="padding:0;">
+        {% if niveaux_list %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Niveau</th>
+                        <th>Section</th>
+                        <th>Classes</th>
+                        <th>Cours</th>
+                        <th>Élèves</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for niveau in niveaux_list %}
+                    <tr>
+                        <td data-label="Niveau">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-layer-group" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ niveau.nom }}
+                            </strong>
+                        </td>
+                        <td data-label="Section">
+                            <span class="wp-badge wp-badge-neutral">{{ niveau.section }}</span>
+                        </td>
+                        <td data-label="Classes">
+                            <span class="wp-badge wp-badge-primary" style="font-weight:700;">{{ niveau.nb_classes }}</span>
+                        </td>
+                        <td data-label="Cours">
+                            <span class="wp-badge wp-badge-warning" style="font-weight:700;">{{ niveau.nb_cours }}</span>
+                        </td>
+                        <td data-label="Élèves">
+                            <span class="wp-badge wp-badge-success" style="font-weight:700;">{{ niveau.nb_eleves }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-layer-group"></i>
+            <p>Aucun niveau enregistré pour cette école.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .stat-card-modern {
+        position: relative;
+        overflow: hidden;
+        transition: transform var(--wp-transition), box-shadow var(--wp-transition);
+    }
+    .stat-card-modern:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--wp-shadow-md);
+    }
+    .stat-card-modern:hover .stat-icon {
+        background: var(--wp-primary) !important;
+        color: #fff !important;
+        transform: scale(1.05) rotate(-4deg);
+    }
+    .stat-card-modern .stat-icon {
+        transition: background var(--wp-transition), color var(--wp-transition), transform var(--wp-transition);
+    }
+</style>
+{% endblock %}

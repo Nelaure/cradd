@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Catégories - CRADD{% endblock %}
+{% block page_heading %}Catégories{% endblock %}
+{% block page_subtitle %}Gérez les catégories d'articles{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'actualites:dashboard' %}">Actualités</a>
+    <span class="sep">/</span>
+    <span>Catégories</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     EN-TÊTE DE PAGE (BOX avec titre + bouton)
+============================================================ -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-tags" style="color:var(--wp-primary);"></i>
+                Catégories
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Gérez les catégories d'articles.
+            </p>
+        </div>
+        <div class="wp-form-actions-inline">
+            <a href="{% url 'actualites:categorie_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Nouvelle catégorie
+            </a>
+            <a href="{% url 'actualites:dashboard' %}" class="wp-btn secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     TABLEAU DES CATÉGORIES
+============================================================ -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3>
+            <i class="fas fa-list" style="color:var(--wp-primary);"></i>
+            Liste des catégories
+        </h3>
+        <span class="wp-count-badge">{{ categories|length }} catégorie{{ categories|length|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if categories %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Slug</th>
+                        <th>Description</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in categories %}
+                    <tr>
+                        <td data-label="Nom">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-tag" style="color:var(--wp-primary); font-size:12px;"></i>
+                                {{ cat.nom }}
+                            </strong>
+                        </td>
+                        <td data-label="Slug">
+                            <span class="wp-code">{{ cat.slug }}</span>
+                        </td>
+                        <td data-label="Description">
+                            {% if cat.description %}
+                                <span style="font-size:12.5px; color:var(--wp-text-muted);">
+                                    {{ cat.description|truncatechars:80 }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+                                <a href="{% url 'actualites:categorie_edit' cat.pk %}"
+                                   class="wp-action-btn edit"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'actualites:categorie_delete' cat.pk %}"
+                                   class="wp-action-btn danger"
+                                   title="Supprimer"
+                                   onclick="return confirm('Supprimer la catégorie « {{ cat.nom }} » ?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-tags"></i>
+            <h5 style="font-weight:700; margin:14px 0 10px; color:var(--wp-text-strong);">
+                Aucune catégorie créée
+            </h5>
+            <p style="max-width:500px; margin:0 auto 20px; line-height:1.7;">
+                Créez votre première catégorie pour organiser vos articles.
+            </p>
+            <a href="{% url 'actualites:categorie_create' %}" class="wp-btn">
+                <i class="fas fa-plus"></i> Créer une catégorie
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

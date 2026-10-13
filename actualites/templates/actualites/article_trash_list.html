@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Corbeille - CRADD{% endblock %}
+{% block page_heading %}Corbeille{% endblock %}
+{% block page_subtitle %}Articles supprimés récemment{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{% url 'ecoles:dashboard' %}"><i class="fas fa-home"></i> Accueil</a>
+    <span class="sep">/</span>
+    <a href="{% url 'actualites:dashboard' %}">Actualités</a>
+    <span class="sep">/</span>
+    <span>Corbeille</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     EN-TÊTE DE PAGE (BOX avec titre + boutons)
+============================================================ -->
+<div class="wp-card" style="margin-bottom:20px;">
+    <div class="wp-card-body" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:var(--wp-text-strong);">
+                <i class="fas fa-trash-alt" style="color:var(--wp-danger);"></i>
+                Corbeille
+            </h2>
+            <p style="margin:4px 0 0; font-size:12.5px; color:var(--wp-text-light);">
+                Articles supprimés pouvant être restaurés ou effacés définitivement.
+            </p>
+        </div>
+        <div class="wp-form-actions-inline">
+            <a href="{% url 'actualites:dashboard' %}" class="wp-btn secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+            {% if articles %}
+            <a href="{% url 'actualites:empty_trash' %}" class="wp-btn danger">
+                <i class="fas fa-trash-alt"></i> Vider la corbeille
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     TABLEAU DES ARTICLES SUPPRIMÉS
+============================================================ -->
+<div class="wp-card">
+    <div class="wp-card-header">
+        <h3>
+            <i class="fas fa-list" style="color:var(--wp-primary);"></i>
+            Articles supprimés
+        </h3>
+        <span class="wp-count-badge">{{ articles.paginator.count|default:articles|length }} article{{ articles.paginator.count|default:articles|length|pluralize }}</span>
+    </div>
+
+    <div class="wp-card-body" style="padding:0;">
+        {% if articles %}
+        <div style="overflow-x:auto;">
+            <table class="wp-table">
+                <thead>
+                    <tr>
+                        <th>Titre</th>
+                        <th>Auteur</th>
+                        <th>Supprimé le</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in articles %}
+                    <tr>
+                        <td data-label="Titre">
+                            <strong style="color:var(--wp-text-strong); font-size:13.5px;">
+                                <i class="fas fa-file-alt" style="color:var(--wp-text-light); font-size:12px;"></i>
+                                {{ article.titre }}
+                            </strong>
+                        </td>
+                        <td data-label="Auteur">
+                            {% if article.auteur %}
+                                <span style="font-size:12.5px;">
+                                    <i class="fas fa-user" style="color:var(--wp-primary); font-size:11px;"></i>
+                                    {{ article.auteur.get_full_name|default:article.auteur.username }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Supprimé le">
+                            {% if article.deleted_at %}
+                                <span style="font-size:12.5px; color:var(--wp-text-muted); white-space:nowrap;">
+                                    <i class="fas fa-clock" style="font-size:10px;"></i>
+                                    {{ article.deleted_at|date:"d/m/Y H:i" }}
+                                </span>
+                            {% else %}
+                                <span style="color:var(--wp-text-light); font-style:italic;">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions" style="text-align:right;">
+                            <div class="wp-actions" style="justify-content:flex-end;">
+                                <a href="{% url 'actualites:restore_article' article.pk %}"
+                                   class="wp-action-btn success"
+                                   title="Restaurer"
+                                   onclick="return confirm('Restaurer cet article ?');">
+                                    <i class="fas fa-undo"></i>
+                                </a>
+                                <a href="{% url 'actualites:hard_delete_article' article.pk %}"
+                                   class="wp-action-btn danger"
+                                   title="Supprimer définitivement"
+                                   onclick="return confirm('⚠️ Supprimer DÉFINITIVEMENT cet article ?\n\nCette action est irréversible.');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="wp-empty">
+            <i class="fas fa-trash-alt"></i>
+            <h5 style="font-weight:700; margin:14px 0 10px; color:var(--wp-text-strong);">
+                La corbeille est vide
+            </h5>
+            <p style="max-width:500px; margin:0 auto 20px; line-height:1.7;">
+                Aucun article supprimé pour le moment.
+            </p>
+            <a href="{% url 'actualites:dashboard' %}" class="wp-btn">
+                <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ============================================================
+         PAGINATION
+    ============================================================ -->
+    {% if articles.has_other_pages %}
+    <div class="wp-card-footer">
+        <div class="wp-pagination" style="width:100%;">
+            {% if articles.has_previous %}
+                <a href="?page=1" class="wp-page-link" title="Première page">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ articles.previous_page_number }}" class="wp-page-link" title="Précédente">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-left"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-left"></i></span>
+            {% endif %}
+
+            {% for num in articles.paginator.page_range %}
+                {% if articles.number == num %}
+                    <span class="wp-page-link active">{{ num }}</span>
+                {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
+                    <a href="?page={{ num }}" class="wp-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if articles.has_next %}
+                <a href="?page={{ articles.next_page_number }}" class="wp-page-link" title="Suivante">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?page={{ articles.paginator.num_pages }}" class="wp-page-link" title="Dernière page">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="wp-page-link disabled"><i class="fas fa-angle-right"></i></span>
+                <span class="wp-page-link disabled"><i class="fas fa-angle-double-right"></i></span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
