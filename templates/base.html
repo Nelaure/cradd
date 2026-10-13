@@ -22,9 +22,6 @@
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 
     <style>
-        /* ============================================================
-           1. VARIABLES — PALETTE HARMONISÉE
-        ============================================================ */
         :root {
             --wp-primary: #2271b1;
             --wp-primary-hover: #135e96;
@@ -128,9 +125,6 @@
             --wp-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.7);
         }
 
-        /* ============================================================
-           2. RESET & BASE
-        ============================================================ */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
@@ -170,9 +164,6 @@
         [data-bs-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); background-clip: content-box; }
         [data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.30); background-clip: content-box; }
 
-        /* ============================================================
-           LOGO ARRONDI
-        ============================================================ */
         .cradd-logo,
         .cradd-logo-round,
         img.cradd-logo,
@@ -216,9 +207,6 @@
             filter: brightness(1.05);
         }
 
-        /* ============================================================
-           3. BOUTONS
-        ============================================================ */
         .wp-btn {
             display: inline-flex;
             align-items: center;
@@ -344,9 +332,6 @@
         .wp-btn.lg { padding: 11px 22px; font-size: 14px; border-radius: var(--wp-radius); }
         .wp-btn.icon { padding: 8px; width: 34px; height: 34px; }
 
-        /* ============================================================
-           4. FORMULAIRES
-        ============================================================ */
         .wp-form-group { margin-bottom: 16px; }
         .wp-form-label,
         .wp-form-group > label {
@@ -497,9 +482,6 @@
             border-top: 1px solid var(--wp-border-light);
         }
 
-        /* ============================================================
-           5. TOASTS
-        ============================================================ */
         .wp-toast-container {
             position: fixed;
             top: calc(var(--wp-adminbar-height) + 16px);
@@ -569,9 +551,6 @@
             to { width: 0; }
         }
 
-        /* ============================================================
-           6. LAYOUT ADMIN
-        ============================================================ */
         {% if user.is_authenticated %}
 
         body.admin-body {
@@ -670,7 +649,6 @@
             position: relative; height: calc(100% - 8px); margin: 4px 1px; display: inline-flex;
         }
 
-        /* ---------- SIDEBAR ---------- */
         .wp-sidebar {
             position: fixed;
             top: var(--wp-adminbar-height); left: 0; bottom: 0;
@@ -1537,9 +1515,6 @@
 
         {% endif %}
 
-        /* ============================================================
-           7. PARTIE PUBLIQUE
-        ============================================================ */
         {% if not user.is_authenticated %}
 
         body.public-page {
@@ -1924,9 +1899,6 @@
 
         {% endif %}
 
-        /* ============================================================
-           8. CKEDITOR
-        ============================================================ */
         [data-bs-theme="dark"] .ck-editor__editable_inline {
             background-color: #ffffff !important;
             color: #1d2327 !important;
@@ -1938,9 +1910,6 @@
         [data-bs-theme="dark"] .ck-toolbar .ck-button { color: #f0f0f1 !important; }
         [data-bs-theme="dark"] .ck-toolbar .ck-button:hover { background: #3c434a !important; }
 
-        /* ============================================================
-           9. RESPONSIVE
-        ============================================================ */
         {% if user.is_authenticated %}
 
         @media (max-width: 992px) {
@@ -2245,9 +2214,6 @@
 
         {% endif %}
 
-        /* ============================================================
-           PARTIE PUBLIQUE — RESPONSIVE
-        ============================================================ */
         {% if not user.is_authenticated %}
 
         @media (max-width: 992px) {
@@ -2445,9 +2411,6 @@
 
         {% endif %}
 
-        /* ============================================================
-           10. PROTECTION CONTENU
-        ============================================================ */
         body.protected input,
         body.protected textarea,
         body.protected select,
@@ -2471,9 +2434,6 @@
 
     {% if user.is_authenticated %}
 
-    <!-- ============================================================
-         ADMIN BAR
-    ============================================================ -->
     <div class="admin-bar">
         <a href="{% url 'ecoles:index' %}" class="ab-brand" title="Accueil du site public">
             <img src="{% static 'images/logo.png' %}" alt="Logo CRADD" class="cradd-logo" />
@@ -2494,7 +2454,6 @@
 
         <div class="ab-spacer"></div>
 
-        <!-- DROPDOWN UTILISATEUR -->
         <div class="dropdown" data-custom-dropdown="user">
             <button class="ab-user" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-dropdown-toggle="user">
                 <span class="avatar-mini">{{ user.prenom|slice:":1"|upper }}{{ user.nom|slice:":1"|upper }}</span>
@@ -2516,15 +2475,9 @@
         </div>
     </div>
 
-    <!-- ============================================================
-         SIDEBAR — RÉORGANISÉE PAR RÔLE
-    ============================================================ -->
     <aside class="wp-sidebar" id="sidebar">
         <ul class="sb-menu">
 
-            {# ========================================================== #}
-            {# ÉDITEUR #}
-            {# ========================================================== #}
             {% if user.est_editeur %}
             <li class="sb-label">Publications</li>
             <li class="sb-item"><a href="{% url 'actualites:dashboard' %}" class="{% if request.resolver_match.app_name == 'actualites' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> <span>Tableau de bord</span></a></li>
@@ -2539,9 +2492,6 @@
             <li class="sb-item"><a href="{% url 'accounts:change_password' %}" class="{% if request.resolver_match.url_name == 'change_password' %}active{% endif %}"><i class="fas fa-key"></i> <span>Mot de passe</span></a></li>
             <li class="sb-item"><a href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Déconnexion</span></a></li>
 
-            {# ========================================================== #}
-            {# MINISTRE #}
-            {# ========================================================== #}
             {% elif user.est_ministre %}
             <li class="sb-label">Statistiques</li>
             <li class="sb-item"><a href="{% url 'ecoles:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'ecoles' %}active{% endif %}"><i class="fas fa-landmark"></i> <span>Tableau de bord</span></a></li>
@@ -2557,9 +2507,6 @@
             <li class="sb-item"><a href="{% url 'accounts:change_password' %}"><i class="fas fa-key"></i> <span>Mot de passe</span></a></li>
             <li class="sb-item"><a href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Déconnexion</span></a></li>
 
-            {# ========================================================== #}
-            {# ADMINISTRATEUR #}
-            {# ========================================================== #}
             {% elif user.est_administrateur %}
             <li class="sb-label">Navigation</li>
             <li class="sb-item"><a href="{% url 'ecoles:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'ecoles' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> <span>Tableau de bord</span></a></li>
@@ -2570,7 +2517,6 @@
             <li class="sb-item"><a href="{% url 'ecoles:section_list' %}" class="{% if request.resolver_match.url_name == 'section_list' %}active{% endif %}"><i class="fas fa-stream"></i> <span>Sections</span></a></li>
             <li class="sb-item"><a href="{% url 'ecoles:niveau_list' %}" class="{% if request.resolver_match.url_name == 'niveau_list' %}active{% endif %}"><i class="fas fa-layer-group"></i> <span>Niveaux</span></a></li>
             <li class="sb-item"><a href="{% url 'ecoles:classe_list' %}" class="{% if request.resolver_match.url_name == 'classe_list' %}active{% endif %}"><i class="fas fa-users"></i> <span>Classes</span></a></li>
-            <li class="sb-item"><a href="{% url 'ecoles:domaine_list' %}" class="{% if request.resolver_match.url_name == 'domaine_list' %}active{% endif %}"><i class="fas fa-tags"></i> <span>Domaines</span></a></li>
             <li class="sb-item"><a href="{% url 'ecoles:cours_list' %}" class="{% if request.resolver_match.url_name == 'cours_list' %}active{% endif %}"><i class="fas fa-book"></i> <span>Cours</span></a></li>
             <li class="sb-item"><a href="{% url 'ecoles:annee_list' %}" class="{% if request.resolver_match.url_name == 'annee_list' %}active{% endif %}"><i class="fas fa-calendar-alt"></i> <span>Années</span></a></li>
 
@@ -2599,9 +2545,6 @@
             <li class="sb-item"><a href="{% url 'accounts:change_password' %}" class="{% if request.resolver_match.url_name == 'change_password' %}active{% endif %}"><i class="fas fa-key"></i> <span>Mot de passe</span></a></li>
             <li class="sb-item"><a href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Déconnexion</span></a></li>
 
-            {# ========================================================== #}
-            {# PROVED — Directeur Provincial #}
-            {# ========================================================== #}
             {% elif user.est_proved %}
             <li class="sb-label">Navigation</li>
             <li class="sb-item"><a href="{% url 'ecoles:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'ecoles' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> <span>Tableau de bord</span></a></li>
@@ -2611,7 +2554,6 @@
             <li class="sb-item"><a href="{% url 'ecoles:section_list' %}" class="{% if request.resolver_match.url_name == 'section_list' %}active{% endif %}"><i class="fas fa-stream"></i> <span>Sections</span></a></li>
             <li class="sb-item"><a href="{% url 'ecoles:niveau_list' %}" class="{% if request.resolver_match.url_name == 'niveau_list' %}active{% endif %}"><i class="fas fa-layer-group"></i> <span>Niveaux</span></a></li>
             <li class="sb-item"><a href="{% url 'ecoles:classe_list' %}" class="{% if request.resolver_match.url_name == 'classe_list' %}active{% endif %}"><i class="fas fa-users"></i> <span>Classes</span></a></li>
-            <li class="sb-item"><a href="{% url 'ecoles:domaine_list' %}" class="{% if request.resolver_match.url_name == 'domaine_list' %}active{% endif %}"><i class="fas fa-tags"></i> <span>Domaines</span></a></li>
             <li class="sb-item"><a href="{% url 'ecoles:cours_list' %}" class="{% if request.resolver_match.url_name == 'cours_list' %}active{% endif %}"><i class="fas fa-book"></i> <span>Cours</span></a></li>
 
             <li class="sb-label">Gestion</li>
@@ -2626,9 +2568,6 @@
             <li class="sb-item"><a href="{% url 'accounts:change_password' %}" class="{% if request.resolver_match.url_name == 'change_password' %}active{% endif %}"><i class="fas fa-key"></i> <span>Mot de passe</span></a></li>
             <li class="sb-item"><a href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Déconnexion</span></a></li>
 
-            {# ========================================================== #}
-            {# AGENT / INSPECTEUR — Restrictions appliquées #}
-            {# ========================================================== #}
             {% elif user.est_agent or user.est_inspecteur %}
             <li class="sb-label">Navigation</li>
             <li class="sb-item"><a href="{% url 'ecoles:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'ecoles' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> <span>Tableau de bord</span></a></li>
@@ -2638,10 +2577,7 @@
             <li class="sb-item"><a href="{% url 'ecoles:section_list' %}" class="{% if request.resolver_match.url_name == 'section_list' %}active{% endif %}"><i class="fas fa-stream"></i> <span>Sections</span></a></li>
             <li class="sb-item"><a href="{% url 'ecoles:niveau_list' %}" class="{% if request.resolver_match.url_name == 'niveau_list' %}active{% endif %}"><i class="fas fa-layer-group"></i> <span>Niveaux</span></a></li>
             <li class="sb-item"><a href="{% url 'ecoles:classe_list' %}" class="{% if request.resolver_match.url_name == 'classe_list' %}active{% endif %}"><i class="fas fa-users"></i> <span>Classes</span></a></li>
-            <li class="sb-item"><a href="{% url 'ecoles:domaine_list' %}" class="{% if request.resolver_match.url_name == 'domaine_list' %}active{% endif %}"><i class="fas fa-tags"></i> <span>Domaines</span></a></li>
             <li class="sb-item"><a href="{% url 'ecoles:cours_list' %}" class="{% if request.resolver_match.url_name == 'cours_list' %}active{% endif %}"><i class="fas fa-book"></i> <span>Cours</span></a></li>
-
-            {# ✅ PAS de section "Gestion" pour l'agent : Élèves, Résultats, Bulletins, Sans notes masqués #}
 
             <li class="sb-sep"></li>
             <li class="sb-label">Compte</li>
@@ -2649,9 +2585,6 @@
             <li class="sb-item"><a href="{% url 'accounts:change_password' %}" class="{% if request.resolver_match.url_name == 'change_password' %}active{% endif %}"><i class="fas fa-key"></i> <span>Mot de passe</span></a></li>
             <li class="sb-item"><a href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Déconnexion</span></a></li>
 
-            {# ========================================================== #}
-            {# ENSEIGNANT #}
-            {# ========================================================== #}
             {% elif user.est_enseignant %}
             <li class="sb-label">Navigation</li>
             <li class="sb-item"><a href="{% url 'ecoles:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'ecoles' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> <span>Tableau de bord</span></a></li>
@@ -2669,9 +2602,6 @@
             <li class="sb-item"><a href="{% url 'accounts:change_password' %}" class="{% if request.resolver_match.url_name == 'change_password' %}active{% endif %}"><i class="fas fa-key"></i> <span>Mot de passe</span></a></li>
             <li class="sb-item"><a href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Déconnexion</span></a></li>
 
-            {# ========================================================== #}
-            {# PARENT #}
-            {# ========================================================== #}
             {% elif user.est_parent %}
             <li class="sb-label">Navigation</li>
             <li class="sb-item"><a href="{% url 'ecoles:parent_recherche' %}" class="{% if request.resolver_match.url_name == 'parent_recherche' %}active{% endif %}"><i class="fas fa-search"></i> <span>Rechercher un élève</span></a></li>
@@ -2683,9 +2613,6 @@
             <li class="sb-item"><a href="{% url 'accounts:change_password' %}" class="{% if request.resolver_match.url_name == 'change_password' %}active{% endif %}"><i class="fas fa-key"></i> <span>Mot de passe</span></a></li>
             <li class="sb-item"><a href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt"></i> <span>Déconnexion</span></a></li>
 
-            {# ========================================================== #}
-            {# RÔLE INCONNU #}
-            {# ========================================================== #}
             {% else %}
             <li class="sb-label">Navigation</li>
             <li class="sb-item"><a href="{% url 'ecoles:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'ecoles' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> <span>Tableau de bord</span></a></li>
@@ -2707,9 +2634,6 @@
 
     <div class="wp-overlay" id="wpOverlay"></div>
 
-    <!-- ============================================================
-         CONTENU ADMIN
-    ============================================================ -->
     <div class="wp-content-wrapper" id="mainWrapper">
         <header class="wp-page-header">
             <div class="ph-left">
@@ -2735,7 +2659,6 @@
                     <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
 
-                <!-- DROPDOWN NOTIFICATIONS -->
                 <div class="dropdown" data-custom-dropdown="notif">
                     <button class="wp-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications" data-dropdown-toggle="notif">
                         <i class="fas fa-bell"></i>
@@ -2753,9 +2676,6 @@
             </div>
         </header>
 
-        <!-- ============================================================
-             OVERLAY DE RECHERCHE
-        ============================================================ -->
         <div class="wp-search-overlay" id="searchOverlay" aria-hidden="true">
             <div class="wp-search-overlay-backdrop" data-close-search></div>
             <div class="wp-search-overlay-panel">
@@ -2796,9 +2716,6 @@
 
     {% else %}
 
-    <!-- ============================================================
-         NAVBAR PUBLIQUE
-    ============================================================ -->
     <nav class="pub-navbar" id="navbarPublic">
         <a href="{% url 'ecoles:index' %}" class="brand">
             <img src="{% static 'images/logo.png' %}" alt="Logo CRADD" class="cradd-logo" />
@@ -2831,9 +2748,6 @@
 
     {% endif %}
 
-    <!-- ============================================================
-         MESSAGES FLOTTANTS
-    ============================================================ -->
     {% if messages %}
     <div class="wp-toast-container" id="wpToastContainer">
         {% for message in messages %}
@@ -2916,9 +2830,6 @@
     {% endblock %}
     {% endif %}
 
-    <!-- ============================================================
-         ROUTES DYNAMIQUES POUR LE JS
-         ============================================================ -->
     <script>
         window.CRADD_URLS = {
             eleveDetail: "{% url 'eleves:eleve_detail' 0 %}".replace('/0/', '/__ID__/')
@@ -2951,7 +2862,7 @@
                 console.clear();
                 console.log('%cCRADD', craddStyle1);
                 console.log('%cCentre de Recherche et d\'Actions pour le Développement Durable', craddStyle2);
-            } catch (e) { /* ignore */ }
+            } catch (e) { }
 
             const originalClear = console.clear;
             console.clear = function () {
@@ -2959,10 +2870,9 @@
                 try {
                     console.log('%cCRADD', craddStyle1);
                     console.log('%cCentre de Recherche et d\'Actions pour le Développement Durable', craddStyle2);
-                } catch (e) { /* ignore */ }
+                } catch (e) { }
             };
 
-            /* ---------- Thème ---------- */
             const themeToggle = document.getElementById('themeToggle');
             const themeIcon = document.getElementById('themeIcon');
             const html = document.documentElement;
@@ -2979,7 +2889,6 @@
                 });
             }
 
-            /* ---------- Sidebar mobile (admin) ---------- */
             const sidebar = document.getElementById('sidebar');
             const menuToggle = document.getElementById('menuToggle');
             const overlay = document.getElementById('wpOverlay');
@@ -3022,9 +2931,6 @@
                 if (e.key === 'Escape' && sidebar && sidebar.classList.contains('open')) closeSidebar();
             });
 
-            /* ============================================================
-               NAVBAR PUBLIQUE — Menu mobile + Détection lien actif + Scroll
-               ============================================================ */
             (function initPublicNavbar() {
                 const publicNavbar = document.getElementById('navbarPublic');
                 const publicMenuToggle = document.getElementById('publicMenuToggle');
@@ -3141,7 +3047,6 @@
                 }
             })();
 
-            /* ---------- Auto-dismiss toasts ---------- */
             document.querySelectorAll('.wp-toast').forEach((toast, i) => {
                 setTimeout(() => {
                     toast.style.transition = 'opacity 0.35s, transform 0.35s';
@@ -3151,9 +3056,6 @@
                 }, 6000 + i * 500);
             });
 
-            /* ============================================================
-               MENU DÉROULANT MOBILE — ADMIN
-               ============================================================ */
             (function initCustomDropdowns() {
                 const isMobile = () => window.innerWidth <= 768;
 
@@ -3219,9 +3121,6 @@
                 });
             })();
 
-            /* ============================================================
-               RECHERCHE GLOBALE
-               ============================================================ */
             (function initGlobalSearch() {
                 const searchTrigger = document.getElementById('searchTrigger');
                 const desktopSearchWrapper = document.getElementById('desktopSearchWrapper');
@@ -3239,7 +3138,6 @@
                 const extractNom = (item) =>
                     item.nom_complet || item.nom || item.nom_eleve || 'Élève';
 
-                // ✅ buildResultHtml : affiche nom + école + classe + niveau
                 const buildResultHtml = (data, q) => {
                     if (data.results && data.results.length) {
                         let html = '';
@@ -3254,35 +3152,30 @@
                                     : `/eleves/${id}/`)
                                 : `/recherche/?nom=${encodeURIComponent(nom)}`;
 
-                            // ---------- Badge École ----------
                             const ecoleBadge = item.ecole && item.ecole !== '-'
                                 ? `<span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:9999px; background:rgba(0,163,42,0.12); color:#008a20; font-size:10.5px; font-weight:600;">
                                        <i class="fas fa-school" style="font-size:9px;"></i> ${item.ecole}
                                    </span>`
                                 : '';
 
-                            // ---------- Badge Classe ----------
                             const classeBadge = item.classe && item.classe !== '-'
                                 ? `<span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:9999px; background:var(--wp-primary-soft); color:var(--wp-primary); font-size:10.5px; font-weight:600;">
                                        <i class="fas fa-users" style="font-size:9px;"></i> ${item.classe}
                                    </span>`
                                 : '';
 
-                            // ---------- Badge Niveau ----------
                             const niveauBadge = item.niveau && item.niveau !== '-'
                                 ? `<span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:9999px; background:var(--wp-surface-alt); color:var(--wp-text-muted); font-size:10.5px; font-weight:600; border:1px solid var(--wp-border-light);">
                                        <i class="fas fa-layer-group" style="font-size:9px;"></i> ${item.niveau}
                                    </span>`
                                 : '';
 
-                            // ---------- Matricule ----------
                             const matricule = item.matricule && item.matricule !== '-'
                                 ? `<span style="font-size:11px; color:var(--wp-text-light); font-family:monospace;">${item.matricule}</span>`
                                 : '';
 
                             html += `<a class="dropdown-item" href="${href}" style="display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding:12px 14px;">`;
 
-                            // Ligne 1 : Icône + Nom + Matricule
                             html += `  <div style="display:flex; align-items:center; gap:8px; width:100%;">`;
                             html += `    <i class="fas fa-user-graduate" style="color:var(--wp-primary);"></i>`;
                             html += `    <strong style="color:var(--wp-text-strong); font-size:14px;">${nom}</strong>`;
@@ -3291,7 +3184,6 @@
                             }
                             html += `  </div>`;
 
-                            // Ligne 2 : Badges École / Classe / Niveau
                             if (ecoleBadge || classeBadge || niveauBadge) {
                                 html += `  <div style="display:flex; gap:6px; flex-wrap:wrap; padding-left:22px;">`;
                                 html += `    ${ecoleBadge}`;
@@ -3400,7 +3292,6 @@
                 });
             })();
 
-            /* ---------- DataTables & Select2 ---------- */
             {% if user.is_authenticated %}
             if (typeof $.fn.DataTable !== 'undefined') {
                 document.querySelectorAll('.datatable').forEach(table => {
@@ -3419,10 +3310,8 @@
             }
             {% endif %}
 
-            /* ---------- Tooltips ---------- */
             document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 
-            /* ---------- CKEditor ---------- */
             if (document.getElementById('id_contenu')) {
                 ClassicEditor
                     .create(document.querySelector('#id_contenu'), {

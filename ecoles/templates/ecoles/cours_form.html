@@ -63,26 +63,20 @@
                                 <div class="wp-form-error">{{ form.code.errors|striptags }}</div>
                             {% endif %}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label for="{{ form.coefficient.id_for_label }}" class="wp-form-label">
                                 <i class="fas fa-hashtag"></i> {{ form.coefficient.label }}
                             </label>
                             {{ form.coefficient }}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label for="{{ form.niveau.id_for_label }}" class="wp-form-label">
                                 <i class="fas fa-layer-group"></i> {{ form.niveau.label }}
                             </label>
                             {{ form.niveau }}
                             <div class="wp-form-help">
-                                <i class="fas fa-info-circle"></i> Sélectionnez un niveau pour voir ses classes et domaines
+                                <i class="fas fa-info-circle"></i> Sélectionnez un niveau pour voir ses classes
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="{{ form.ecole.id_for_label }}" class="wp-form-label">
-                                <i class="fas fa-school"></i> {{ form.ecole.label }}
-                            </label>
-                            {{ form.ecole }}
                         </div>
                         <div class="col-12">
                             <label for="{{ form.description.id_for_label }}" class="wp-form-label">
@@ -106,16 +100,15 @@
                     <hr style="margin:24px 0;">
 
                     <h5 style="color:var(--wp-primary); margin-bottom:16px;">
-                        <i class="fas fa-layer-group"></i> Classes & Domaines concernés
+                        <i class="fas fa-users"></i> Classes concernées
                     </h5>
 
                     {% if is_edit %}
                     <div style="background:var(--wp-warning-soft); border-left:4px solid var(--wp-warning); border-radius:4px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px;">
                         <i class="fas fa-exclamation-triangle" style="color:var(--wp-warning); font-size:1.1rem; margin-top:2px;"></i>
                         <p style="margin:0; font-size:0.88rem; line-height:1.6;">
-                            <strong>Mode édition</strong> : La <strong>première</strong> classe et le <strong>premier</strong>
-                            domaine sélectionnés mettront à jour ce cours. Les <strong>autres combinaisons</strong>
-                            créeront de <strong>nouveaux cours</strong> avec le même cycle d'évaluation.
+                            <strong>Mode édition</strong> : La <strong>première</strong> classe sélectionnée mettra à jour ce cours.
+                            Les <strong>autres classes</strong> créeront de <strong>nouveaux cours</strong> avec le même cycle d'évaluation.
                         </p>
                     </div>
                     {% else %}
@@ -126,7 +119,7 @@
                                 <strong>Mode référence</strong> : seules les <strong>classes de référence</strong> sont affichées.
                                 Le cours sera propagé à toutes les instances de chaque classe sélectionnée.
                             {% else %}
-                                Sélectionnez <strong>plusieurs classes</strong> et <strong>plusieurs domaines</strong>
+                                Sélectionnez <strong>plusieurs classes</strong>
                                 en maintenant <kbd>Ctrl</kbd> (Windows) ou <kbd>Cmd</kbd> (Mac).
                             {% endif %}
                         </p>
@@ -136,12 +129,12 @@
                     <div id="selectionStatus" style="display:none; margin-bottom:16px;">
                         <div style="background:var(--wp-primary-soft); border-radius:4px; padding:10px 14px; font-size:0.85rem;">
                             <i class="fas fa-spinner fa-spin" style="color:var(--wp-primary);"></i>
-                            <span id="statusMessage">Chargement des classes et domaines...</span>
+                            <span id="statusMessage">Chargement des classes...</span>
                         </div>
                     </div>
 
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-12">
                             <label for="{{ form.classe.id_for_label }}" class="wp-form-label">
                                 <i class="fas fa-users"></i> {{ form.classe.label }}
                                 <span id="classeCount" style="display:inline-block; background:var(--wp-primary); color:#fff; padding:2px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; margin-left:6px; min-width:24px; text-align:center;">0</span>
@@ -152,19 +145,6 @@
                             {% endif %}
                             <div class="wp-form-help">
                                 <i class="fas fa-hand-pointer"></i> Maintenez <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> pour sélectionner plusieurs classes
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.domaine.id_for_label }}" class="wp-form-label">
-                                <i class="fas fa-tags"></i> {{ form.domaine.label }}
-                                <span id="domaineCount" style="display:inline-block; background:var(--wp-primary); color:#fff; padding:2px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; margin-left:6px; min-width:24px; text-align:center;">0</span>
-                            </label>
-                            {{ form.domaine }}
-                            {% if form.domaine.errors %}
-                                <div class="wp-form-error">{{ form.domaine.errors|striptags }}</div>
-                            {% endif %}
-                            <div class="wp-form-help">
-                                <i class="fas fa-hand-pointer"></i> Maintenez <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> pour sélectionner plusieurs domaines
                             </div>
                         </div>
                     </div>
@@ -417,13 +397,11 @@
     document.addEventListener('DOMContentLoaded', function () {
         const niveauSelect = document.getElementById('id_niveau');
         const classeSelect = document.getElementById('id_classe');
-        const domaineSelect = document.getElementById('id_domaine');
         const ecoleSelect  = document.getElementById('id_ecole');
 
         const recapBox = document.getElementById('recapBox');
         const recapList = document.getElementById('recapList');
         const classeCount = document.getElementById('classeCount');
-        const domaineCount = document.getElementById('domaineCount');
         const selectionStatus = document.getElementById('selectionStatus');
         const statusMessage = document.getElementById('statusMessage');
 
@@ -431,7 +409,6 @@
         const isReference = {{ is_reference_form|yesno:"true,false" }};
 
         const URL_CLASSES_PAR_NIVEAU = "{% url 'ecoles:api_get_classes_by_niveau' %}";
-        const URL_DOMAINES_PAR_NIVEAU = "{% url 'ecoles:api_get_domaines_by_niveau' %}";
 
         console.log('=== COURS FORM DEBUG ===');
         console.log('Mode édition :', isEdit);
@@ -440,10 +417,6 @@
         if (classeSelect && !classeSelect.multiple) {
             classeSelect.setAttribute('multiple', 'multiple');
             classeSelect.setAttribute('size', '8');
-        }
-        if (domaineSelect && !domaineSelect.multiple) {
-            domaineSelect.setAttribute('multiple', 'multiple');
-            domaineSelect.setAttribute('size', '8');
         }
 
         function showStatus(message) {
@@ -463,38 +436,25 @@
                 classeCount.textContent = count;
                 classeCount.style.background = count > 0 ? '#0d9488' : 'var(--wp-primary)';
             }
-            if (domaineCount && domaineSelect) {
-                const count = domaineSelect.selectedOptions.length;
-                domaineCount.textContent = count;
-                domaineCount.style.background = count > 0 ? '#0d9488' : 'var(--wp-primary)';
-            }
         }
 
         function updateRecap() {
             if (!recapBox || !recapList || isEdit) return;
 
             const classes = classeSelect ? Array.from(classeSelect.selectedOptions) : [];
-            const domaines = domaineSelect ? Array.from(domaineSelect.selectedOptions) : [];
 
-            if (classes.length === 0 || domaines.length === 0) {
+            if (classes.length === 0) {
                 recapBox.style.display = 'none';
                 return;
             }
 
-            const combinations = [];
-            classes.forEach(c => {
-                domaines.forEach(d => {
-                    combinations.push({ classe: c.textContent, domaine: d.textContent });
-                });
-            });
-
             const displayLimit = 20;
-            const total = combinations.length;
-            const displayed = combinations.slice(0, displayLimit);
+            const total = classes.length;
+            const displayed = classes.slice(0, displayLimit);
 
             let html = '';
-            displayed.forEach(combo => {
-                html += `<li><i class="fas fa-check-circle"></i> ${combo.classe} <span style="color:var(--wp-text-light);">×</span> ${combo.domaine}</li>`;
+            displayed.forEach(c => {
+                html += `<li><i class="fas fa-check-circle"></i> ${c.textContent}</li>`;
             });
 
             if (total > displayLimit) {
@@ -505,12 +465,11 @@
             recapBox.style.display = 'block';
         }
 
-        function loadClassesAndDomaines(niveauId, forceReload = false) {
+        function loadClasses(niveauId, forceReload = false) {
             const ecoleId = ecoleSelect ? ecoleSelect.value : '';
 
             if (!niveauId) {
                 if (classeSelect) classeSelect.innerHTML = '';
-                if (domaineSelect) domaineSelect.innerHTML = '';
                 updateCounters();
                 updateRecap();
                 return;
@@ -525,13 +484,9 @@
             const selectedClasses = classeSelect
                 ? Array.from(classeSelect.selectedOptions).map(o => o.value)
                 : [];
-            const selectedDomaines = domaineSelect
-                ? Array.from(domaineSelect.selectedOptions).map(o => o.value)
-                : [];
 
-            showStatus('Chargement...');
+            showStatus('Chargement des classes...');
 
-            // ============ CLASSES ============
             if (classeSelect) {
                 classeSelect.innerHTML = '<option disabled>Chargement...</option>';
 
@@ -575,66 +530,16 @@
                     });
             }
 
-            // ============ DOMAINES ============
-            if (domaineSelect) {
-                domaineSelect.innerHTML = '<option disabled>Chargement...</option>';
-
-                const params = new URLSearchParams();
-                params.append('niveau_id', niveauId);
-                if (ecoleId) params.append('ecole_id', ecoleId);
-                if (isReference) params.append('reference', '1');
-
-                const url = `${URL_DOMAINES_PAR_NIVEAU}?${params.toString()}`;
-                console.log('🔍 Fetch domaines:', url);
-
-                fetch(url)
-                    .then(r => r.json())
-                    .then(data => {
-                        console.log('📥 Domaines reçus:', data);
-                        domaineSelect.innerHTML = '';
-                        if (!Array.isArray(data) || data.length === 0) {
-                            const opt = document.createElement('option');
-                            opt.disabled = true;
-                            opt.textContent = isReference
-                                ? 'Aucun domaine de référence disponible'
-                                : 'Aucun domaine disponible';
-                            domaineSelect.appendChild(opt);
-                        } else {
-                            data.forEach(domaine => {
-                                const option = document.createElement('option');
-                                option.value = domaine.id;
-                                option.textContent = domaine.nom;
-                                if (selectedDomaines.includes(String(domaine.id))) {
-                                    option.selected = true;
-                                }
-                                domaineSelect.appendChild(option);
-                            });
-                        }
-                        updateCounters();
-                        updateRecap();
-                    })
-                    .catch(err => {
-                        console.error('❌ Erreur domaines:', err);
-                        domaineSelect.innerHTML = `<option disabled>Erreur : ${err.message}</option>`;
-                    });
-            }
-
             setTimeout(hideStatus, 800);
         }
 
         if (niveauSelect) {
             niveauSelect.addEventListener('change', function () {
-                loadClassesAndDomaines(this.value, true);
+                loadClasses(this.value, true);
             });
         }
         if (classeSelect) {
             classeSelect.addEventListener('change', function () {
-                updateCounters();
-                updateRecap();
-            });
-        }
-        if (domaineSelect) {
-            domaineSelect.addEventListener('change', function () {
                 updateCounters();
                 updateRecap();
             });
@@ -644,7 +549,7 @@
             console.log('🎯 Mode édition : listes non rechargées');
             updateCounters();
         } else if (niveauSelect && niveauSelect.value) {
-            loadClassesAndDomaines(niveauSelect.value, true);
+            loadClasses(niveauSelect.value, true);
         } else {
             updateCounters();
             updateRecap();

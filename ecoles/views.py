@@ -1,4 +1,8 @@
-﻿import logging
+﻿# ============================================================================
+# ecoles/views.py
+# ============================================================================
+
+import logging
 import requests
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
@@ -12,13 +16,13 @@ from django.urls import reverse
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import (
-    Ecole, Niveau, Classe, Domaine, Cours, AnneeScolaire,
+    Ecole, Niveau, Classe, Cours, AnneeScolaire,
     CycleEvaluation, EvaluationConfig, EvaluationResultat,
     ResultatCycle, ResultatAnnuel, Province,
     Section
 )
 from .forms import (
-    EcoleForm, NiveauForm, ClasseForm, DomaineForm, CoursForm,
+    EcoleForm, NiveauForm, ClasseForm, CoursForm,
     CycleEvaluationConfigForm,
     AnneeScolaireForm, CycleEvaluationForm, EvaluationConfigFormSet,
     ResultatSelectionForm, EvaluationResultatForm, ProvinceForm,
@@ -67,24 +71,18 @@ def calculer_moyenne_generale(queryset_resultats):
 
 
 def _nom_niveau_ou_defaut(niveau):
-    """Retourne le nom du niveau, ou 'MAXIMA' si vide."""
     if niveau and niveau.nom and niveau.nom.strip():
         return niveau.nom.strip()
     return NOM_NIVEAU_PAR_DEFAUT
 
 
 def _nom_section_ou_defaut(section):
-    """Retourne le nom de la section, ou 'MAXIMA' si vide."""
     if section and section.nom and section.nom.strip():
         return section.nom.strip()
     return NOM_SECTION_PAR_DEFAUT
 
 
 def _label_classe_complet(classe):
-    """
-    Retourne un label complet pour une classe :
-    'Nom (Niveau - Section)' ou 'Nom (Niveau)' si pas de section.
-    """
     nom = classe.nom or "Sans nom"
     niveau_nom = NOM_NIVEAU_PAR_DEFAUT
     section_nom = ''
@@ -100,7 +98,6 @@ def _label_classe_complet(classe):
 
 
 def _stocker_rapport_sync(request, rapport, action_label=""):
-    """Stocke le rapport de synchronisation en session et affiche un message."""
     defaults = {
         'instances_traitees': 0,
         'cours_ajoutes': 0,
@@ -524,7 +521,6 @@ def dashboard_view(request):
         total_sections = Section.objects.count()
         total_niveaux_ref = Niveau.objects.filter(est_reference=True, ecole__isnull=True).count()
         total_classes_ref = Classe.objects.filter(est_reference=True, ecole__isnull=True).count()
-        total_domaines_ref = Domaine.objects.filter(est_reference=True, ecole__isnull=True).count()
         total_cours_ref = Cours.objects.filter(est_reference=True, ecole__isnull=True).count()
 
         total_ecoles = Ecole.objects.count()
@@ -540,7 +536,6 @@ def dashboard_view(request):
             'total_sections': total_sections,
             'total_niveaux_ref': total_niveaux_ref,
             'total_classes_ref': total_classes_ref,
-            'total_domaines_ref': total_domaines_ref,
             'total_cours_ref': total_cours_ref,
             'total_ecoles': total_ecoles,
             'total_provinces': total_provinces,
@@ -835,7 +830,6 @@ def ecole_detail(request, pk):
 
     total_niveaux = Niveau.objects.filter(ecole=ecole, est_reference=False).count()
     total_classes = Classe.objects.filter(ecole=ecole, est_reference=False).count()
-    total_domaines = Domaine.objects.filter(ecole=ecole, est_reference=False).count()
     total_cours = Cours.objects.filter(ecole=ecole, est_reference=False).count()
 
     sections_ids = Niveau.objects.filter(
@@ -944,7 +938,6 @@ def ecole_detail(request, pk):
         'annee_actuelle': annee_actuelle,
         'total_niveaux': total_niveaux,
         'total_classes': total_classes,
-        'total_domaines': total_domaines,
         'total_cours': total_cours,
         'total_sections': total_sections,
         'sections_list': sections_list,
@@ -1578,20 +1571,6 @@ def classe_duplicate(request, pk):
                                 code_candidat = f"{code_ref}_ref_{suffix}"
                                 suffix += 1
 
-                            domaine_ref = Domaine.objects.filter(
-                                nom=cours.domaine.nom,
-                                est_reference=True,
-                                ecole__isnull=True,
-                            ).first()
-                            if not domaine_ref:
-                                domaine_ref = Domaine.objects.create(
-                                    nom=cours.domaine.nom,
-                                    description=cours.domaine.description,
-                                    ecole=None,
-                                    est_reference=True,
-                                )
-                                domaine_ref.niveaux.add(niveau_ref)
-
                             nouveau_cours_ref = Cours.objects.create(
                                 nom=cours.nom,
                                 code=code_candidat,
@@ -1599,7 +1578,6 @@ def classe_duplicate(request, pk):
                                 description=cours.description,
                                 niveau=niveau_ref,
                                 classe=classe_ref,
-                                domaine=domaine_ref,
                                 ecole=None,
                                 est_reference=True,
                             )
@@ -1658,7 +1636,6 @@ def classe_duplicate(request, pk):
                             description=cours.description,
                             niveau=cours.niveau,
                             classe=nouvelle_classe,
-                            domaine=cours.domaine,
                             ecole=cours.ecole,
                             est_reference=False,
                             reference_source=cours_ref,
@@ -1724,182 +1701,6 @@ def classe_duplicate(request, pk):
     })
 
 
-# ===================== CRUD DOMAINES =====================
-@login_required
-def domaine_list(request):
-    user = request.user
-    if user.est_parent() or user.est_ministre():
-        messages.warning(request, "Vous n'avez pas accès à cette liste.")
-        return redirect('ecoles:dashboard')
-
-    if user.est_enseignant():
-        domaines = Domaine.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Domaine.objects.none()
-    elif user.est_agent():
-        domaines = Domaine.objects.all().order_by('-est_reference', 'nom')
-    elif user.est_inspecteur():
-        if user.ecole_affectation:
-            domaines = Domaine.objects.filter(
-                Q(est_reference=True) | Q(ecole=user.ecole_affectation, est_reference=False)
-            )
-        else:
-            domaines = Domaine.objects.filter(est_reference=True)
-    elif user.est_proved():
-        if user.province_affectation:
-            ecoles = Ecole.objects.filter(province=user.province_affectation)
-            domaines = Domaine.objects.filter(
-                Q(est_reference=True) | Q(ecole__in=ecoles, est_reference=False)
-            )
-        else:
-            domaines = Domaine.objects.filter(est_reference=True)
-    else:
-        domaines = Domaine.objects.all().order_by('-est_reference', 'nom')
-
-    ecole_id = request.GET.get('ecole')
-    type_filter = request.GET.get('type')
-    if ecole_id:
-        domaines = domaines.filter(ecole_id=ecole_id, est_reference=False)
-    if type_filter == 'reference':
-        domaines = domaines.filter(est_reference=True)
-    elif type_filter == 'instance':
-        domaines = domaines.filter(est_reference=False)
-
-    paginator = Paginator(domaines, 20)
-    page = request.GET.get('page')
-    domaines = paginator.get_page(page)
-
-    if user.est_administrateur() or user.est_agent():
-        ecoles = Ecole.objects.all()
-    elif user.est_inspecteur():
-        ecoles = Ecole.objects.filter(id=user.ecole_affectation.id) if user.ecole_affectation else Ecole.objects.none()
-    elif user.est_proved():
-        if user.province_affectation:
-            ecoles = Ecole.objects.filter(province=user.province_affectation)
-        else:
-            ecoles = Ecole.objects.none()
-    else:
-        if user.ecole_affectation:
-            ecoles = Ecole.objects.filter(id=user.ecole_affectation.id)
-        else:
-            ecoles = Ecole.objects.none()
-
-    context = {
-        'domaines': domaines, 'ecoles': ecoles,
-        'selected_ecole': ecole_id, 'selected_type': type_filter,
-    }
-    return render(request, 'ecoles/domaine_list.html', context)
-
-
-@login_required
-def domaine_create(request):
-    if not (request.user.est_administrateur() or request.user.est_agent()):
-        messages.error(request, 'Seuls les administrateurs et agents peuvent créer des domaines de référence.')
-        return redirect('ecoles:dashboard')
-
-    is_reference = True
-
-    if request.method == 'POST':
-        form = DomaineForm(request.POST, user=request.user, is_reference=is_reference)
-        form.instance.est_reference = is_reference
-        if form.is_valid():
-            domaine = form.save(commit=False)
-            domaine.ecole = None
-            domaine.save()
-            form.save_m2m()
-            messages.success(request, f'Domaine de référence {domaine.nom} créé avec succès.')
-
-            niveaux_concernes = domaine.niveaux.filter(est_reference=True, ecole__isnull=True)
-            for niveau in niveaux_concernes:
-                rapport = niveau.synchroniser_si_necessaire()
-                if rapport:
-                    _stocker_rapport_sync(request, rapport, f"création de domaine ({niveau.nom or NOM_NIVEAU_PAR_DEFAUT})")
-            return redirect('ecoles:domaine_list')
-    else:
-        form = DomaineForm(user=request.user, is_reference=is_reference)
-        form.instance.est_reference = is_reference
-
-    return render(request, 'ecoles/domaine_form.html', {
-        'form': form,
-        'title': 'Créer un domaine de référence',
-        'is_reference_form': is_reference,
-    })
-
-
-@login_required
-def domaine_edit(request, pk):
-    domaine = get_object_or_404(Domaine, pk=pk)
-    user = request.user
-    if user.est_parent() or user.est_ministre():
-        messages.error(request, 'Accès non autorisé.')
-        return redirect('ecoles:dashboard')
-
-    if domaine.est_reference:
-        if not (user.est_administrateur() or user.est_agent()):
-            messages.error(request, 'Accès non autorisé.')
-            return redirect('ecoles:dashboard')
-    else:
-        if user.est_agent():
-            pass
-        elif user.est_inspecteur() and domaine.ecole != user.ecole_affectation:
-            messages.error(request, 'Accès non autorisé.')
-            return redirect('ecoles:dashboard')
-        elif user.est_proved() and (domaine.ecole and domaine.ecole.province != user.province_affectation):
-            messages.error(request, 'Accès non autorisé.')
-            return redirect('ecoles:dashboard')
-
-    is_reference = domaine.est_reference
-
-    if request.method == 'POST':
-        form = DomaineForm(request.POST, instance=domaine, user=user, is_reference=is_reference)
-        if form.is_valid():
-            domaine = form.save()
-            messages.success(request, 'Domaine modifié avec succès.')
-            if domaine.est_reference:
-                niveaux_concernes = domaine.niveaux.filter(est_reference=True, ecole__isnull=True)
-                for niveau in niveaux_concernes:
-                    rapport = niveau.synchroniser_si_necessaire()
-                    if rapport:
-                        _stocker_rapport_sync(request, rapport, f"modification de domaine ({niveau.nom or NOM_NIVEAU_PAR_DEFAUT})")
-            return redirect('ecoles:domaine_list')
-    else:
-        form = DomaineForm(instance=domaine, user=user, is_reference=is_reference)
-
-    return render(request, 'ecoles/domaine_form.html', {
-        'form': form,
-        'title': 'Modifier un domaine',
-        'is_reference_form': is_reference,
-    })
-
-
-@login_required
-def domaine_delete(request, pk):
-    domaine = get_object_or_404(Domaine, pk=pk)
-    user = request.user
-    if user.est_parent() or user.est_ministre():
-        messages.error(request, 'Accès non autorisé.')
-        return redirect('ecoles:dashboard')
-
-    if domaine.est_reference:
-        if not (user.est_administrateur() or user.est_agent()):
-            messages.error(request, 'Accès non autorisé.')
-            return redirect('ecoles:dashboard')
-    else:
-        if user.est_agent():
-            pass
-        elif user.est_inspecteur() and domaine.ecole != user.ecole_affectation:
-            messages.error(request, 'Accès non autorisé.')
-            return redirect('ecoles:dashboard')
-        elif user.est_proved() and (domaine.ecole and domaine.ecole.province != user.province_affectation):
-            messages.error(request, 'Accès non autorisé.')
-            return redirect('ecoles:dashboard')
-
-    if request.method == 'POST':
-        nom = domaine.nom
-        domaine.delete()
-        messages.success(request, f'Domaine {nom} supprimé avec succès.')
-        return redirect('ecoles:domaine_list')
-    return render(request, 'ecoles/domaine_confirm_delete.html', {'domaine': domaine})
-
-
 # ===================== CRUD COURS =====================
 @login_required
 def cours_list(request):
@@ -1932,24 +1733,22 @@ def cours_list(request):
     ecole_id = request.GET.get('ecole')
     niveau_id = request.GET.get('niveau')
     classe_id = request.GET.get('classe')
-    domaine_id = request.GET.get('domaine')
     type_filter = request.GET.get('type')
     search_query = request.GET.get('q', '').strip()
 
     if ecole_id: cours_qs = cours_qs.filter(ecole_id=ecole_id, est_reference=False)
     if niveau_id: cours_qs = cours_qs.filter(niveau_id=niveau_id)
     if classe_id: cours_qs = cours_qs.filter(classe_id=classe_id)
-    if domaine_id: cours_qs = cours_qs.filter(domaine_id=domaine_id)
     if type_filter == 'reference': cours_qs = cours_qs.filter(est_reference=True)
     elif type_filter == 'instance': cours_qs = cours_qs.filter(est_reference=False)
     if search_query:
         cours_qs = cours_qs.filter(Q(nom__icontains=search_query) | Q(code__icontains=search_query))
 
-    cours_qs = cours_qs.select_related('niveau', 'classe', 'domaine', 'ecole')
+    cours_qs = cours_qs.select_related('niveau', 'classe', 'ecole')
 
     nb_filtres_actifs = sum([
         bool(ecole_id), bool(niveau_id), bool(classe_id),
-        bool(domaine_id), bool(type_filter), bool(search_query),
+        bool(type_filter), bool(search_query),
     ])
 
     try:
@@ -1959,7 +1758,7 @@ def cours_list(request):
 
     groupes_dict = defaultdict(list)
     for c in cours_qs:
-        key = (c.nom, c.domaine_id, c.niveau_id, c.ecole_id, c.est_reference)
+        key = (c.nom, c.niveau_id, c.ecole_id, c.est_reference)
         groupes_dict[key].append(c)
 
     cours_groupes = []
@@ -1978,7 +1777,7 @@ def cours_list(request):
 
         cours_groupes.append({
             'nom': premier.nom, 'description': premier.description,
-            'domaine': premier.domaine, 'niveau': premier.niveau,
+            'niveau': premier.niveau,
             'ecole': premier.ecole, 'est_reference': premier.est_reference,
             'codes': codes, 'codes_str': ', '.join(codes),
             'coefficients': coefficients,
@@ -2008,7 +1807,6 @@ def cours_list(request):
     if ecole_id: query_params += f'&ecole={ecole_id}'
     if niveau_id: query_params += f'&niveau={niveau_id}'
     if classe_id: query_params += f'&classe={classe_id}'
-    if domaine_id: query_params += f'&domaine={domaine_id}'
     if type_filter: query_params += f'&type={type_filter}'
     if search_query: query_params += f'&q={search_query}'
 
@@ -2016,40 +1814,34 @@ def cours_list(request):
         ecoles = Ecole.objects.all()
         niveaux = Niveau.objects.filter(est_reference=False)
         classes = Classe.objects.filter(est_reference=False)
-        domaines = Domaine.objects.filter(est_reference=False)
     elif user.est_inspecteur():
         ecoles = Ecole.objects.filter(id=user.ecole_affectation.id) if user.ecole_affectation else Ecole.objects.none()
         niveaux = Niveau.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Niveau.objects.none()
         classes = Classe.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Classe.objects.none()
-        domaines = Domaine.objects.filter(ecole=user.ecole_affectation, est_reference=False) if user.ecole_affectation else Domaine.objects.none()
     elif user.est_proved():
         if user.province_affectation:
             ecoles = Ecole.objects.filter(province=user.province_affectation)
             niveaux = Niveau.objects.filter(ecole__in=ecoles, est_reference=False)
             classes = Classe.objects.filter(ecole__in=ecoles, est_reference=False)
-            domaines = Domaine.objects.filter(ecole__in=ecoles, est_reference=False)
         else:
             ecoles = Ecole.objects.none()
             niveaux = Niveau.objects.none()
             classes = Classe.objects.none()
-            domaines = Domaine.objects.none()
     else:
         if user.ecole_affectation:
             ecoles = Ecole.objects.filter(id=user.ecole_affectation.id)
             niveaux = Niveau.objects.filter(ecole=user.ecole_affectation, est_reference=False)
             classes = Classe.objects.filter(ecole=user.ecole_affectation, est_reference=False)
-            domaines = Domaine.objects.filter(ecole=user.ecole_affectation, est_reference=False)
         else:
             ecoles = Ecole.objects.none()
             niveaux = Niveau.objects.none()
             classes = Classe.objects.none()
-            domaines = Domaine.objects.none()
 
     context = {
         'cours_page': cours_page, 'cours_recents': cours_recents,
-        'ecoles': ecoles, 'niveaux': niveaux, 'classes': classes, 'domaines': domaines,
+        'ecoles': ecoles, 'niveaux': niveaux, 'classes': classes,
         'selected_ecole': ecole_id, 'selected_niveau': niveau_id,
-        'selected_classe': classe_id, 'selected_domaine': domaine_id,
+        'selected_classe': classe_id,
         'selected_type': type_filter, 'search_query': search_query,
         'query_params': query_params, 'nb_filtres_actifs': nb_filtres_actifs,
         'total_groupes': len(cours_groupes), 'total_cours': cours_qs.count(),
@@ -2085,7 +1877,6 @@ def cours_create(request):
             description = form.cleaned_data.get('description', '')
             niveau = form.cleaned_data['niveau']
             classes = form.cleaned_data['classe']
-            domaines = form.cleaned_data['domaine']
             ecole = None if is_reference else form.cleaned_data.get('ecole')
 
             config_data = cycle_config_form.get_config()
@@ -2094,53 +1885,52 @@ def cours_create(request):
             errors = []
 
             for classe in classes:
-                for domaine in domaines:
-                    code_candidat = base_code
-                    suffix = 1
-                    while Cours.objects.filter(code=code_candidat).exists():
-                        code_candidat = f"{base_code}_{suffix}"
-                        suffix += 1
+                code_candidat = base_code
+                suffix = 1
+                while Cours.objects.filter(code=code_candidat).exists():
+                    code_candidat = f"{base_code}_{suffix}"
+                    suffix += 1
 
-                    try:
-                        with transaction.atomic():
-                            cours = Cours.objects.create(
-                                nom=nom, code=code_candidat, coefficient=coefficient,
-                                description=description, niveau=niveau, classe=classe,
-                                domaine=domaine, ecole=None if is_reference else ecole,
-                                est_reference=is_reference,
-                            )
-                            cycle_eval = CycleEvaluation.objects.create(
-                                cours=cours,
-                                type_cycle=config_data['type_cycle'] if config_data else 'trimestre'
-                            )
-                            cycle_eval.evaluations.all().delete()
+                try:
+                    with transaction.atomic():
+                        cours = Cours.objects.create(
+                            nom=nom, code=code_candidat, coefficient=coefficient,
+                            description=description, niveau=niveau, classe=classe,
+                            ecole=None if is_reference else ecole,
+                            est_reference=is_reference,
+                        )
+                        cycle_eval = CycleEvaluation.objects.create(
+                            cours=cours,
+                            type_cycle=config_data['type_cycle'] if config_data else 'trimestre'
+                        )
+                        cycle_eval.evaluations.all().delete()
 
-                            if config_data:
-                                nb_cycles = config_data['nombre_cycles']
-                                nb_periodes = config_data['periodes_par_cycle']
-                                inclure_examen = config_data['inclure_examen']
-                                pts_max = config_data['points_max']
-                                pts_max_examen = pts_max * 2
+                        if config_data:
+                            nb_cycles = config_data['nombre_cycles']
+                            nb_periodes = config_data['periodes_par_cycle']
+                            inclure_examen = config_data['inclure_examen']
+                            pts_max = config_data['points_max']
+                            pts_max_examen = pts_max * 2
 
-                                for cycle_num in range(1, nb_cycles + 1):
-                                    for periode_num in range(1, nb_periodes + 1):
-                                        EvaluationConfig.objects.create(
-                                            cycle_evaluation=cycle_eval, cycle_num=cycle_num,
-                                            periode_num=periode_num, type='periode',
-                                            points_max=pts_max, ordre=periode_num
-                                        )
-                                    if inclure_examen:
-                                        EvaluationConfig.objects.create(
-                                            cycle_evaluation=cycle_eval, cycle_num=cycle_num,
-                                            periode_num=None, type='examen',
-                                            points_max=pts_max_examen, ordre=nb_periodes + 1
-                                        )
-                            else:
-                                cycle_eval.creer_evaluations_par_defaut()
+                            for cycle_num in range(1, nb_cycles + 1):
+                                for periode_num in range(1, nb_periodes + 1):
+                                    EvaluationConfig.objects.create(
+                                        cycle_evaluation=cycle_eval, cycle_num=cycle_num,
+                                        periode_num=periode_num, type='periode',
+                                        points_max=pts_max, ordre=periode_num
+                                    )
+                                if inclure_examen:
+                                    EvaluationConfig.objects.create(
+                                        cycle_evaluation=cycle_eval, cycle_num=cycle_num,
+                                        periode_num=None, type='examen',
+                                        points_max=pts_max_examen, ordre=nb_periodes + 1
+                                    )
+                        else:
+                            cycle_eval.creer_evaluations_par_defaut()
 
-                            created_cours.append(cours)
-                    except Exception as e:
-                        errors.append(f"{classe.nom} × {domaine.nom} : {str(e)}")
+                        created_cours.append(cours)
+                except Exception as e:
+                    errors.append(f"{classe.nom} : {str(e)}")
 
             if created_cours:
                 if len(created_cours) == 1:
@@ -2216,10 +2006,9 @@ def cours_edit(request, pk):
 
         if form.is_valid() and cycle_form.is_valid() and formset.is_valid():
             classes = list(form.cleaned_data.get('classe') or [])
-            domaines = list(form.cleaned_data.get('domaine') or [])
 
-            if not classes or not domaines:
-                messages.error(request, 'Veuillez sélectionner au moins une classe et un domaine.')
+            if not classes:
+                messages.error(request, 'Veuillez sélectionner au moins une classe.')
                 return render(request, 'ecoles/cours_form.html', {
                     'form': form, 'cycle_form': cycle_form, 'formset': formset,
                     'cours': cours, 'title': 'Modifier un cours', 'is_edit': True,
@@ -2227,7 +2016,6 @@ def cours_edit(request, pk):
                 })
 
             first_classe = classes[0]
-            first_domaine = domaines[0]
 
             try:
                 with transaction.atomic():
@@ -2237,7 +2025,6 @@ def cours_edit(request, pk):
                     cours.description = form.cleaned_data.get('description', '')
                     cours.niveau = form.cleaned_data['niveau']
                     cours.classe = first_classe
-                    cours.domaine = first_domaine
                     cours.ecole = None if is_reference else form.cleaned_data.get('ecole')
                     cours.est_reference = is_reference
                     cours.save()
@@ -2250,36 +2037,35 @@ def cours_edit(request, pk):
 
                     created_count = 0
                     base_code = cours.code
-                    existing_combos = {(first_classe.id, first_domaine.id)}
+                    existing_combos = {(first_classe.id,)}
 
                     for classe in classes:
-                        for domaine in domaines:
-                            if (classe.id, domaine.id) in existing_combos:
-                                continue
-                            code_candidat = base_code
-                            suffix = 1
-                            while Cours.objects.filter(code=code_candidat).exists():
-                                code_candidat = f"{base_code}_{suffix}"
-                                suffix += 1
-                            nouveau_cours = Cours.objects.create(
-                                nom=cours.nom, code=code_candidat, coefficient=cours.coefficient,
-                                description=cours.description, niveau=cours.niveau,
-                                classe=classe, domaine=domaine, ecole=cours.ecole,
-                                est_reference=cours.est_reference,
-                                reference_source=cours.reference_source,
+                        if (classe.id,) in existing_combos:
+                            continue
+                        code_candidat = base_code
+                        suffix = 1
+                        while Cours.objects.filter(code=code_candidat).exists():
+                            code_candidat = f"{base_code}_{suffix}"
+                            suffix += 1
+                        nouveau_cours = Cours.objects.create(
+                            nom=cours.nom, code=code_candidat, coefficient=cours.coefficient,
+                            description=cours.description, niveau=cours.niveau,
+                            classe=classe, ecole=cours.ecole,
+                            est_reference=cours.est_reference,
+                            reference_source=cours.reference_source,
+                        )
+                        nouveau_cycle = CycleEvaluation.objects.create(
+                            cours=nouveau_cours, type_cycle=cycle_eval.type_cycle
+                        )
+                        nouveau_cycle.evaluations.all().delete()
+                        for config in configs_source:
+                            EvaluationConfig.objects.create(
+                                cycle_evaluation=nouveau_cycle,
+                                cycle_num=config.cycle_num, periode_num=config.periode_num,
+                                type=config.type, points_max=config.points_max,
+                                ordre=config.ordre
                             )
-                            nouveau_cycle = CycleEvaluation.objects.create(
-                                cours=nouveau_cours, type_cycle=cycle_eval.type_cycle
-                            )
-                            nouveau_cycle.evaluations.all().delete()
-                            for config in configs_source:
-                                EvaluationConfig.objects.create(
-                                    cycle_evaluation=nouveau_cycle,
-                                    cycle_num=config.cycle_num, periode_num=config.periode_num,
-                                    type=config.type, points_max=config.points_max,
-                                    ordre=config.ordre
-                                )
-                            created_count += 1
+                        created_count += 1
 
             except Exception as e:
                 logger.exception("Erreur cours_edit")
@@ -2547,6 +2333,10 @@ def resultat_list(request):
         if niveau_id: eleves_queryset = eleves_queryset.filter(niveau_id=niveau_id)
         if classe_id: eleves_queryset = eleves_queryset.filter(classe_id=classe_id)
         eleves_sans_note = eleves_queryset.exclude(id__in=eleves_avec_note)
+
+    resultats = resultats.select_related(
+        'eleve', 'cours', 'annee_scolaire', 'evaluation_config'
+    ).order_by('-date_saisie')
 
     paginator = Paginator(resultats, 20)
     page = request.GET.get('page')
@@ -2949,7 +2739,7 @@ def trash_list(request):
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
     items = []
-    models = [Ecole, Niveau, Classe, Domaine, Cours, Eleve, Province]
+    models = [Ecole, Niveau, Classe, Cours, Eleve, Province]
     for model in models:
         if hasattr(model, 'all_objects'):
             qs = model.all_objects.filter(deleted_at__isnull=False)
@@ -2967,7 +2757,7 @@ def restore_item(request, model_name, pk):
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
     model_map = {
-        'Ecole': Ecole, 'Niveau': Niveau, 'Classe': Classe, 'Domaine': Domaine,
+        'Ecole': Ecole, 'Niveau': Niveau, 'Classe': Classe,
         'Cours': Cours, 'Eleve': Eleve, 'Province': Province,
     }
     model = model_map.get(model_name)
@@ -2985,7 +2775,7 @@ def permanent_delete(request, model_name, pk):
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
     model_map = {
-        'Ecole': Ecole, 'Niveau': Niveau, 'Classe': Classe, 'Domaine': Domaine,
+        'Ecole': Ecole, 'Niveau': Niveau, 'Classe': Classe,
         'Cours': Cours, 'Eleve': Eleve, 'Province': Province,
     }
     model = model_map.get(model_name)
@@ -3003,7 +2793,7 @@ def empty_trash(request):
     if not request.user.est_administrateur():
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:trash_list')
-    models = [Ecole, Niveau, Classe, Domaine, Cours, Eleve, Province]
+    models = [Ecole, Niveau, Classe, Cours, Eleve, Province]
     deleted_count = 0
     for model in models:
         if hasattr(model, 'all_objects'):
@@ -3017,9 +2807,6 @@ def empty_trash(request):
 # ===================== API =====================
 @login_required
 def api_get_niveaux(request):
-    """
-    API niveaux : exclut les niveaux déjà affectés à un utilisateur.
-    """
     from accounts.models import Utilisateur
 
     ecole_id = request.GET.get('ecole_id')
@@ -3056,10 +2843,6 @@ def api_get_niveaux(request):
 
 @login_required
 def api_get_classes(request):
-    """
-    API classes : exclut les classes déjà affectées à un utilisateur.
-    Format du label : "Nom (Niveau - Section)".
-    """
     from accounts.models import Utilisateur
 
     ecole_id = request.GET.get('ecole_id')
@@ -3094,27 +2877,8 @@ def api_get_classes(request):
     return JsonResponse(data, safe=False)
 
 
-# ============================================================================
-# API CLASSES PAR NIVEAU — Corrigée pour supporter :
-#   1. Le mode RÉFÉRENCE (reference=1) : classes de référence (est_reference=True, ecole=None)
-#   2. Le mode INSTANCE (reference=0)   : classes d'instance filtrées par école
-#   3. Le filtrage optionnel par école (ecole_id)
-#   4. L'exclusion des classes déjà affectées (mode instance)
-# ============================================================================
 @login_required
 def api_get_classes_by_niveau(request):
-    """
-    API classes par niveau.
-
-    Paramètres GET :
-    - niveau_id (obligatoire) : ID du niveau
-    - reference (optionnel) : '1' pour les classes de référence, '0' ou absent pour les instances
-    - ecole_id (optionnel) : filtre par école (mode instance)
-    - current_user_id (optionnel) : exclut l'utilisateur en cours (anti-doublon)
-
-    Retourne une liste de classes au format :
-    [{'id': 1, 'nom': '6ème A (Primaire)'}, ...]
-    """
     from accounts.models import Utilisateur
 
     niveau_id = request.GET.get('niveau_id')
@@ -3125,30 +2889,20 @@ def api_get_classes_by_niveau(request):
         return JsonResponse([], safe=False)
 
     try:
-        # ============================================================
-        # Base queryset : classes du niveau demandé
-        # ============================================================
         queryset = Classe.objects.filter(niveau_id=niveau_id).select_related(
             'niveau', 'niveau__section', 'ecole'
         )
 
-        # ============================================================
-        # MODE RÉFÉRENCE : classes de référence uniquement
-        # ============================================================
         if reference:
             queryset = queryset.filter(
                 est_reference=True,
                 ecole__isnull=True,
             )
-        # ============================================================
-        # MODE INSTANCE : classes d'instance, filtrées par école si fournie
-        # ============================================================
         else:
             queryset = queryset.filter(est_reference=False)
             if ecole_id:
                 queryset = queryset.filter(ecole_id=ecole_id)
 
-            # Exclusion des classes déjà affectées à un utilisateur
             classes_prises = Utilisateur.objects.exclude(
                 classe_affectation__isnull=True
             ).values_list('classe_affectation_id', flat=True)
@@ -3167,53 +2921,16 @@ def api_get_classes_by_niveau(request):
 
             queryset = queryset.exclude(id__in=classes_prises)
 
-        # ============================================================
-        # Tri et formatage
-        # ============================================================
         queryset = queryset.order_by('nom')
 
         data = []
         for classe in queryset:
             data.append({'id': classe.id, 'nom': _label_classe_complet(classe)})
 
-        logger.info(
-            f"[api_get_classes_by_niveau] niveau={niveau_id}, "
-            f"reference={reference}, ecole={ecole_id}, resultats={len(data)}"
-        )
         return JsonResponse(data, safe=False)
 
     except Exception as e:
         logger.exception("Erreur api_get_classes_by_niveau")
-        return JsonResponse([], safe=False)
-
-
-@login_required
-def api_get_domaines_by_niveau(request):
-    niveau_id = request.GET.get('niveau_id')
-    ecole_id = request.GET.get('ecole_id')
-    reference = request.GET.get('reference') == '1'
-
-    if not niveau_id:
-        return JsonResponse([], safe=False)
-
-    try:
-        if reference:
-            queryset = Domaine.objects.filter(
-                est_reference=True,
-                ecole__isnull=True,
-            ).filter(
-                Q(niveaux__id=niveau_id) | Q(niveaux__isnull=True)
-            ).distinct()
-        else:
-            queryset = Domaine.objects.filter(est_reference=False)
-            if ecole_id:
-                queryset = queryset.filter(ecole_id=ecole_id)
-
-        domaines = list(queryset.values('id', 'nom').order_by('nom'))
-        return JsonResponse(domaines, safe=False)
-
-    except Exception as e:
-        logger.exception("Erreur api_get_domaines_by_niveau")
         return JsonResponse([], safe=False)
 
 
@@ -3318,7 +3035,6 @@ def autocomplete_eleves(request):
 
     results = []
     for eleve in eleves:
-        # ---------- Niveau (avec section) ----------
         niveau_nom = NOM_NIVEAU_PAR_DEFAUT
         niveau_id = None
 
@@ -3342,14 +3058,12 @@ def autocomplete_eleves(request):
             else:
                 niveau_nom = base_nom
 
-        # ---------- Classe (avec niveau + section) ----------
         classe_nom = '-'
         classe_id = None
         if eleve.classe:
             classe_id = eleve.classe.id
             classe_nom = _label_classe_complet(eleve.classe)
 
-        # ---------- École ----------
         ecole_nom = '-'
         ecole_id = None
         if eleve.ecole:

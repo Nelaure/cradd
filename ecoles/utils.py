@@ -64,11 +64,11 @@ def recalculer_resultats_eleve(eleve, annee_scolaire):
 def trash_count(request):
     """Context processor : retourne le nombre d'éléments en corbeille."""
     try:
-        from ecoles.models import Ecole, Niveau, Classe, Domaine, Cours, Province
+        from ecoles.models import Ecole, Niveau, Classe, Cours, Province
         from eleves.models import Eleve
 
         count = 0
-        for model in [Ecole, Niveau, Classe, Domaine, Cours, Province, Eleve]:
+        for model in [Ecole, Niveau, Classe, Cours, Province, Eleve]:
             if hasattr(model, 'all_objects'):
                 count += model.all_objects.filter(deleted_at__isnull=False).count()
 
@@ -106,10 +106,11 @@ def calculer_moyenne_generale(queryset_resultats):
 def synchroniser_cours_ref_vers_instances(cours_ref, logger=None):
     """
     Synchronise UN cours de référence vers toutes ses instances d'école.
+    (SANS domaine)
 
     Cherche les cours d'instance par :
       1. `reference_source=cours_ref` (prioritaire)
-      2. Fallback : même nom + même domaine + classe d'instance correspondante
+      2. Fallback : même nom + même classe d'instance correspondante
 
     Crée les cours d'instance manquants.
     Met à jour nom, coefficient, description, cycle d'évaluation.
@@ -117,7 +118,7 @@ def synchroniser_cours_ref_vers_instances(cours_ref, logger=None):
     Retourne un rapport compatible avec `_stocker_rapport_sync`.
     """
     from ecoles.models import (
-        Classe, Cours, Domaine, CycleEvaluation, EvaluationConfig,
+        Classe, Cours, CycleEvaluation, EvaluationConfig,
         EvaluationResultat
     )
 
@@ -219,15 +220,7 @@ def synchroniser_cours_ref_vers_instances(cours_ref, logger=None):
         rapport['instances_traitees'] += 1
 
         try:
-            # ---- Domaine d'instance ----
-            domaine_inst, _ = Domaine.objects.get_or_create(
-                nom=cours_ref.domaine.nom,
-                ecole=ecole,
-                est_reference=False,
-                defaults={'description': cours_ref.domaine.description},
-            )
-
-            # ---- Chercher un cours d'instance correspondant ----
+            # ---- Chercher un cours d'instance correspondant (SANS domaine) ----
             cours_inst = Cours.objects.filter(
                 ecole=ecole,
                 est_reference=False,
@@ -235,8 +228,7 @@ def synchroniser_cours_ref_vers_instances(cours_ref, logger=None):
                 Q(reference_source=cours_ref) |
                 Q(reference_source__isnull=True,
                   nom=cours_ref.nom,
-                  classe=classe_inst,
-                  domaine=domaine_inst)
+                  classe=classe_inst)
             ).first()
 
             if cours_inst:
@@ -261,9 +253,6 @@ def synchroniser_cours_ref_vers_instances(cours_ref, logger=None):
                 if cours_inst.niveau_id != niveau_inst.id:
                     cours_inst.niveau = niveau_inst
                     modifie = True
-                if cours_inst.domaine_id != domaine_inst.id:
-                    cours_inst.domaine = domaine_inst
-                    modifie = True
 
                 if modifie:
                     cours_inst.save()
@@ -271,7 +260,7 @@ def synchroniser_cours_ref_vers_instances(cours_ref, logger=None):
                     rapport['cours_modifies'] += 1
                     log(f"🔄 Cours '{cours_inst.nom}' mis à jour dans '{classe_inst}'")
             else:
-                # ---- Créer le cours d'instance ----
+                # ---- Créer le cours d'instance (SANS domaine) ----
                 base_code = cours_ref.code
                 code_candidat = base_code
                 suffix = 1
@@ -286,7 +275,6 @@ def synchroniser_cours_ref_vers_instances(cours_ref, logger=None):
                     description=cours_ref.description,
                     niveau=niveau_inst,
                     classe=classe_inst,
-                    domaine=domaine_inst,
                     ecole=ecole,
                     est_reference=False,
                     reference_source=cours_ref,

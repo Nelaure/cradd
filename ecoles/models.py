@@ -229,31 +229,15 @@ class Niveau(SoftDeleteMixin):
                 est_reference=False,
                 reference_source=classe_ref,
             )
-            self._copier_domaines_et_cours(classe_ref, nouvelle_classe, ecole, nouveau_niveau)
+            self._copier_cours(classe_ref, nouvelle_classe, ecole, nouveau_niveau)
 
         return nouveau_niveau
 
-    def _copier_domaines_et_cours(self, classe_ref, nouvelle_classe, ecole, nouveau_niveau):
-        """Copie les domaines et cours d'une classe de référence vers une instance."""
+    def _copier_cours(self, classe_ref, nouvelle_classe, ecole, nouveau_niveau):
+        """Copie les cours d'une classe de référence vers une instance (sans domaine)."""
         cours_ref_qs = Cours.objects.filter(classe=classe_ref, ecole=None, est_reference=True)
 
         for cours_ref in cours_ref_qs:
-            # --- Domaine ---
-            domaine_ref = cours_ref.domaine
-            try:
-                domaine_ecole = Domaine.objects.get(
-                    nom=domaine_ref.nom,
-                    ecole=ecole,
-                    est_reference=False
-                )
-            except Domaine.DoesNotExist:
-                domaine_ecole = Domaine.objects.create(
-                    nom=domaine_ref.nom,
-                    description=domaine_ref.description,
-                    ecole=ecole,
-                    est_reference=False
-                )
-
             # --- Code unique ---
             base_code = cours_ref.code
             code_candidat = base_code
@@ -270,7 +254,6 @@ class Niveau(SoftDeleteMixin):
                 description=cours_ref.description,
                 niveau=nouveau_niveau,
                 classe=nouvelle_classe,
-                domaine=domaine_ecole,
                 ecole=ecole,
                 est_reference=False,
                 reference_source=cours_ref,
@@ -414,36 +397,14 @@ class Niveau(SoftDeleteMixin):
 
                 details_ecole['classes_traitees'] += 1
 
-                # --- Domaines ---
+                # --- Cours (sans domaine) ---
                 cours_ref_queryset = Cours.objects.filter(
                     classe=classe_ref,
                     ecole=None,
                     est_reference=True
                 )
-                domaines_ref_ids = cours_ref_queryset.values_list(
-                    'domaine_id', flat=True
-                ).distinct()
 
-                domaine_map = {}
-                for domaine_ref_id in domaines_ref_ids:
-                    try:
-                        domaine_ref = Domaine.objects.get(pk=domaine_ref_id)
-                    except Domaine.DoesNotExist:
-                        continue
-                    domaine_instance, _ = Domaine.objects.get_or_create(
-                        nom=domaine_ref.nom,
-                        ecole=ecole,
-                        est_reference=False,
-                        defaults={'description': domaine_ref.description}
-                    )
-                    domaine_map[domaine_ref_id] = domaine_instance
-
-                # --- Cours ---
                 for cours_ref in cours_ref_queryset:
-                    domaine_instance = domaine_map.get(cours_ref.domaine_id)
-                    if not domaine_instance:
-                        continue
-
                     # Fallback robuste
                     cours_existant = Cours.objects.filter(
                         ecole=ecole,
@@ -452,8 +413,7 @@ class Niveau(SoftDeleteMixin):
                         Q(reference_source=cours_ref) |
                         Q(reference_source__isnull=True,
                           nom=cours_ref.nom,
-                          classe=classe_instance,
-                          domaine=domaine_instance)
+                          classe=classe_instance)
                     ).first()
 
                     if cours_existant:
@@ -478,9 +438,6 @@ class Niveau(SoftDeleteMixin):
                         if cours_existant.niveau_id != niveau_instance.id:
                             cours_existant.niveau = niveau_instance
                             modifie = True
-                        if cours_existant.domaine_id != domaine_instance.id:
-                            cours_existant.domaine = domaine_instance
-                            modifie = True
                         if modifie:
                             cours_existant.save()
                             details_ecole['cours_modifies'] += 1
@@ -501,7 +458,6 @@ class Niveau(SoftDeleteMixin):
                             description=cours_ref.description,
                             niveau=niveau_instance,
                             classe=classe_instance,
-                            domaine=domaine_instance,
                             ecole=ecole,
                             est_reference=False,
                             reference_source=cours_ref,
@@ -670,35 +626,7 @@ class Classe(SoftDeleteMixin):
             raise ValidationError("Une instance doit être associée à une école.")
 
 
-# ===================== DOMAINE =====================
-class Domaine(SoftDeleteMixin):
-    nom = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    ecole = models.ForeignKey(Ecole, on_delete=models.CASCADE, null=True, blank=True, related_name='domaines')
-    est_reference = models.BooleanField(default=False)
-    niveaux = models.ManyToManyField(Niveau, blank=True, related_name='domaines')
-    classes = models.ManyToManyField(Classe, blank=True, related_name='domaines')
-
-    objects = SoftDeleteManager()
-    all_objects = models.Manager()
-
-    class Meta:
-        unique_together = [['nom', 'ecole']]
-        indexes = [
-            models.Index(fields=['ecole', 'est_reference']),
-        ]
-
-    def __str__(self):
-        return self.nom + (" (réf.)" if self.est_reference else "")
-
-    def clean(self):
-        if self.est_reference and self.ecole is not None:
-            raise ValidationError("Une référence ne peut pas être associée à une école.")
-        if not self.est_reference and self.ecole is None:
-            raise ValidationError("Une instance doit être associée à une école.")
-
-
-# ===================== COURS =====================
+# ===================== COURS (SANS DOMAINE) =====================
 class Cours(SoftDeleteMixin):
     nom = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True)
@@ -706,7 +634,6 @@ class Cours(SoftDeleteMixin):
     description = models.TextField(blank=True)
     niveau = models.ForeignKey(Niveau, on_delete=models.CASCADE, related_name='cours')
     classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='cours')
-    domaine = models.ForeignKey(Domaine, on_delete=models.CASCADE, related_name='cours')
     ecole = models.ForeignKey(Ecole, on_delete=models.CASCADE, null=True, blank=True, related_name='cours')
     est_reference = models.BooleanField(default=False)
 
@@ -727,7 +654,7 @@ class Cours(SoftDeleteMixin):
     all_objects = models.Manager()
 
     class Meta:
-        unique_together = [['nom', 'niveau', 'classe', 'domaine', 'ecole']]
+        unique_together = [['nom', 'niveau', 'classe', 'ecole']]
         indexes = [
             models.Index(fields=['niveau', 'classe', 'ecole', 'est_reference']),
             models.Index(fields=['-date_creation']),

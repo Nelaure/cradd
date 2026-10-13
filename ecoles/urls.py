@@ -24,7 +24,7 @@ urlpatterns = [
     # Écoles
     path('ecoles/', views.ecole_list, name='ecole_list'),
     path('ecoles/creer/', views.ecole_create, name='ecole_create'),
-    path('ecoles/<int:pk>/', views.ecole_detail, name='ecole_detail'),           # ← DÉTAIL
+    path('ecoles/<int:pk>/', views.ecole_detail, name='ecole_detail'),
     path('ecoles/modifier/<int:pk>/', views.ecole_edit, name='ecole_edit'),
     path('ecoles/supprimer/<int:pk>/', views.ecole_delete, name='ecole_delete'),
 
@@ -49,12 +49,6 @@ urlpatterns = [
     path('classes/modifier/<int:pk>/', views.classe_edit, name='classe_edit'),
     path('classes/supprimer/<int:pk>/', views.classe_delete, name='classe_delete'),
     path('classes/dupliquer/<int:pk>/', views.classe_duplicate, name='classe_duplicate'),
-
-    # Domaines
-    path('domaines/', views.domaine_list, name='domaine_list'),
-    path('domaines/creer/', views.domaine_create, name='domaine_create'),
-    path('domaines/modifier/<int:pk>/', views.domaine_edit, name='domaine_edit'),
-    path('domaines/supprimer/<int:pk>/', views.domaine_delete, name='domaine_delete'),
 
     # Cours
     path('cours/', views.cours_list, name='cours_list'),
@@ -88,7 +82,6 @@ urlpatterns = [
     path('api/niveaux/', views.api_get_niveaux, name='api_get_niveaux'),
     path('api/classes/', views.api_get_classes, name='api_get_classes'),
     path('api/classes-par-niveau/', views.api_get_classes_by_niveau, name='api_get_classes_by_niveau'),
-    path('api/domaines-par-niveau/', views.api_get_domaines_by_niveau, name='api_get_domaines_by_niveau'),
     path('api/eleves/', views.api_get_eleves, name='api_get_eleves'),
     path('api/cours/', views.api_get_cours, name='api_get_cours'),
 ]

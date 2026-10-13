@@ -1,20 +1,15 @@
 ﻿from django import forms
 from django.forms import inlineformset_factory
-from django.db.models import Min
+from django.db.models import Min, Q
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Column, Field, Fieldset, Div, HTML, Submit
 from .models import (
-    Ecole, Niveau, Classe, Domaine, Cours, AnneeScolaire,
+    Ecole, Niveau, Classe, Cours, AnneeScolaire,
     CycleEvaluation, EvaluationConfig, EvaluationResultat, Province,
     Section
 )
 from eleves.models import Eleve
 from accounts.models import Utilisateur
-
-
-# ===================== CONSTANTES =====================
-
-NOM_DOMAINE_PAR_DEFAUT = "MAXIMA"
 
 
 # ===================== PROVINCE =====================
@@ -428,284 +423,24 @@ class ClasseForm(forms.ModelForm):
         return cleaned_data
 
 
-# ===================== DOMAINE =====================
-
-class DomaineForm(forms.ModelForm):
-    """
-    Formulaire de domaine.
-
-    ✅ LOGIQUE SPÉCIALE 1 : si le nom est vide, on utilise automatiquement
-    'MAXIMA' comme nom par défaut.
-
-    ✅ LOGIQUE SPÉCIALE 2 : si un ou plusieurs niveaux sont sélectionnés,
-    la liste des classes est automatiquement filtrée pour ne montrer
-    que les classes appartenant à ces niveaux.
-    """
-
-    class Meta:
-        model = Domaine
-        fields = ['nom', 'description', 'ecole', 'est_reference', 'niveaux', 'classes']
-        widgets = {
-            'nom': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': f'Ex: Mathématiques (vide = {NOM_DOMAINE_PAR_DEFAUT})'
-            }),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Description'}),
-            'ecole': forms.Select(attrs={'class': 'form-select'}),
-            'est_reference': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'niveaux': forms.SelectMultiple(attrs={
-                'class': 'form-select select2',
-                'id': 'id_niveaux',
-            }),
-            'classes': forms.SelectMultiple(attrs={
-                'class': 'form-select select2',
-                'id': 'id_classes',
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        self.is_reference = kwargs.pop('is_reference', False)
-        super().__init__(*args, **kwargs)
-
-        # ✅ Nom optionnel → fallback MAXIMA
-        self.fields['nom'].required = False
-
-        # ---------- Construction des querysets de base (niveaux) ----------
-        if self.is_reference:
-            self.fields['ecole'].queryset = Ecole.objects.none()
-            self.fields['ecole'].widget = forms.HiddenInput()
-            self.fields['ecole'].required = False
-            self.fields['est_reference'].initial = True
-            self.fields['est_reference'].disabled = True
-
-            self.fields['niveaux'].queryset = Niveau.objects.filter(
-                est_reference=True, ecole__isnull=True
-            ).order_by('nom')
-
-            # Queryset de base pour les classes (toutes les classes de référence)
-            classes_base_qs = Classe.objects.filter(
-                est_reference=True, ecole__isnull=True
-            ).order_by('niveau__nom', 'nom')
-
-        else:
-            if self.user:
-                if self.user.est_ministre():
-                    for field in self.fields.values():
-                        field.disabled = True
-                    classes_base_qs = Classe.objects.none()
-
-                elif self.user.est_enseignant():
-                    for field in self.fields:
-                        self.fields[field].disabled = True
-                    classes_base_qs = Classe.objects.none()
-
-                elif self.user.est_agent() or self.user.est_inspecteur():
-                    if self.user.ecole_affectation:
-                        self.fields['ecole'].queryset = Ecole.objects.filter(
-                            id=self.user.ecole_affectation.id
-                        )
-                        self.fields['ecole'].initial = self.user.ecole_affectation.id
-                        self.fields['ecole'].disabled = True
-                        self.fields['niveaux'].queryset = Niveau.objects.filter(
-                            ecole=self.user.ecole_affectation, est_reference=False
-                        ).order_by('nom')
-                        classes_base_qs = Classe.objects.filter(
-                            ecole=self.user.ecole_affectation, est_reference=False
-                        ).order_by('niveau__nom', 'nom')
-                    else:
-                        self.fields['ecole'].queryset = Ecole.objects.none()
-                        self.fields['niveaux'].queryset = Niveau.objects.none()
-                        classes_base_qs = Classe.objects.none()
-
-                elif self.user.est_proved():
-                    if self.user.province_affectation:
-                        ecoles = Ecole.objects.filter(province=self.user.province_affectation)
-                        self.fields['ecole'].queryset = ecoles
-                        if self.instance.pk and self.instance.ecole:
-                            self.fields['ecole'].initial = self.instance.ecole.id
-                            self.fields['ecole'].disabled = True
-                        else:
-                            self.fields['ecole'].disabled = True
-                        self.fields['niveaux'].queryset = Niveau.objects.filter(
-                            ecole__in=ecoles, est_reference=False
-                        ).order_by('nom')
-                        classes_base_qs = Classe.objects.filter(
-                            ecole__in=ecoles, est_reference=False
-                        ).order_by('niveau__nom', 'nom')
-                    else:
-                        self.fields['ecole'].queryset = Ecole.objects.none()
-                        self.fields['niveaux'].queryset = Niveau.objects.none()
-                        classes_base_qs = Classe.objects.none()
-
-                else:
-                    self.fields['ecole'].queryset = Ecole.objects.all()
-                    self.fields['niveaux'].queryset = Niveau.objects.filter(
-                        est_reference=False
-                    ).order_by('nom')
-                    classes_base_qs = Classe.objects.filter(
-                        est_reference=False
-                    ).order_by('niveau__nom', 'nom')
-            else:
-                classes_base_qs = Classe.objects.none()
-
-        # ============================================================
-        # ✅ FILTRAGE DYNAMIQUE DES CLASSES SELON LES NIVEAUX SÉLECTIONNÉS
-        # ============================================================
-        # Si on est en POST → utiliser les niveaux soumis
-        # Si on est en GET (édition) → utiliser les niveaux de l'instance
-        niveaux_selectionnes = []
-
-        if self.data and self.data.getlist('niveaux'):
-            # En POST : récupérer les IDs des niveaux soumis
-            niveaux_ids = self.data.getlist('niveaux')
-            niveaux_selectionnes = [
-                int(nid) for nid in niveaux_ids if nid and str(nid).isdigit()
-            ]
-        elif self.instance.pk:
-            # En édition : utiliser les niveaux actuels du domaine
-            niveaux_selectionnes = list(
-                self.instance.niveaux.values_list('id', flat=True)
-            )
-
-        # Filtrer les classes si des niveaux sont sélectionnés
-        if niveaux_selectionnes:
-            classes_filtrees = classes_base_qs.filter(
-                niveau_id__in=niveaux_selectionnes
-            )
-        else:
-            # Aucun niveau sélectionné → on affiche TOUTES les classes disponibles
-            # (le JS gèrera le filtrage côté client si besoin)
-            classes_filtrees = classes_base_qs
-
-        # Préserver les classes déjà sélectionnées (en édition)
-        if self.instance.pk and self.instance.classes.exists():
-            classes_actuelles = self.instance.classes.all()
-            classes_filtrees = (classes_filtrees | classes_actuelles).distinct()
-
-        self.fields['classes'].queryset = classes_filtrees.order_by('niveau__nom', 'nom')
-
-        # ---------- Pré-sélection en édition ----------
-        if self.instance.pk:
-            if self.instance.niveaux.exists():
-                self.fields['niveaux'].initial = list(
-                    self.instance.niveaux.values_list('id', flat=True)
-                )
-            if self.instance.classes.exists():
-                self.fields['classes'].initial = list(
-                    self.instance.classes.values_list('id', flat=True)
-                )
-
-        # ---------- Helper crispy ----------
-        self.helper = FormHelper()
-        self.helper.form_method = 'post'
-        self.helper.layout = Layout(
-            Row(
-                Column('nom', css_class='form-group col-md-6'),
-                Column('ecole', css_class='form-group col-md-6'),
-                css_class='row'
-            ),
-            Row(
-                Column('est_reference', css_class='form-group col-12'),
-                css_class='row'
-            ),
-            Row(
-                Column('niveaux', css_class='form-group col-12'),
-                css_class='row'
-            ),
-            Row(
-                Column('classes', css_class='form-group col-12'),
-                css_class='row'
-            ),
-            Row(
-                Column('description', css_class='form-group col-12'),
-                css_class='row'
-            ),
-            Div(
-                Submit('submit', 'Enregistrer', css_class='btn btn-primary'),
-                HTML('<a href="{% url "ecoles:domaine_list" %}" class="btn btn-secondary">Annuler</a>'),
-                css_class='d-flex gap-2 justify-content-end mt-4'
-            )
-        )
-
-    def clean_nom(self):
-        """
-        ✅ Fallback : si le nom est vide ou ne contient que des espaces,
-        on retourne MAXIMA.
-        """
-        nom = self.cleaned_data.get('nom', '')
-        if not nom or not nom.strip():
-            return NOM_DOMAINE_PAR_DEFAUT
-        return nom.strip()
-
-    def clean(self):
-        cleaned_data = super().clean()
-
-        # ---------- Règles par mode ----------
-        if self.is_reference:
-            cleaned_data['ecole'] = None
-            cleaned_data['est_reference'] = True
-        else:
-            if self.user and (self.user.est_agent() or self.user.est_inspecteur()):
-                if self.user.ecole_affectation:
-                    cleaned_data['ecole'] = self.user.ecole_affectation
-                else:
-                    raise forms.ValidationError("Vous devez être affecté à une école.")
-            elif self.user and self.user.est_proved():
-                ecole = cleaned_data.get('ecole')
-                if ecole and ecole.province != self.user.province_affectation:
-                    raise forms.ValidationError("L'école choisie n'appartient pas à votre province.")
-
-        # ---------- Vérification cohérence niveaux / classes ----------
-        niveaux = cleaned_data.get('niveaux')
-        classes = cleaned_data.get('classes')
-
-        if niveaux and classes:
-            niveaux_ids = set(niveaux.values_list('id', flat=True))
-            classes_invalides = [
-                c for c in classes if c.niveau_id not in niveaux_ids
-            ]
-            if classes_invalides:
-                noms = ', '.join(c.nom for c in classes_invalides[:3])
-                raise forms.ValidationError(
-                    f"Les classes suivantes n'appartiennent pas aux niveaux "
-                    f"sélectionnés : {noms}."
-                )
-
-        return cleaned_data
-
-
-# ===================== COURS (SÉLECTION MULTIPLE) =====================
+# ===================== COURS (SANS DOMAINE) =====================
 
 class CoursForm(forms.ModelForm):
     """
-    Formulaire de création/modification d'un cours.
+    Formulaire de création/modification d'un cours (SANS domaine).
 
-    RÈGLES CRITIQUES :
-    - Mode RÉFÉRENCE (is_reference=True) :
-        * Niveau : uniquement les niveaux de référence (est_reference=True, ecole=None)
-        * Classe : uniquement les classes de référence (est_reference=True, ecole=None)
-        * Domaine : uniquement les domaines de référence (est_reference=True, ecole=None)
-        * Les instances dupliquées (est_reference=False) sont EXCLUES.
-        * ✅ Accessible à l'Administrateur ET à l'Agent.
-    - Mode INSTANCE (is_reference=False) :
-        * Niveau, classe, domaine filtrés par école.
-        * Réservé à l'Administrateur.
+    RÈGLE IMPORTANTE :
+    - En mode CRÉATION : le champ `classe` est vide au départ, puis rempli
+      dynamiquement via l'API `/api/classes-par-niveau/` quand l'utilisateur
+      change le niveau.
+    - En mode MODIFICATION : le champ `classe` n'affiche QUE les classes
+      appartenant au niveau actuel du cours (filtrage strict par niveau).
     """
 
     classe = forms.ModelMultipleChoiceField(
         queryset=Classe.objects.none(),
         required=True,
         label="Classes",
-        widget=forms.SelectMultiple(attrs={
-            'class': 'form-select',
-            'size': '8',
-        })
-    )
-    domaine = forms.ModelMultipleChoiceField(
-        queryset=Domaine.objects.none(),
-        required=True,
-        label="Domaines",
         widget=forms.SelectMultiple(attrs={
             'class': 'form-select',
             'size': '8',
@@ -731,7 +466,11 @@ class CoursForm(forms.ModelForm):
         self.is_reference = kwargs.pop('is_reference', False)
         super().__init__(*args, **kwargs)
 
+        # ============================================================
+        # 1. CONFIGURATION DES QUERYSETS DE BASE
+        # ============================================================
         if self.is_reference:
+            # ----- Mode référence -----
             self.fields['ecole'].queryset = Ecole.objects.none()
             self.fields['ecole'].widget = forms.HiddenInput()
             self.fields['ecole'].required = False
@@ -742,15 +481,10 @@ class CoursForm(forms.ModelForm):
                 est_reference=True, ecole__isnull=True,
             ).order_by('nom')
 
-            self.fields['classe'].queryset = Classe.objects.filter(
-                est_reference=True, ecole__isnull=True,
-            ).order_by('niveau__nom', 'nom')
-
-            self.fields['domaine'].queryset = Domaine.objects.filter(
-                est_reference=True, ecole__isnull=True,
-            ).order_by('nom')
+            # ⚠️ Le queryset de `classe` sera défini plus bas selon le contexte
 
         else:
+            # ----- Mode instance -----
             if self.user:
                 if self.user.est_ministre():
                     for field in self.fields.values():
@@ -765,9 +499,6 @@ class CoursForm(forms.ModelForm):
                         self.fields['niveau'].queryset = Niveau.objects.filter(
                             id=self.user.niveau_affectation.id
                         ) if self.user.niveau_affectation else Niveau.objects.none()
-                        self.fields['domaine'].queryset = Domaine.objects.filter(
-                            ecole=self.user.ecole_affectation, est_reference=False
-                        )
                         self.fields['ecole'].queryset = Ecole.objects.filter(
                             id=self.user.ecole_affectation.id
                         )
@@ -782,17 +513,9 @@ class CoursForm(forms.ModelForm):
                         self.fields['niveau'].queryset = Niveau.objects.filter(
                             ecole=self.user.ecole_affectation, est_reference=False
                         )
-                        self.fields['classe'].queryset = Classe.objects.filter(
-                            ecole=self.user.ecole_affectation, est_reference=False
-                        )
-                        self.fields['domaine'].queryset = Domaine.objects.filter(
-                            ecole=self.user.ecole_affectation, est_reference=False
-                        )
                     else:
                         self.fields['ecole'].queryset = Ecole.objects.none()
                         self.fields['niveau'].queryset = Niveau.objects.none()
-                        self.fields['classe'].queryset = Classe.objects.none()
-                        self.fields['domaine'].queryset = Domaine.objects.none()
                 elif self.user.est_proved():
                     if self.user.province_affectation:
                         ecoles = Ecole.objects.filter(province=self.user.province_affectation)
@@ -805,67 +528,62 @@ class CoursForm(forms.ModelForm):
                         self.fields['niveau'].queryset = Niveau.objects.filter(
                             ecole__in=ecoles, est_reference=False
                         )
-                        self.fields['classe'].queryset = Classe.objects.filter(
-                            ecole__in=ecoles, est_reference=False
-                        )
-                        self.fields['domaine'].queryset = Domaine.objects.filter(
-                            ecole__in=ecoles, est_reference=False
-                        )
                     else:
                         self.fields['ecole'].queryset = Ecole.objects.none()
                         self.fields['niveau'].queryset = Niveau.objects.none()
-                        self.fields['classe'].queryset = Classe.objects.none()
-                        self.fields['domaine'].queryset = Domaine.objects.none()
                 else:
                     self.fields['ecole'].queryset = Ecole.objects.all()
                     self.fields['niveau'].queryset = Niveau.objects.filter(est_reference=False)
-                    self.fields['classe'].queryset = Classe.objects.filter(est_reference=False)
-                    self.fields['domaine'].queryset = Domaine.objects.filter(est_reference=False)
 
-        # ---------- PRÉ-SÉLECTION EN MODE ÉDITION ----------
-        if self.instance.pk:
+        # ============================================================
+        # 2. GESTION DU QUERYSET DE `classe`
+        # ============================================================
+        if self.instance.pk and self.instance.niveau_id:
+            # ----- MODE MODIFICATION : filtrer par niveau du cours -----
+            # On n'affiche QUE les classes qui appartiennent au niveau du cours.
+            niveau_courant = self.instance.niveau
+
+            if self.is_reference:
+                # Classes de référence du même niveau
+                classes_du_niveau = Classe.objects.filter(
+                    niveau=niveau_courant,
+                    est_reference=True,
+                    ecole__isnull=True,
+                ).order_by('nom')
+            else:
+                # Classes d'instance du même niveau (même école)
+                classes_du_niveau = Classe.objects.filter(
+                    niveau=niveau_courant,
+                    ecole=self.instance.ecole,
+                    est_reference=False,
+                ).order_by('nom')
+
+            # Filtrer selon l'école et le rôle de l'utilisateur (sécurité)
+            if self.user:
+                if self.user.est_agent() or self.user.est_inspecteur():
+                    if self.user.ecole_affectation:
+                        classes_du_niveau = classes_du_niveau.filter(
+                            ecole=self.user.ecole_affectation
+                        )
+                elif self.user.est_proved() and self.user.province_affectation:
+                    classes_du_niveau = classes_du_niveau.filter(
+                        ecole__province=self.user.province_affectation
+                    )
+
+            self.fields['classe'].queryset = classes_du_niveau
+
+            # Pré-sélectionner la classe actuelle
             if self.instance.classe_id:
-                classe_actuelle = Classe.objects.filter(pk=self.instance.classe_id)
-                self.fields['classe'].queryset = (
-                    self.fields['classe'].queryset | classe_actuelle
-                ).distinct()
                 self.fields['classe'].initial = [self.instance.classe_id]
 
-            if self.instance.domaine_id:
-                domaine_actuel = Domaine.objects.filter(pk=self.instance.domaine_id)
-                self.fields['domaine'].queryset = (
-                    self.fields['domaine'].queryset | domaine_actuel
-                ).distinct()
-                self.fields['domaine'].initial = [self.instance.domaine_id]
+        else:
+            # ----- MODE CRÉATION : queryset vide -----
+            # Le JS remplira dynamiquement via l'API
+            self.fields['classe'].queryset = Classe.objects.none()
 
-            if self.instance.niveau_id:
-                if self.is_reference:
-                    classes_du_niveau = Classe.objects.filter(
-                        niveau_id=self.instance.niveau_id,
-                        est_reference=True,
-                        ecole__isnull=True,
-                    )
-                    domaines_du_niveau = Domaine.objects.filter(
-                        est_reference=True,
-                        ecole__isnull=True,
-                    )
-                else:
-                    classes_du_niveau = Classe.objects.filter(
-                        niveau_id=self.instance.niveau_id,
-                        ecole=self.instance.ecole,
-                        est_reference=False,
-                    )
-                    domaines_du_niveau = Domaine.objects.filter(
-                        ecole=self.instance.ecole,
-                        est_reference=False,
-                    )
-                self.fields['classe'].queryset = (
-                    self.fields['classe'].queryset | classes_du_niveau
-                ).distinct()
-                self.fields['domaine'].queryset = (
-                    self.fields['domaine'].queryset | domaines_du_niveau
-                ).distinct()
-
+        # ============================================================
+        # 3. LAYOUT CRISPY
+        # ============================================================
         self.helper = FormHelper()
         self.helper.form_method = 'post'
         self.helper.layout = Layout(
@@ -875,14 +593,12 @@ class CoursForm(forms.ModelForm):
                 css_class='row'
             ),
             Row(
-                Column('coefficient', css_class='form-group col-md-4'),
-                Column('niveau', css_class='form-group col-md-4'),
-                Column('ecole', css_class='form-group col-md-4'),
+                Column('coefficient', css_class='form-group col-md-6'),
+                Column('niveau', css_class='form-group col-md-6'),
                 css_class='row'
             ),
             Row(
-                Column('classe', css_class='form-group col-md-6'),
-                Column('domaine', css_class='form-group col-md-6'),
+                Column('classe', css_class='form-group col-12'),
                 css_class='row'
             ),
             Row(
@@ -1119,10 +835,6 @@ EvaluationConfigFormSet = inlineformset_factory(
 # ===================== RÉSULTATS =====================
 
 class ResultatSelectionForm(forms.Form):
-    """
-    Formulaire de sélection en cascade pour la saisie des résultats.
-    Le queryset des cours est filtré par école pour éviter les mélanges.
-    """
     ecole = forms.ModelChoiceField(
         queryset=Ecole.objects.all(), required=False, label="École",
         widget=forms.Select(attrs={'class': 'form-select'})
