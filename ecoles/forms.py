@@ -430,9 +430,10 @@ class CoursForm(forms.ModelForm):
     Formulaire de création/modification d'un cours (SANS domaine).
 
     RÈGLE IMPORTANTE :
-    - En mode CRÉATION : le champ `classe` est vide au départ, puis rempli
-      dynamiquement via l'API `/api/classes-par-niveau/` quand l'utilisateur
-      change le niveau.
+    - En mode CRÉATION : le champ `classe` est peuplé dynamiquement via l'API
+      `/api/classes-par-niveau/` quand l'utilisateur change le niveau.
+      Le queryset initial doit être ÉLARGI (pas vide) pour que Django
+      puisse valider les IDs soumis.
     - En mode MODIFICATION : le champ `classe` n'affiche QUE les classes
       appartenant au niveau actuel du cours (filtrage strict par niveau).
     """
@@ -540,25 +541,21 @@ class CoursForm(forms.ModelForm):
         # ============================================================
         if self.instance.pk and self.instance.niveau_id:
             # ----- MODE MODIFICATION : filtrer par niveau du cours -----
-            # On n'affiche QUE les classes qui appartiennent au niveau du cours.
             niveau_courant = self.instance.niveau
 
             if self.is_reference:
-                # Classes de référence du même niveau
                 classes_du_niveau = Classe.objects.filter(
                     niveau=niveau_courant,
                     est_reference=True,
                     ecole__isnull=True,
                 ).order_by('nom')
             else:
-                # Classes d'instance du même niveau (même école)
                 classes_du_niveau = Classe.objects.filter(
                     niveau=niveau_courant,
                     ecole=self.instance.ecole,
                     est_reference=False,
                 ).order_by('nom')
 
-            # Filtrer selon l'école et le rôle de l'utilisateur (sécurité)
             if self.user:
                 if self.user.est_agent() or self.user.est_inspecteur():
                     if self.user.ecole_affectation:
@@ -572,14 +569,54 @@ class CoursForm(forms.ModelForm):
 
             self.fields['classe'].queryset = classes_du_niveau
 
-            # Pré-sélectionner la classe actuelle
             if self.instance.classe_id:
                 self.fields['classe'].initial = [self.instance.classe_id]
 
         else:
-            # ----- MODE CRÉATION : queryset vide -----
-            # Le JS remplira dynamiquement via l'API
-            self.fields['classe'].queryset = Classe.objects.none()
+            # ----- MODE CRÉATION -----
+            # ⚠️ CORRECTION : Le queryset doit être ÉLARGI (pas vide) pour que
+            # Django puisse valider les IDs soumis par le formulaire.
+            # Le filtrage réel est fait côté JS via l'API.
+            if self.is_reference:
+                # Classes de référence (correspond à ce que l'API retourne avec reference=1)
+                self.fields['classe'].queryset = Classe.objects.filter(
+                    est_reference=True,
+                    ecole__isnull=True,
+                ).order_by('nom')
+            else:
+                # Classes d'instance, filtrées selon le rôle de l'utilisateur
+                if self.user:
+                    if self.user.est_agent() or self.user.est_inspecteur():
+                        if self.user.ecole_affectation:
+                            self.fields['classe'].queryset = Classe.objects.filter(
+                                ecole=self.user.ecole_affectation,
+                                est_reference=False,
+                            ).order_by('nom')
+                        else:
+                            self.fields['classe'].queryset = Classe.objects.none()
+                    elif self.user.est_proved():
+                        if self.user.province_affectation:
+                            self.fields['classe'].queryset = Classe.objects.filter(
+                                ecole__province=self.user.province_affectation,
+                                est_reference=False,
+                            ).order_by('nom')
+                        else:
+                            self.fields['classe'].queryset = Classe.objects.none()
+                    elif self.user.est_enseignant():
+                        if self.user.classe_affectation:
+                            self.fields['classe'].queryset = Classe.objects.filter(
+                                id=self.user.classe_affectation.id
+                            )
+                        else:
+                            self.fields['classe'].queryset = Classe.objects.none()
+                    else:
+                        self.fields['classe'].queryset = Classe.objects.filter(
+                            est_reference=False,
+                        ).order_by('nom')
+                else:
+                    self.fields['classe'].queryset = Classe.objects.filter(
+                        est_reference=False,
+                    ).order_by('nom')
 
         # ============================================================
         # 3. LAYOUT CRISPY
