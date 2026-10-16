@@ -629,7 +629,10 @@ class Classe(SoftDeleteMixin):
 # ===================== COURS (SANS DOMAINE) =====================
 class Cours(SoftDeleteMixin):
     nom = models.CharField(max_length=100)
-    code = models.CharField(max_length=20, unique=True)
+    # ⚠️ CORRECTION : la limite passe de 20 à 50 caractères pour accommoder
+    # les codes générés incluant le nom de la classe
+    # (ex: "Expression_Orale_1ere_A" = 23 caractères).
+    code = models.CharField(max_length=50, unique=True)
     coefficient = models.PositiveIntegerField(default=1)
     description = models.TextField(blank=True)
     niveau = models.ForeignKey(Niveau, on_delete=models.CASCADE, related_name='cours')
