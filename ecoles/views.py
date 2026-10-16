@@ -97,6 +97,62 @@ def _label_classe_complet(classe):
     return f"{nom} ({niveau_nom})"
 
 
+def _slugifier_pour_code(texte):
+    """
+    Transforme un texte en version utilisable dans un code de cours.
+    Ex: "1ère A" -> "1ere_A"
+    """
+    if not texte:
+        return "CLASSE"
+    # Remplace les accents courants
+    remplacements = {
+        'à': 'a', 'â': 'a', 'ä': 'a', 'á': 'a', 'ã': 'a', 'å': 'a',
+        'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+        'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+        'ò': 'o', 'ó': 'o', 'ô': 'o', 'ö': 'o', 'õ': 'o',
+        'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
+        'ç': 'c', 'ñ': 'n',
+        'À': 'A', 'Â': 'A', 'Ä': 'A', 'Á': 'A', 'Ã': 'A', 'Å': 'A',
+        'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
+        'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
+        'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Ö': 'O', 'Õ': 'O',
+        'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
+        'Ç': 'C', 'Ñ': 'N',
+    }
+    for accent, sans_accent in remplacements.items():
+        texte = texte.replace(accent, sans_accent)
+    # Remplace les caractères non alphanumériques par des underscores
+    resultat = ''.join(c if c.isalnum() else '_' for c in texte)
+    # Supprime les underscores multiples
+    while '__' in resultat:
+        resultat = resultat.replace('__', '_')
+    return resultat.strip('_') or "CLASSE"
+
+
+def _generer_code_cours_unique(base_code, classe, model_class=None):
+    """
+    Génère un code de cours unique en incluant le nom de la classe.
+
+    Exemple : base_code="Expression_Orale", classe.nom="1ère A"
+    -> "Expression_Orale_1ere_A" (ou avec suffixe _1, _2 si déjà utilisé)
+
+    Cela garantit qu'on peut créer un cours avec le même nom de base
+    dans plusieurs classes sans violer la contrainte unique sur `code`.
+    """
+    if model_class is None:
+        model_class = Cours
+
+    suffixe_classe = _slugifier_pour_code(classe.nom)
+    code_base = f"{base_code}_{suffixe_classe}"
+
+    code_candidat = code_base
+    suffix = 1
+    while model_class.objects.filter(code=code_candidat).exists():
+        code_candidat = f"{code_base}_{suffix}"
+        suffix += 1
+    return code_candidat
+
+
 def _stocker_rapport_sync(request, rapport, action_label=""):
     defaults = {
         'instances_traitees': 0,
@@ -1884,12 +1940,32 @@ def cours_create(request):
             created_cours = []
             errors = []
 
+            # ⚠️ CORRECTION : on garde une trace des codes utilisés dans cette transaction
+            # pour éviter les conflits d'unicité quand plusieurs classes sont sélectionnées.
+            codes_utilises = set()
+
             for classe in classes:
-                code_candidat = base_code
+                # ============================================================
+                # GÉNÉRATION DU CODE UNIQUE PAR CLASSE
+                # ============================================================
+                # On inclut le nom de la classe dans le code pour garantir
+                # l'unicité même si plusieurs classes sont sélectionnées avec
+                # le même code de base.
+                # Ex: "Expression_Orale" + "1ère A" -> "Expression_Orale_1ere_A"
+                suffixe_classe = _slugifier_pour_code(classe.nom)
+                base_code_classe = f"{base_code}_{suffixe_classe}"
+
+                code_candidat = base_code_classe
                 suffix = 1
-                while Cours.objects.filter(code=code_candidat).exists():
-                    code_candidat = f"{base_code}_{suffix}"
+                # Boucle pour trouver un code unique en tenant compte :
+                # - des cours existants en base (Cours.objects.filter)
+                # - des cours déjà créés dans cette transaction (codes_utilises)
+                while (Cours.objects.filter(code=code_candidat).exists()
+                       or code_candidat in codes_utilises):
+                    code_candidat = f"{base_code_classe}_{suffix}"
                     suffix += 1
+
+                codes_utilises.add(code_candidat)
 
                 try:
                     with transaction.atomic():
@@ -2039,14 +2115,33 @@ def cours_edit(request, pk):
                     base_code = cours.code
                     existing_combos = {(first_classe.id,)}
 
+                    # ⚠️ CORRECTION : suivi des codes utilisés dans cette transaction
+                    codes_utilises = set()
+                    # On ajoute aussi le code du cours principal (déjà enregistré)
+                    codes_utilises.add(cours.code)
+
                     for classe in classes:
                         if (classe.id,) in existing_combos:
                             continue
-                        code_candidat = base_code
+
+                        # ============================================================
+                        # GÉNÉRATION DU CODE UNIQUE PAR CLASSE
+                        # ============================================================
+                        # On inclut le nom de la classe dans le code pour garantir
+                        # l'unicité même si plusieurs classes sont sélectionnées avec
+                        # le même code de base.
+                        suffixe_classe = _slugifier_pour_code(classe.nom)
+                        base_code_classe = f"{base_code}_{suffixe_classe}"
+
+                        code_candidat = base_code_classe
                         suffix = 1
-                        while Cours.objects.filter(code=code_candidat).exists():
-                            code_candidat = f"{base_code}_{suffix}"
+                        while (Cours.objects.filter(code=code_candidat).exists()
+                               or code_candidat in codes_utilises):
+                            code_candidat = f"{base_code_classe}_{suffix}"
                             suffix += 1
+
+                        codes_utilises.add(code_candidat)
+
                         nouveau_cours = Cours.objects.create(
                             nom=cours.nom, code=code_candidat, coefficient=cours.coefficient,
                             description=cours.description, niveau=cours.niveau,
