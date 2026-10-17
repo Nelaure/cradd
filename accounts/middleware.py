@@ -6,7 +6,7 @@ from django.contrib.auth import logout
 from django.urls import reverse
 
 from .models import AuditLog
-from .views import log_audit, get_client_ip
+from .views import log_audit, get_client_ip, get_user_agent
 
 
 class ActiveUserMiddleware(MiddlewareMixin):
@@ -24,8 +24,14 @@ class ActiveUserMiddleware(MiddlewareMixin):
 class AuditLogMiddleware(MiddlewareMixin):
     """
     Middleware pour journaliser automatiquement les actions des utilisateurs.
-    - Journalise les actions POST (création, modification, suppression) pour les utilisateurs authentifiés.
-    - Journalise les visites (GET) pour tous les visiteurs (anonymes ou connectés) sur les pages importantes.
+
+    - Journalise les actions POST (création, modification, suppression) pour les
+      utilisateurs authentifiés, en complément des `log_audit()` explicites des vues.
+    - Journalise les visites (GET) pour tous les visiteurs (anonymes ou connectés).
+
+    ⚠️ IMPORTANT : Le middleware reconnaît à la fois les URLs anglaises
+    (`/delete/`, `/create/`, `/edit/`) ET françaises (`/supprimer/`, `/creer/`,
+    `/modifier/`, `/editer/`).
     """
 
     IGNORE_PATHS = [
@@ -36,58 +42,83 @@ class AuditLogMiddleware(MiddlewareMixin):
         r'^/admin/',
         r'^/accounts/password-reset/',
         r'^/accounts/password-reset/verify/',
+        r'^/accounts/audit-log/',  # éviter de polluer avec les visites d'audit
+    ]
+
+    # Chemins des actions (français + anglais)
+    ACTION_PATTERNS = {
+        'DELETE': ['/delete/', '/supprimer/'],
+        'CREATE': ['/create/', '/creer/', '/ajouter/'],
+        'UPDATE': ['/edit/', '/modifier/', '/editer/'],
+    }
+
+    # Mapping chemin → modèle (pour renseigner `model_name`)
+    MODEL_PATTERNS = [
+        ('/ecoles/', AuditLog.ModelName.ECOLE),
+        ('/niveaux/', AuditLog.ModelName.NIVEAU),
+        ('/classes/', AuditLog.ModelName.CLASSE),
+        ('/sections/', AuditLog.ModelName.SECTION),
+        ('/cours/', AuditLog.ModelName.COURS),
+        ('/eleves/', AuditLog.ModelName.ELEVE),
+        ('/resultats/', AuditLog.ModelName.EVALUATION),
+        ('/provinces/', AuditLog.ModelName.PROVINCE),
+        ('/annees/', AuditLog.ModelName.ANNEE_SCOLAIRE),
+        ('/accounts/users/', AuditLog.ModelName.UTILISATEUR),
+        ('/utilisateurs/', AuditLog.ModelName.UTILISATEUR),
     ]
 
     def process_request(self, request):
         pass
 
+    def _detect_action(self, path):
+        """Détecte l'action (DELETE, CREATE, UPDATE) depuis le chemin."""
+        for action, patterns in self.ACTION_PATTERNS.items():
+            for pattern in patterns:
+                if pattern in path:
+                    return action
+        return None
+
+    def _detect_model(self, path):
+        """Détecte le modèle depuis le chemin."""
+        for pattern, model_name in self.MODEL_PATTERNS:
+            if pattern in path:
+                return model_name
+        return None
+
     def process_response(self, request, response):
-        # --- 1. Journaliser les actions POST (authentifiés) ---
+        # --- 1. Journaliser les actions POST (utilisateurs authentifiés) ---
         if request.method == 'POST' and request.user.is_authenticated:
             path = request.path
 
-            action = None
-            model_name = None
-
-            if '/delete/' in path:
-                action = AuditLog.ActionType.DELETE
-            elif '/create/' in path or '/creer/' in path:
-                action = AuditLog.ActionType.CREATE
-            elif '/edit/' in path or '/modifier/' in path:
-                action = AuditLog.ActionType.UPDATE
-
-            if '/ecoles/' in path:
-                model_name = AuditLog.ModelName.ECOLE
-            elif '/niveaux/' in path:
-                model_name = AuditLog.ModelName.NIVEAU
-            elif '/classes/' in path:
-                model_name = AuditLog.ModelName.CLASSE
-            elif '/cours/' in path:
-                model_name = AuditLog.ModelName.COURS
-            elif '/eleves/' in path:
-                model_name = AuditLog.ModelName.ELEVE
-            elif '/resultats/' in path:
-                model_name = AuditLog.ModelName.EVALUATION
-            elif '/users/' in path:
-                model_name = AuditLog.ModelName.UTILISATEUR
-            elif '/provinces/' in path:
-                model_name = AuditLog.ModelName.PROVINCE
-            elif '/domaines/' in path:
-                model_name = AuditLog.ModelName.DOMAINE
+            action = self._detect_action(path)
+            model_name = self._detect_model(path)
 
             if action and model_name:
                 ip = get_client_ip(request)
-                user_agent = request.META.get('HTTP_USER_AGENT', '')
+                user_agent = get_user_agent(request)
 
-                log_audit(
-                    user=request.user,
+                # Ne journalise QUE si la vue n'a pas déjà fait un log_audit()
+                # pour éviter les doublons. On considère qu'il y a doublon si une
+                # entrée a été créée dans les 2 dernières secondes pour la même action.
+                from django.utils import timezone
+                from datetime import timedelta
+                recent = AuditLog.objects.filter(
+                    utilisateur=request.user,
                     action=action,
                     model_name=model_name,
-                    ip_address=ip,
-                    user_agent=user_agent,
-                    success=response.status_code < 400,
-                    message=f"{action} sur {model_name}"
-                )
+                    timestamp__gte=timezone.now() - timedelta(seconds=2),
+                ).exists()
+
+                if not recent:
+                    log_audit(
+                        user=request.user,
+                        action=action,
+                        model_name=model_name,
+                        ip_address=ip,
+                        user_agent=user_agent,
+                        success=response.status_code < 400,
+                        message=f"{action} sur {model_name} ({path})"
+                    )
 
         # --- 2. Journaliser les visites (GET) pour tous ---
         if request.method == 'GET' and response.status_code < 400:
@@ -98,7 +129,7 @@ class AuditLogMiddleware(MiddlewareMixin):
 
             user = request.user if request.user.is_authenticated else None
             ip = get_client_ip(request)
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            user_agent = get_user_agent(request)
 
             log_audit(
                 user=user,

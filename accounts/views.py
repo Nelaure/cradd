@@ -1,4 +1,7 @@
 import logging
+import csv
+from datetime import datetime, timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -7,7 +10,10 @@ from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.http import HttpResponse
+from django.urls import reverse
+
 from .models import Utilisateur, AuditLog
 from .forms import (
     UtilisateurCreationForm, UtilisateurChangeForm,
@@ -23,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 def log_audit(user, action, model_name=None, object_id=None, object_repr=None,
               changes=None, ip_address=None, user_agent=None, success=True, message=None):
+    """Journalise une action dans l'AuditLog."""
     try:
         AuditLog.objects.create(
             utilisateur=user,
@@ -41,12 +48,18 @@ def log_audit(user, action, model_name=None, object_id=None, object_repr=None,
 
 
 def get_client_ip(request):
+    """Récupère l'IP réelle du client (gère les proxys)."""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
+        ip = x_forwarded_for.split(',')[0].strip()
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+
+def get_user_agent(request):
+    """Récupère le User-Agent tronqué à 500 caractères."""
+    return request.META.get('HTTP_USER_AGENT', '')[:500]
 
 
 # ===================== AUTHENTIFICATION =====================
@@ -56,14 +69,14 @@ def login_view(request):
         return redirect('ecoles:dashboard')
 
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
         user = authenticate(request, username=username, password=password)
 
         ip = get_client_ip(request)
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        user_agent = get_user_agent(request)
 
-        if user and user.est_actif:
+        if user and user.est_actif and user.is_active:
             login(request, user)
             log_audit(
                 user=user,
@@ -77,6 +90,7 @@ def login_view(request):
                 return redirect('actualites:dashboard')
             return redirect(request.GET.get('next', 'ecoles:dashboard'))
         else:
+            # Journaliser la tentative échouée
             if user:
                 log_audit(
                     user=user,
@@ -84,8 +98,11 @@ def login_view(request):
                     ip_address=ip,
                     user_agent=user_agent,
                     success=False,
-                    message=f"Tentative de connexion échouée depuis {ip}"
+                    message=f"Tentative échouée (compte inactif ou désactivé) depuis {ip}"
                 )
+            else:
+                # Utilisateur inexistant : on journalise quand même l'IP
+                logger.warning(f"LOGIN_FAILED pour username='{username}' depuis {ip}")
             messages.error(request, 'Identifiants incorrects ou compte inactif.')
 
     return render(request, 'accounts/login.html')
@@ -94,7 +111,7 @@ def login_view(request):
 @login_required
 def logout_view(request):
     ip = get_client_ip(request)
-    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    user_agent = get_user_agent(request)
     log_audit(
         user=request.user,
         action=AuditLog.ActionType.LOGOUT,
@@ -132,7 +149,7 @@ def change_password_view(request):
             update_session_auth_hash(request, request.user)
 
             ip = get_client_ip(request)
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            user_agent = get_user_agent(request)
             log_audit(
                 user=request.user,
                 action=AuditLog.ActionType.PASSWORD_CHANGE,
@@ -157,8 +174,11 @@ def password_reset_request_view(request):
         form = PasswordResetRequestForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
+            ip = get_client_ip(request)
+            user_agent = get_user_agent(request)
+
             try:
-                user = Utilisateur.objects.get(email=email)
+                user = Utilisateur.objects.get(email__iexact=email)
                 code = user.generate_reset_code()
 
                 subject = 'Réinitialisation de votre mot de passe - Cradd'
@@ -185,8 +205,6 @@ def password_reset_request_view(request):
                         [email],
                         fail_silently=False,
                     )
-                    ip = get_client_ip(request)
-                    user_agent = request.META.get('HTTP_USER_AGENT', '')
                     log_audit(
                         user=user,
                         action=AuditLog.ActionType.PASSWORD_RESET,
@@ -218,6 +236,7 @@ def password_reset_request_view(request):
                         )
 
             except Utilisateur.DoesNotExist:
+                # Message générique pour ne pas révéler l'existence de l'email
                 messages.success(
                     request,
                     'Si un compte existe avec cet email, '
@@ -258,7 +277,7 @@ def password_reset_verify_view(request):
                     user.save()
 
                     ip = get_client_ip(request)
-                    user_agent = request.META.get('HTTP_USER_AGENT', '')
+                    user_agent = get_user_agent(request)
                     log_audit(
                         user=user,
                         action=AuditLog.ActionType.PASSWORD_RESET,
@@ -302,12 +321,41 @@ def user_list_view(request):
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
 
-    users = Utilisateur.objects.all().order_by('-date_creation')
-    paginator = Paginator(users, 20)
+    users_qs = Utilisateur.objects.select_related(
+        'ecole_affectation', 'province_affectation',
+        'niveau_affectation', 'classe_affectation'
+    ).order_by('-date_creation')
+
+    # Filtres optionnels
+    search = request.GET.get('q', '').strip()
+    role = request.GET.get('role')
+    est_actif = request.GET.get('est_actif')
+
+    if search:
+        users_qs = users_qs.filter(
+            Q(username__icontains=search) |
+            Q(nom__icontains=search) |
+            Q(postnom__icontains=search) |
+            Q(prenom__icontains=search) |
+            Q(email__icontains=search)
+        )
+    if role:
+        users_qs = users_qs.filter(role=role)
+    if est_actif in ('0', '1'):
+        users_qs = users_qs.filter(est_actif=(est_actif == '1'))
+
+    paginator = Paginator(users_qs, 20)
     page = request.GET.get('page')
     users = paginator.get_page(page)
 
-    return render(request, 'accounts/user_list.html', {'users': users})
+    context = {
+        'users': users,
+        'roles': Utilisateur.Role.choices,
+        'search_query': search,
+        'selected_role': role,
+        'selected_est_actif': est_actif,
+    }
+    return render(request, 'accounts/user_list.html', context)
 
 
 @login_required
@@ -322,7 +370,7 @@ def user_create_view(request):
             user = form.save()
 
             ip = get_client_ip(request)
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            user_agent = get_user_agent(request)
             log_audit(
                 user=request.user,
                 action=AuditLog.ActionType.CREATE,
@@ -362,7 +410,7 @@ def user_edit_view(request, pk):
             form.save()
 
             ip = get_client_ip(request)
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            user_agent = get_user_agent(request)
             log_audit(
                 user=request.user,
                 action=AuditLog.ActionType.UPDATE,
@@ -406,19 +454,21 @@ def user_delete_view(request, pk):
 
     if request.method == 'POST':
         username = user.username
+        user_id = user.id
+        user_repr = str(user)
 
         ip = get_client_ip(request)
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        user_agent = get_user_agent(request)
         log_audit(
             user=request.user,
             action=AuditLog.ActionType.DELETE,
             model_name=AuditLog.ModelName.UTILISATEUR,
-            object_id=user.id,
-            object_repr=str(user),
+            object_id=user_id,
+            object_repr=user_repr,
             ip_address=ip,
             user_agent=user_agent,
             success=True,
-            message=f"Suppression de l'utilisateur {username}"
+            message=f"Suppression de l'utilisateur {username} (ID={user_id})"
         )
 
         user.delete()
@@ -432,43 +482,177 @@ def user_delete_view(request, pk):
 
 @login_required
 def audit_log_view(request):
+    """Vue améliorée du journal d'activité avec filtres, tri, recherche et export CSV."""
     if not request.user.est_administrateur():
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
 
+    # --- Récupération des filtres ---
+    action = request.GET.get('action', '').strip()
+    user_id = request.GET.get('user', '').strip()
+    model = request.GET.get('model', '').strip()
+    success_filter = request.GET.get('success', '').strip()
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
+    search_query = request.GET.get('q', '').strip()
+    sort_by = request.GET.get('sort', 'timestamp')
+    sort_order = request.GET.get('order', 'desc')
+    export_format = request.GET.get('export', '').strip()
+
+    # --- Queryset de base ---
     logs = AuditLog.objects.select_related('utilisateur').all()
 
-    action = request.GET.get('action')
-    user_id = request.GET.get('user')
-    model = request.GET.get('model')
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-
+    # --- Application des filtres ---
     if action:
         logs = logs.filter(action=action)
     if user_id:
-        logs = logs.filter(utilisateur_id=user_id)
+        try:
+            logs = logs.filter(utilisateur_id=int(user_id))
+        except (ValueError, TypeError):
+            pass
     if model:
         logs = logs.filter(model_name=model)
+    if success_filter in ('0', '1'):
+        logs = logs.filter(success=(success_filter == '1'))
     if date_from:
-        logs = logs.filter(timestamp__date__gte=date_from)
+        try:
+            logs = logs.filter(timestamp__date__gte=date_from)
+        except Exception:
+            pass
     if date_to:
-        logs = logs.filter(timestamp__date__lte=date_to)
+        try:
+            logs = logs.filter(timestamp__date__lte=date_to)
+        except Exception:
+            pass
 
+    # --- Recherche textuelle ---
+    if search_query:
+        logs = logs.filter(
+            Q(message__icontains=search_query) |
+            Q(object_repr__icontains=search_query) |
+            Q(ip_address__icontains=search_query) |
+            Q(user_agent__icontains=search_query) |
+            Q(utilisateur__username__icontains=search_query) |
+            Q(utilisateur__nom__icontains=search_query) |
+            Q(utilisateur__prenom__icontains=search_query)
+        )
+
+    # --- Tri ---
+    sort_field = 'timestamp'
+    if sort_by in ('timestamp', 'action', 'model_name', 'success'):
+        sort_field = sort_by
+    if sort_order == 'asc':
+        logs = logs.order_by(sort_field)
+    else:
+        logs = logs.order_by(f'-{sort_field}')
+
+    # --- Export CSV (avant la pagination !) ---
+    if export_format == 'csv':
+        return _export_audit_csv(logs, request)
+
+    # --- Statistiques ---
+    today = timezone.now().date()
+    seven_days_ago = today - timedelta(days=7)
+
+    # On utilise un queryset non filtré pour les stats globales, mais avec les mêmes
+    # filtres utilisateur/modèle pour la cohérence
+    stats_qs = AuditLog.objects.all()
+    if user_id:
+        try:
+            stats_qs = stats_qs.filter(utilisateur_id=int(user_id))
+        except (ValueError, TypeError):
+            pass
+    if model:
+        stats_qs = stats_qs.filter(model_name=model)
+
+    stats = {
+        'total': stats_qs.count(),
+        'total_delete': stats_qs.filter(action='DELETE').count(),
+        'total_login_failed': stats_qs.filter(action='LOGIN_FAILED').count(),
+        'total_users': Utilisateur.objects.filter(est_actif=True).count(),
+    }
+
+    # --- Pagination ---
     paginator = Paginator(logs, 50)
     page = request.GET.get('page')
-    logs = paginator.get_page(page)
+    logs_page = paginator.get_page(page)
+
+    # --- Construction des query params pour la pagination ---
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    query_string = query_params.urlencode()
 
     context = {
-        'logs': logs,
+        'logs': logs_page,
         'users': Utilisateur.objects.all().order_by('username'),
         'actions': AuditLog.ActionType.choices,
         'models': AuditLog.ModelName.choices,
         'selected_action': action,
         'selected_user': user_id,
         'selected_model': model,
+        'selected_success': success_filter,
         'selected_date_from': date_from,
         'selected_date_to': date_to,
+        # Alias pour compatibilité template
+        'date_from': date_from,
+        'date_to': date_to,
+        'search_query': search_query,
+        'sort_by': sort_by,
+        'sort_order': sort_order,
+        'stats': stats,
+        'today': today,
+        'seven_days_ago': seven_days_ago,
+        'query_string': query_string,
     }
 
     return render(request, 'accounts/audit_log.html', context)
+
+
+def _export_audit_csv(logs, request):
+    """Exporte les logs d'audit en CSV."""
+    # Journaliser l'export
+    ip = get_client_ip(request)
+    user_agent = get_user_agent(request)
+    log_audit(
+        user=request.user,
+        action=AuditLog.ActionType.EXPORT,
+        ip_address=ip,
+        user_agent=user_agent,
+        success=True,
+        message=f"Export CSV du journal d'activité ({logs.count()} entrées)"
+    )
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    filename = f"audit_log_{timezone.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    # BOM UTF-8 pour Excel
+    response.write('\ufeff')
+
+    writer = csv.writer(response, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow([
+        'Date', 'Heure', 'Utilisateur', 'Nom complet', 'Rôle',
+        'Action', 'Modèle', 'Objet', 'ID objet',
+        'IP', 'Statut', 'Message', 'User-Agent'
+    ])
+
+    for log in logs.iterator():
+        u = log.utilisateur
+        writer.writerow([
+            log.timestamp.strftime('%d/%m/%Y'),
+            log.timestamp.strftime('%H:%M:%S'),
+            u.username if u else 'Anonyme',
+            u.get_full_name() if u else '—',
+            u.get_role_display() if u else '—',
+            log.get_action_display(),
+            log.get_model_name_display() or '—',
+            log.object_repr or '—',
+            log.object_id or '—',
+            log.ip_address or '—',
+            'OK' if log.success else 'Échec',
+            log.message or '—',
+            log.user_agent or '—',
+        ])
+
+    return response

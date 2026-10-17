@@ -11,17 +11,359 @@
     <span>Journal d'activité</span>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+    /* ===== Bandeau de statistiques ===== */
+    .audit-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+    .audit-stat {
+        background: var(--wp-surface);
+        border: 1px solid var(--wp-border-light);
+        border-radius: var(--wp-radius);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: transform var(--wp-transition), box-shadow var(--wp-transition);
+    }
+    .audit-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .audit-stat-icon {
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+    .audit-stat-icon.primary { background: rgba(13,148,136,0.12); color: #0d9488; }
+    .audit-stat-icon.danger  { background: rgba(220,38,38,0.12); color: #dc2626; }
+    .audit-stat-icon.warning { background: rgba(217,119,6,0.12); color: #d97706; }
+    .audit-stat-icon.info    { background: rgba(59,130,246,0.12); color: #3b82f6; }
+    .audit-stat-value {
+        font-size: 20px; font-weight: 700;
+        color: var(--wp-text-strong);
+        line-height: 1.1;
+    }
+    .audit-stat-label {
+        font-size: 11.5px;
+        color: var(--wp-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+    }
+
+    /* ===== Barre de recherche + filtres rapides ===== */
+    .audit-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+        align-items: center;
+    }
+    .audit-search {
+        flex: 1;
+        min-width: 240px;
+        position: relative;
+    }
+    .audit-search input {
+        width: 100%;
+        padding: 10px 38px 10px 38px;
+        border: 1.5px solid var(--wp-border-light);
+        border-radius: var(--wp-radius-sm);
+        font-size: 13.5px;
+        background: var(--wp-surface);
+        transition: border-color var(--wp-transition), box-shadow var(--wp-transition);
+    }
+    .audit-search input:focus {
+        outline: none;
+        border-color: var(--wp-primary);
+        box-shadow: 0 0 0 3px var(--wp-primary-soft);
+    }
+    .audit-search > i.fa-search {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--wp-text-light);
+        font-size: 13px;
+    }
+    .audit-search .clear-search {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--wp-text-light);
+        text-decoration: none;
+        font-size: 14px;
+    }
+    .audit-search .clear-search:hover { color: #dc2626; }
+
+    .audit-quick-filters {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .audit-quick-filters a {
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 12.5px;
+        font-weight: 600;
+        border: 1.5px solid var(--wp-border-light);
+        color: var(--wp-text);
+        text-decoration: none;
+        background: var(--wp-surface);
+        transition: all var(--wp-transition);
+        white-space: nowrap;
+    }
+    .audit-quick-filters a:hover {
+        border-color: var(--wp-primary);
+        color: var(--wp-primary);
+    }
+    .audit-quick-filters a.active {
+        background: var(--wp-primary);
+        color: #fff;
+        border-color: var(--wp-primary);
+    }
+
+    /* ===== Alerte LOGIN_FAILED ===== */
+    .audit-alert {
+        background: rgba(220,38,38,0.08);
+        border-left: 4px solid #dc2626;
+        padding: 12px 16px;
+        border-radius: var(--wp-radius-sm);
+        margin-bottom: 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        font-size: 13px;
+    }
+    .audit-alert i { color: #dc2626; font-size: 18px; flex-shrink: 0; margin-top: 2px; }
+
+    /* ===== Badge recherche active ===== */
+    .audit-search-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding: 8px 14px;
+        background: rgba(59,130,246,0.08);
+        border-radius: var(--wp-radius-sm);
+        font-size: 12.5px;
+    }
+    .audit-search-badge .clear-link {
+        color: var(--wp-text-light);
+        text-decoration: underline;
+        font-size: 12px;
+        margin-left: auto;
+    }
+    .audit-search-badge .clear-link:hover { color: #dc2626; }
+
+    /* ===== Lignes critiques ===== */
+    .audit-row-danger { background: rgba(220,38,38,0.04) !important; }
+    .audit-row-danger:hover { background: rgba(220,38,38,0.08) !important; }
+    .audit-row-warning { background: rgba(217,119,6,0.04) !important; }
+
+    /* ===== Détail dépliable ===== */
+    .audit-detail-row { display: none; }
+    .audit-detail-row.open { display: table-row; }
+    .audit-detail-cell {
+        padding: 0 !important;
+        background: var(--wp-surface-alt);
+    }
+    .audit-detail-content {
+        padding: 16px 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+        font-size: 12.5px;
+    }
+    .audit-detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    .audit-detail-item strong {
+        font-size: 11px;
+        color: var(--wp-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+    .audit-detail-item span,
+    .audit-detail-item pre {
+        color: var(--wp-text-strong);
+        word-break: break-word;
+    }
+
+    /* ===== Bouton détail ===== */
+    .audit-toggle-btn {
+        background: transparent;
+        border: 1.5px solid var(--wp-border-light);
+        border-radius: 6px;
+        width: 28px; height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--wp-text-muted);
+        font-size: 12px;
+        transition: all var(--wp-transition);
+    }
+    .audit-toggle-btn:hover {
+        border-color: var(--wp-primary);
+        color: var(--wp-primary);
+        background: var(--wp-primary-soft);
+    }
+    .audit-toggle-btn.open {
+        background: var(--wp-primary);
+        border-color: var(--wp-primary);
+        color: #fff;
+    }
+
+    /* ===== Tri ===== */
+    .audit-sortable { cursor: pointer; user-select: none; }
+    .audit-sortable:hover { color: var(--wp-primary); }
+    .audit-sortable i { font-size: 10px; margin-left: 4px; opacity: 0.4; }
+    .audit-sortable.sorted i { opacity: 1; color: var(--wp-primary); }
+
+    /* ===== Ligne cliquable ===== */
+    tbody tr:not(.audit-detail-row) { cursor: pointer; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+        .audit-toolbar { flex-direction: column; align-items: stretch; }
+        .audit-quick-filters { overflow-x: auto; padding-bottom: 4px; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <!-- ============================================================
-     FILTRES
+     STATISTIQUES RAPIDES
+============================================================ -->
+<div class="audit-stats">
+    <div class="audit-stat">
+        <div class="audit-stat-icon primary"><i class="fas fa-list"></i></div>
+        <div>
+            <div class="audit-stat-value">{{ stats.total|default:logs.paginator.count }}</div>
+            <div class="audit-stat-label">Total entrées</div>
+        </div>
+    </div>
+    <div class="audit-stat">
+        <div class="audit-stat-icon danger"><i class="fas fa-trash"></i></div>
+        <div>
+            <div class="audit-stat-value">{{ stats.total_delete|default:"—" }}</div>
+            <div class="audit-stat-label">Suppressions</div>
+        </div>
+    </div>
+    <div class="audit-stat">
+        <div class="audit-stat-icon warning"><i class="fas fa-exclamation-triangle"></i></div>
+        <div>
+            <div class="audit-stat-value">{{ stats.total_login_failed|default:"—" }}</div>
+            <div class="audit-stat-label">Connexions échouées</div>
+        </div>
+    </div>
+    <div class="audit-stat">
+        <div class="audit-stat-icon info"><i class="fas fa-users"></i></div>
+        <div>
+            <div class="audit-stat-value">{{ stats.total_users|default:"—" }}</div>
+            <div class="audit-stat-label">Utilisateurs actifs</div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     ALERTE LOGIN_FAILED (si présent)
+============================================================ -->
+{% if stats.total_login_failed > 0 %}
+<div class="audit-alert">
+    <i class="fas fa-shield-alt"></i>
+    <div>
+        <strong>{{ stats.total_login_failed }} tentative{{ stats.total_login_failed|pluralize }} de connexion échouée{{ stats.total_login_failed|pluralize }}</strong>
+        détectée{{ stats.total_login_failed|pluralize }} récemment.
+        <a href="?action=LOGIN_FAILED" style="color:#dc2626; font-weight:600; margin-left:6px;">
+            Voir les détails <i class="fas fa-arrow-right" style="font-size:10px;"></i>
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- ============================================================
+     BARRE DE RECHERCHE + FILTRES RAPIDES
+============================================================ -->
+<div class="audit-toolbar">
+    <form method="get" class="audit-search" style="margin:0;">
+        <i class="fas fa-search"></i>
+        <input type="text" name="q" placeholder="Rechercher dans les messages, objets, IP, utilisateurs…"
+               value="{{ search_query|default:'' }}">
+        {% if search_query %}
+            <a href="?{% if selected_action %}action={{ selected_action }}&{% endif %}{% if selected_user %}user={{ selected_user }}&{% endif %}{% if selected_model %}model={{ selected_model }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if selected_success %}success={{ selected_success }}{% endif %}"
+               class="clear-search" title="Effacer la recherche">
+                <i class="fas fa-times-circle"></i>
+            </a>
+        {% endif %}
+        {% if selected_action %}<input type="hidden" name="action" value="{{ selected_action }}">{% endif %}
+        {% if selected_user %}<input type="hidden" name="user" value="{{ selected_user }}">{% endif %}
+        {% if selected_model %}<input type="hidden" name="model" value="{{ selected_model }}">{% endif %}
+        {% if date_from %}<input type="hidden" name="date_from" value="{{ date_from }}">{% endif %}
+        {% if date_to %}<input type="hidden" name="date_to" value="{{ date_to }}">{% endif %}
+        {% if selected_success %}<input type="hidden" name="success" value="{{ selected_success }}">{% endif %}
+    </form>
+
+    <div class="audit-quick-filters">
+        <a href="{% url 'accounts:audit_log' %}" class="{% if not selected_action and not date_from and not search_query %}active{% endif %}">
+            <i class="fas fa-clock"></i> Tous
+        </a>
+        <a href="?date_from={{ today|date:'Y-m-d' }}" class="{% if date_from == today|date:'Y-m-d' %}active{% endif %}">
+            <i class="fas fa-calendar-day"></i> Aujourd'hui
+        </a>
+        <a href="?date_from={{ seven_days_ago|date:'Y-m-d' }}" class="{% if date_from == seven_days_ago|date:'Y-m-d' %}active{% endif %}">
+            <i class="fas fa-calendar-week"></i> 7 jours
+        </a>
+        <a href="?action=DELETE" class="{% if selected_action == 'DELETE' %}active{% endif %}">
+            <i class="fas fa-trash"></i> Suppressions
+        </a>
+        <a href="?action=LOGIN_FAILED" class="{% if selected_action == 'LOGIN_FAILED' %}active{% endif %}">
+            <i class="fas fa-exclamation-triangle"></i> Échecs
+        </a>
+    </div>
+</div>
+
+<!-- ============================================================
+     BADGE RECHERCHE ACTIVE
+============================================================ -->
+{% if search_query %}
+<div class="audit-search-badge">
+    <i class="fas fa-search" style="color:#3b82f6;"></i>
+    <strong>Recherche :</strong> "{{ search_query }}"
+    <span style="color:var(--wp-text-light);">— {{ logs.paginator.count }} résultat{{ logs.paginator.count|pluralize }}</span>
+    <a href="?{% if selected_action %}action={{ selected_action }}&{% endif %}{% if selected_user %}user={{ selected_user }}&{% endif %}{% if selected_model %}model={{ selected_model }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if selected_success %}success={{ selected_success }}{% endif %}"
+       class="clear-link">
+        <i class="fas fa-times"></i> Effacer
+    </a>
+</div>
+{% endif %}
+
+<!-- ============================================================
+     FILTRES AVANCÉS
 ============================================================ -->
 <div class="wp-card" style="margin-bottom:20px;">
     <div class="wp-card-header">
-        <h3><i class="fas fa-filter" style="color:var(--wp-primary);"></i> Filtres</h3>
+        <h3><i class="fas fa-filter" style="color:var(--wp-primary);"></i> Filtres avancés</h3>
+        <button type="button" class="wp-btn outline" id="toggleFilters" style="font-size:12px;">
+            <i class="fas fa-chevron-down"></i> Afficher
+        </button>
     </div>
-    <div class="wp-card-body">
+    <div class="wp-card-body" id="advancedFilters" style="display:none;">
         <form method="get">
+            {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
             <div class="row g-3">
                 <div class="col-md-3">
                     <label for="id_filter_action" class="wp-form-label">
@@ -62,15 +404,41 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <div class="wp-form-actions-inline" style="width:100%;">
-                        <button type="submit" class="wp-btn" style="flex:1;">
-                            <i class="fas fa-filter"></i> Filtrer
-                        </button>
-                        <a href="{% url 'accounts:audit_log' %}" class="wp-btn outline" title="Réinitialiser">
-                            <i class="fas fa-times"></i>
-                        </a>
-                    </div>
+                <div class="col-md-3">
+                    <label for="id_filter_status" class="wp-form-label">
+                        <i class="fas fa-check-circle"></i> Statut
+                    </label>
+                    <select name="success" id="id_filter_status" class="wp-select">
+                        <option value="">Tous</option>
+                        <option value="1" {% if selected_success == '1' %}selected{% endif %}>Succès</option>
+                        <option value="0" {% if selected_success == '0' %}selected{% endif %}>Échec</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="id_filter_date_from" class="wp-form-label">
+                        <i class="fas fa-calendar-alt"></i> Du
+                    </label>
+                    <input type="date" name="date_from" id="id_filter_date_from"
+                           class="wp-input" value="{{ date_from|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="id_filter_date_to" class="wp-form-label">
+                        <i class="fas fa-calendar-alt"></i> Au
+                    </label>
+                    <input type="date" name="date_to" id="id_filter_date_to"
+                           class="wp-input" value="{{ date_to|default:'' }}">
+                </div>
+                <div class="col-md-6 d-flex align-items-end gap-2">
+                    <button type="submit" class="wp-btn" style="flex:1;">
+                        <i class="fas fa-filter"></i> Appliquer
+                    </button>
+                    <a href="{% url 'accounts:audit_log' %}" class="wp-btn outline">
+                        <i class="fas fa-times"></i> Réinitialiser
+                    </a>
+                    <a href="?{% if selected_action %}action={{ selected_action }}&{% endif %}{% if selected_user %}user={{ selected_user }}&{% endif %}{% if selected_model %}model={{ selected_model }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if selected_success %}success={{ selected_success }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}export=csv"
+                       class="wp-btn secondary" title="Exporter en CSV">
+                        <i class="fas fa-file-csv"></i> CSV
+                    </a>
                 </div>
             </div>
         </form>
@@ -95,22 +463,41 @@
             <table class="wp-table">
                 <thead>
                     <tr>
-                        <th>Date / Heure</th>
+                        <th style="width:40px;"></th>
+                        <th class="audit-sortable {% if sort_by == 'timestamp' %}sorted{% endif %}"
+                            onclick="window.location='?sort=timestamp&order={% if sort_by == 'timestamp' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if query_string %}&{{ query_string }}{% endif %}'">
+                            Date / Heure
+                            <i class="fas fa-sort{% if sort_by == 'timestamp' %}-{{ sort_order }}{% endif %}"></i>
+                        </th>
                         <th>Utilisateur</th>
-                        <th>Action</th>
+                        <th class="audit-sortable {% if sort_by == 'action' %}sorted{% endif %}"
+                            onclick="window.location='?sort=action&order={% if sort_by == 'action' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if query_string %}&{{ query_string }}{% endif %}'">
+                            Action
+                            <i class="fas fa-sort{% if sort_by == 'action' %}-{{ sort_order }}{% endif %}"></i>
+                        </th>
                         <th>Modèle</th>
                         <th>Objet</th>
                         <th>IP</th>
                         <th>Statut</th>
+                        <th style="text-align:center; width:50px;">Détails</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for log in logs %}
-                    <tr>
+                    <tr class="
+                        {% if log.action == 'DELETE' %}audit-row-danger
+                        {% elif log.action == 'LOGIN_FAILED' %}audit-row-warning
+                        {% endif %}
+                    ">
+                        <td data-label="">
+                            <button type="button" class="audit-toggle-btn" data-target="detail-{{ log.id }}" title="Voir le détail">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </td>
                         <td data-label="Date / Heure">
                             <span style="font-size:12.5px; color:var(--wp-text-muted); white-space:nowrap;">
                                 <i class="fas fa-clock" style="font-size:10px;"></i>
-                                {{ log.timestamp|date:"d/m/Y H:i" }}
+                                {{ log.timestamp|date:"d/m/Y H:i:s" }}
                             </span>
                         </td>
                         <td data-label="Utilisateur">
@@ -125,43 +512,35 @@
                                 </span>
                             {% else %}
                                 <span style="color:var(--wp-text-light); font-style:italic; font-size:12.5px;">
-                                    <i class="fas fa-user-slash"></i> Utilisateur supprimé
+                                    <i class="fas fa-user-slash"></i> Anonyme / supprimé
                                 </span>
                             {% endif %}
                         </td>
                         <td data-label="Action">
                             {% if log.action == 'LOGIN' %}
-                                <span class="wp-badge wp-badge-success">
-                                    <i class="fas fa-sign-in-alt"></i> {{ log.get_action_display }}
-                                </span>
+                                <span class="wp-badge wp-badge-success"><i class="fas fa-sign-in-alt"></i> {{ log.get_action_display }}</span>
                             {% elif log.action == 'LOGOUT' %}
-                                <span class="wp-badge wp-badge-neutral">
-                                    <i class="fas fa-sign-out-alt"></i> {{ log.get_action_display }}
-                                </span>
+                                <span class="wp-badge wp-badge-neutral"><i class="fas fa-sign-out-alt"></i> {{ log.get_action_display }}</span>
                             {% elif log.action == 'CREATE' %}
-                                <span class="wp-badge wp-badge-primary">
-                                    <i class="fas fa-plus-circle"></i> {{ log.get_action_display }}
-                                </span>
+                                <span class="wp-badge wp-badge-primary"><i class="fas fa-plus-circle"></i> {{ log.get_action_display }}</span>
                             {% elif log.action == 'UPDATE' %}
-                                <span class="wp-badge wp-badge-warning">
-                                    <i class="fas fa-pen"></i> {{ log.get_action_display }}
-                                </span>
+                                <span class="wp-badge wp-badge-warning"><i class="fas fa-pen"></i> {{ log.get_action_display }}</span>
                             {% elif log.action == 'DELETE' %}
-                                <span class="wp-badge wp-badge-danger">
-                                    <i class="fas fa-trash"></i> {{ log.get_action_display }}
-                                </span>
+                                <span class="wp-badge wp-badge-danger"><i class="fas fa-trash"></i> {{ log.get_action_display }}</span>
                             {% elif log.action == 'LOGIN_FAILED' %}
-                                <span class="wp-badge wp-badge-danger">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ log.get_action_display }}
-                                </span>
+                                <span class="wp-badge wp-badge-danger"><i class="fas fa-exclamation-triangle"></i> {{ log.get_action_display }}</span>
                             {% elif log.action == 'VIEW' %}
-                                <span class="wp-badge wp-badge-info">
-                                    <i class="fas fa-eye"></i> {{ log.get_action_display }}
-                                </span>
+                                <span class="wp-badge wp-badge-info"><i class="fas fa-eye"></i> {{ log.get_action_display }}</span>
+                            {% elif log.action == 'EXPORT' %}
+                                <span class="wp-badge wp-badge-info"><i class="fas fa-file-export"></i> {{ log.get_action_display }}</span>
+                            {% elif log.action == 'IMPORT' %}
+                                <span class="wp-badge wp-badge-info"><i class="fas fa-file-import"></i> {{ log.get_action_display }}</span>
+                            {% elif log.action == 'PASSWORD_RESET' %}
+                                <span class="wp-badge wp-badge-warning"><i class="fas fa-key"></i> {{ log.get_action_display }}</span>
+                            {% elif log.action == 'PASSWORD_CHANGE' %}
+                                <span class="wp-badge wp-badge-warning"><i class="fas fa-lock"></i> {{ log.get_action_display }}</span>
                             {% else %}
-                                <span class="wp-badge wp-badge-info">
-                                    <i class="fas fa-bolt"></i> {{ log.get_action_display }}
-                                </span>
+                                <span class="wp-badge wp-badge-info"><i class="fas fa-bolt"></i> {{ log.get_action_display }}</span>
                             {% endif %}
                         </td>
                         <td data-label="Modèle">
@@ -176,7 +555,7 @@
                         <td data-label="Objet">
                             {% if log.object_repr %}
                                 <span style="font-size:12.5px; color:var(--wp-text-muted);">
-                                    {{ log.object_repr|truncatechars:30 }}
+                                    {{ log.object_repr|truncatechars:40 }}
                                 </span>
                             {% else %}
                                 <span style="color:var(--wp-text-light); font-style:italic;">—</span>
@@ -184,23 +563,50 @@
                         </td>
                         <td data-label="IP">
                             {% if log.ip_address %}
-                                <span class="wp-code" style="font-size:11px;">
+                                <a href="https://ip-api.com/{{ log.ip_address }}" target="_blank" rel="noopener"
+                                   class="wp-code" style="font-size:11px; text-decoration:none;"
+                                   title="Géolocaliser {{ log.ip_address }}">
                                     {{ log.ip_address }}
-                                </span>
+                                </a>
                             {% else %}
                                 <span style="color:var(--wp-text-light); font-style:italic;">—</span>
                             {% endif %}
                         </td>
                         <td data-label="Statut">
                             {% if log.success %}
-                                <span class="wp-badge wp-badge-success">
-                                    <i class="fas fa-check"></i> OK
-                                </span>
+                                <span class="wp-badge wp-badge-success"><i class="fas fa-check"></i> OK</span>
                             {% else %}
-                                <span class="wp-badge wp-badge-danger">
-                                    <i class="fas fa-times"></i> Échec
-                                </span>
+                                <span class="wp-badge wp-badge-danger"><i class="fas fa-times"></i> Échec</span>
                             {% endif %}
+                        </td>
+                        <td style="text-align:center;">
+                            <button type="button" class="audit-toggle-btn" data-target="detail-{{ log.id }}" title="Voir le détail">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="audit-detail-row" id="detail-{{ log.id }}">
+                        <td colspan="9" class="audit-detail-cell">
+                            <div class="audit-detail-content">
+                                <div class="audit-detail-item">
+                                    <strong><i class="fas fa-comment"></i> Message</strong>
+                                    <span>{{ log.message|default:"—" }}</span>
+                                </div>
+                                <div class="audit-detail-item">
+                                    <strong><i class="fas fa-fingerprint"></i> ID objet</strong>
+                                    <span>{{ log.object_id|default:"—" }}</span>
+                                </div>
+                                <div class="audit-detail-item">
+                                    <strong><i class="fas fa-browser"></i> User-Agent</strong>
+                                    <span style="font-family:monospace; font-size:11.5px;">{{ log.user_agent|default:"—"|truncatechars:150 }}</span>
+                                </div>
+                                {% if log.changes %}
+                                <div class="audit-detail-item" style="grid-column: 1 / -1;">
+                                    <strong><i class="fas fa-edit"></i> Modifications</strong>
+                                    <pre style="font-family:monospace; font-size:11.5px; background:var(--wp-surface); padding:8px; border-radius:4px; white-space:pre-wrap; margin:0; overflow-x:auto; max-height:200px;">{{ log.changes|pprint }}</pre>
+                                </div>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -210,7 +616,14 @@
         {% else %}
         <div class="wp-empty">
             <i class="fas fa-history"></i>
-            <p>Aucune activité enregistrée pour le moment.</p>
+            {% if selected_action or selected_user or selected_model or date_from or date_to or search_query or selected_success %}
+                <p>Aucune entrée ne correspond à vos filtres.</p>
+                <a href="{% url 'accounts:audit_log' %}" class="wp-btn outline" style="margin-top:10px;">
+                    <i class="fas fa-times"></i> Effacer les filtres
+                </a>
+            {% else %}
+                <p>Aucune activité enregistrée pour le moment.</p>
+            {% endif %}
         </div>
         {% endif %}
     </div>
@@ -224,11 +637,11 @@
     <div class="wp-card-body">
         <div class="wp-pagination">
             {% if logs.has_previous %}
-                <a href="?page=1{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_model %}&model={{ selected_model }}{% endif %}"
+                <a href="?page=1{% if query_string %}&{{ query_string }}{% endif %}"
                    class="wp-page-link" title="Première page">
                     <i class="fas fa-angle-double-left"></i>
                 </a>
-                <a href="?page={{ logs.previous_page_number }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_model %}&model={{ selected_model }}{% endif %}"
+                <a href="?page={{ logs.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}"
                    class="wp-page-link">
                     <i class="fas fa-chevron-left"></i>
                 </a>
@@ -241,17 +654,17 @@
                 {% if logs.number == num %}
                     <span class="wp-page-link active">{{ num }}</span>
                 {% elif num > logs.number|add:"-3" and num < logs.number|add:"3" %}
-                    <a href="?page={{ num }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_model %}&model={{ selected_model }}{% endif %}"
+                    <a href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}"
                        class="wp-page-link">{{ num }}</a>
                 {% endif %}
             {% endfor %}
 
             {% if logs.has_next %}
-                <a href="?page={{ logs.next_page_number }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_model %}&model={{ selected_model }}{% endif %}"
+                <a href="?page={{ logs.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}"
                    class="wp-page-link">
                     <i class="fas fa-chevron-right"></i>
                 </a>
-                <a href="?page={{ logs.paginator.num_pages }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_model %}&model={{ selected_model }}{% endif %}"
+                <a href="?page={{ logs.paginator.num_pages }}{% if query_string %}&{{ query_string }}{% endif %}"
                    class="wp-page-link" title="Dernière page">
                     <i class="fas fa-angle-double-right"></i>
                 </a>
@@ -268,4 +681,53 @@
 </div>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toggle des filtres avancés
+    document.getElementById('toggleFilters')?.addEventListener('click', function() {
+        const panel = document.getElementById('advancedFilters');
+        const btn = this;
+        const isOpen = panel.style.display !== 'none';
+        panel.style.display = isOpen ? 'none' : 'block';
+        btn.innerHTML = isOpen
+            ? '<i class="fas fa-chevron-down"></i> Afficher'
+            : '<i class="fas fa-chevron-up"></i> Masquer';
+    });
+
+    // Toggle du détail de chaque ligne (boutons)
+    document.querySelectorAll('.audit-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleDetail(this.dataset.target, this);
+        });
+    });
+
+    // Rendre la ligne cliquable (sauf sur les liens/boutons)
+    document.querySelectorAll('tbody tr:not(.audit-detail-row)').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('a, button')) return;
+            const btn = this.querySelector('.audit-toggle-btn');
+            if (btn) toggleDetail(btn.dataset.target, btn);
+        });
+    });
+
+    function toggleDetail(targetId, btn) {
+        const target = document.getElementById(targetId);
+        if (!target) return;
+        const isOpen = target.classList.toggle('open');
+        if (btn) {
+            btn.classList.toggle('open', isOpen);
+            const icon = btn.querySelector('i');
+            if (icon) icon.className = isOpen ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+        }
+    }
+
+    // Auto-ouvrir les filtres si un filtre est actif
+    {% if selected_action or selected_user or selected_model or date_from or date_to or selected_success %}
+    document.getElementById('advancedFilters').style.display = 'block';
+    document.getElementById('toggleFilters').innerHTML = '<i class="fas fa-chevron-up"></i> Masquer';
+    {% endif %}
+</script>
 {% endblock %}

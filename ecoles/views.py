@@ -36,6 +36,7 @@ from .utils import (
     synchroniser_cours_ref_vers_instances,
 )
 from accounts.models import AuditLog
+from accounts.views import log_audit, get_client_ip, get_user_agent
 from actualites.models import Article
 
 
@@ -104,7 +105,6 @@ def _slugifier_pour_code(texte):
     """
     if not texte:
         return "CLASSE"
-    # Remplace les accents courants
     remplacements = {
         'à': 'a', 'â': 'a', 'ä': 'a', 'á': 'a', 'ã': 'a', 'å': 'a',
         'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
@@ -121,36 +121,10 @@ def _slugifier_pour_code(texte):
     }
     for accent, sans_accent in remplacements.items():
         texte = texte.replace(accent, sans_accent)
-    # Remplace les caractères non alphanumériques par des underscores
     resultat = ''.join(c if c.isalnum() else '_' for c in texte)
-    # Supprime les underscores multiples
     while '__' in resultat:
         resultat = resultat.replace('__', '_')
     return resultat.strip('_') or "CLASSE"
-
-
-def _generer_code_cours_unique(base_code, classe, model_class=None):
-    """
-    Génère un code de cours unique en incluant le nom de la classe.
-
-    Exemple : base_code="Expression_Orale", classe.nom="1ère A"
-    -> "Expression_Orale_1ere_A" (ou avec suffixe _1, _2 si déjà utilisé)
-
-    Cela garantit qu'on peut créer un cours avec le même nom de base
-    dans plusieurs classes sans violer la contrainte unique sur `code`.
-    """
-    if model_class is None:
-        model_class = Cours
-
-    suffixe_classe = _slugifier_pour_code(classe.nom)
-    code_base = f"{base_code}_{suffixe_classe}"
-
-    code_candidat = code_base
-    suffix = 1
-    while model_class.objects.filter(code=code_candidat).exists():
-        code_candidat = f"{code_base}_{suffix}"
-        suffix += 1
-    return code_candidat
 
 
 def _stocker_rapport_sync(request, rapport, action_label=""):
@@ -756,6 +730,17 @@ def province_create(request):
         form = ProvinceForm(request.POST)
         if form.is_valid():
             province = form.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.CREATE,
+                model_name=AuditLog.ModelName.PROVINCE,
+                object_id=province.id,
+                object_repr=province.nom,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Création de la province '{province.nom}'",
+            )
             messages.success(request, f'Province {province.nom} créée avec succès.')
             return redirect('ecoles:province_list')
     else:
@@ -773,6 +758,17 @@ def province_edit(request, pk):
         form = ProvinceForm(request.POST, instance=province)
         if form.is_valid():
             form.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.UPDATE,
+                model_name=AuditLog.ModelName.PROVINCE,
+                object_id=province.id,
+                object_repr=province.nom,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Modification de la province '{province.nom}'",
+            )
             messages.success(request, 'Province modifiée avec succès.')
             return redirect('ecoles:province_list')
     else:
@@ -788,6 +784,18 @@ def province_delete(request, pk):
     province = get_object_or_404(Province, pk=pk)
     if request.method == 'POST':
         nom = province.nom
+        province_id = province.id
+        log_audit(
+            user=request.user,
+            action=AuditLog.ActionType.DELETE,
+            model_name=AuditLog.ModelName.PROVINCE,
+            object_id=province_id,
+            object_repr=nom,
+            ip_address=get_client_ip(request),
+            user_agent=get_user_agent(request),
+            success=True,
+            message=f"Suppression de la province '{nom}' (ID={province_id})",
+        )
         province.delete()
         messages.success(request, f'Province {nom} supprimée avec succès.')
         return redirect('ecoles:province_list')
@@ -1020,6 +1028,17 @@ def ecole_create(request):
         form = EcoleForm(request.POST, user=request.user)
         if form.is_valid():
             ecole = form.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.CREATE,
+                model_name=AuditLog.ModelName.ECOLE,
+                object_id=ecole.id,
+                object_repr=ecole.nom,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Création de l'école '{ecole.nom}' (code={ecole.code})",
+            )
             niveaux_ref = form.cleaned_data.get('niveaux_reference')
             if niveaux_ref:
                 for niveau_ref in niveaux_ref:
@@ -1059,6 +1078,17 @@ def ecole_edit(request, pk):
         form = EcoleForm(request.POST, instance=ecole, user=request.user)
         if form.is_valid():
             ecole = form.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.UPDATE,
+                model_name=AuditLog.ModelName.ECOLE,
+                object_id=ecole.id,
+                object_repr=ecole.nom,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Modification de l'école '{ecole.nom}'",
+            )
             niveaux_ref = form.cleaned_data.get('niveaux_reference')
             if niveaux_ref:
                 for niveau_ref in niveaux_ref:
@@ -1101,6 +1131,19 @@ def ecole_delete(request, pk):
         return redirect('ecoles:dashboard')
     if request.method == 'POST':
         nom = ecole.nom
+        ecole_id = ecole.id
+        code = ecole.code
+        log_audit(
+            user=request.user,
+            action=AuditLog.ActionType.DELETE,
+            model_name=AuditLog.ModelName.ECOLE,
+            object_id=ecole_id,
+            object_repr=f"{nom} ({code})",
+            ip_address=get_client_ip(request),
+            user_agent=get_user_agent(request),
+            success=True,
+            message=f"Suppression de l'école '{nom}' (ID={ecole_id}, code={code})",
+        )
         ecole.delete()
         messages.success(request, f'École {nom} supprimée avec succès.')
         return redirect('ecoles:ecole_list')
@@ -1168,6 +1211,17 @@ def niveau_create(request):
             if not niveau.nom or not niveau.nom.strip():
                 niveau.nom = NOM_NIVEAU_PAR_DEFAUT
             niveau.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.CREATE,
+                model_name=AuditLog.ModelName.NIVEAU,
+                object_id=niveau.id,
+                object_repr=niveau.nom,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Création du niveau de référence '{niveau.nom}'",
+            )
             messages.success(request, f'Niveau de référence {niveau.nom} créé avec succès.')
             return redirect('ecoles:niveau_list')
     else:
@@ -1207,6 +1261,17 @@ def niveau_edit(request, pk):
             if not niveau.nom or not niveau.nom.strip():
                 niveau.nom = NOM_NIVEAU_PAR_DEFAUT
             niveau.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.UPDATE,
+                model_name=AuditLog.ModelName.NIVEAU,
+                object_id=niveau.id,
+                object_repr=niveau.nom,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Modification du niveau '{niveau.nom}'",
+            )
             messages.success(request, 'Niveau modifié avec succès.')
             return redirect('ecoles:niveau_list')
     else:
@@ -1238,6 +1303,18 @@ def niveau_delete(request, pk):
 
     if request.method == 'POST':
         nom = niveau.nom or NOM_NIVEAU_PAR_DEFAUT
+        niveau_id = niveau.id
+        log_audit(
+            user=request.user,
+            action=AuditLog.ActionType.DELETE,
+            model_name=AuditLog.ModelName.NIVEAU,
+            object_id=niveau_id,
+            object_repr=nom,
+            ip_address=get_client_ip(request),
+            user_agent=get_user_agent(request),
+            success=True,
+            message=f"Suppression du niveau '{nom}' (ID={niveau_id})",
+        )
         niveau.delete()
         messages.success(request, f'Niveau {nom} supprimé avec succès.')
         return redirect('ecoles:niveau_list')
@@ -1251,6 +1328,17 @@ def restore_niveau(request, pk):
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
     niveau.restore()
+    log_audit(
+        user=request.user,
+        action=AuditLog.ActionType.UPDATE,
+        model_name=AuditLog.ModelName.NIVEAU,
+        object_id=niveau.id,
+        object_repr=niveau.nom or NOM_NIVEAU_PAR_DEFAUT,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        success=True,
+        message=f"Restauration du niveau '{niveau.nom or NOM_NIVEAU_PAR_DEFAUT}'",
+    )
     messages.success(request, f'Niveau "{niveau.nom or NOM_NIVEAU_PAR_DEFAUT}" restauré avec succès.')
     return redirect('ecoles:ecole_edit', pk=niveau.ecole.id)
 
@@ -1273,6 +1361,17 @@ def niveau_affecter_ecole(request, pk):
     if request.method == 'POST':
         try:
             niveau_ref.affecter_a_ecole(ecole)
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.CREATE,
+                model_name=AuditLog.ModelName.NIVEAU,
+                object_id=niveau_ref.id,
+                object_repr=f"{niveau_ref.nom} → {ecole.nom}",
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Affectation du niveau '{niveau_ref.nom}' à l'école '{ecole.nom}'",
+            )
             messages.success(request, f'Le niveau {niveau_ref.nom or NOM_NIVEAU_PAR_DEFAUT} a été affecté à {ecole.nom} avec toutes ses classes et cours.')
         except Exception as e:
             messages.error(request, f'Erreur : {str(e)}')
@@ -1313,6 +1412,18 @@ def synchroniser_niveau(request, pk):
                     d.get('evaluations_supprimees', 0)) > 0
             )
             request.session['sync_rapport'] = rapport
+
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.UPDATE,
+                model_name=AuditLog.ModelName.NIVEAU,
+                object_id=niveau.id,
+                object_repr=niveau.nom or NOM_NIVEAU_PAR_DEFAUT,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=rapport.get('success', False),
+                message=f"Synchronisation manuelle du niveau '{niveau.nom}' vers {rapport['instances_traitees']} instance(s)",
+            )
 
             if rapport.get('success'):
                 messages.success(
@@ -1458,6 +1569,17 @@ def classe_create(request):
             classe = form.save(commit=False)
             classe.ecole = None
             classe.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.CREATE,
+                model_name=AuditLog.ModelName.CLASSE,
+                object_id=classe.id,
+                object_repr=classe.nom,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Création de la classe de référence '{classe.nom}'",
+            )
             messages.success(request, f'Classe de référence {classe.nom} créée avec succès.')
 
             niveau = classe.niveau
@@ -1500,6 +1622,17 @@ def classe_edit(request, pk):
         form = ClasseForm(request.POST, instance=classe, user=user, is_reference=is_reference)
         if form.is_valid():
             classe = form.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.UPDATE,
+                model_name=AuditLog.ModelName.CLASSE,
+                object_id=classe.id,
+                object_repr=classe.nom,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Modification de la classe '{classe.nom}'",
+            )
             messages.success(request, 'Classe modifiée avec succès.')
             if is_reference:
                 niveau = classe.niveau
@@ -1537,6 +1670,19 @@ def classe_delete(request, pk):
 
     if request.method == 'POST':
         nom = classe.nom
+        classe_id = classe.id
+        niveau_nom = classe.niveau.nom if classe.niveau else '-'
+        log_audit(
+            user=request.user,
+            action=AuditLog.ActionType.DELETE,
+            model_name=AuditLog.ModelName.CLASSE,
+            object_id=classe_id,
+            object_repr=f"{nom} (niveau: {niveau_nom})",
+            ip_address=get_client_ip(request),
+            user_agent=get_user_agent(request),
+            success=True,
+            message=f"Suppression de la classe '{nom}' (ID={classe_id}, niveau={niveau_nom})",
+        )
         classe.delete()
         messages.success(request, f'Classe {nom} supprimée avec succès.')
         return redirect('ecoles:classe_list')
@@ -1719,6 +1865,18 @@ def classe_duplicate(request, pk):
                 logger.exception("Erreur de duplication")
                 messages.error(request, f"Erreur lors de la duplication : {str(e)}")
                 return redirect('ecoles:classe_list')
+
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.CREATE,
+                model_name=AuditLog.ModelName.CLASSE,
+                object_id=nouvelle_classe.id,
+                object_repr=f"{nouveau_nom} (duplication de {source_classe.nom})",
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Duplication de la classe '{source_classe.nom}' en '{nouveau_nom}'",
+            )
 
             if classe_ref:
                 cours_ref_qs = Cours.objects.filter(
@@ -1939,27 +2097,17 @@ def cours_create(request):
 
             created_cours = []
             errors = []
-
-            # ⚠️ CORRECTION : on garde une trace des codes utilisés dans cette transaction
-            # pour éviter les conflits d'unicité quand plusieurs classes sont sélectionnées.
             codes_utilises = set()
 
             for classe in classes:
                 # ============================================================
                 # GÉNÉRATION DU CODE UNIQUE PAR CLASSE
                 # ============================================================
-                # On inclut le nom de la classe dans le code pour garantir
-                # l'unicité même si plusieurs classes sont sélectionnées avec
-                # le même code de base.
-                # Ex: "Expression_Orale" + "1ère A" -> "Expression_Orale_1ere_A"
                 suffixe_classe = _slugifier_pour_code(classe.nom)
                 base_code_classe = f"{base_code}_{suffixe_classe}"
 
                 code_candidat = base_code_classe
                 suffix = 1
-                # Boucle pour trouver un code unique en tenant compte :
-                # - des cours existants en base (Cours.objects.filter)
-                # - des cours déjà créés dans cette transaction (codes_utilises)
                 while (Cours.objects.filter(code=code_candidat).exists()
                        or code_candidat in codes_utilises):
                     code_candidat = f"{base_code_classe}_{suffix}"
@@ -2009,6 +2157,20 @@ def cours_create(request):
                     errors.append(f"{classe.nom} : {str(e)}")
 
             if created_cours:
+                # Journaliser chaque création
+                for c in created_cours:
+                    log_audit(
+                        user=request.user,
+                        action=AuditLog.ActionType.CREATE,
+                        model_name=AuditLog.ModelName.COURS,
+                        object_id=c.id,
+                        object_repr=f"{c.nom} ({c.code})",
+                        ip_address=get_client_ip(request),
+                        user_agent=get_user_agent(request),
+                        success=True,
+                        message=f"Création du cours '{c.nom}' (code={c.code}, classe={c.classe.nom})",
+                    )
+
                 if len(created_cours) == 1:
                     messages.success(request, f'Cours "{nom}" créé avec succès.')
                 else:
@@ -2114,22 +2276,13 @@ def cours_edit(request, pk):
                     created_count = 0
                     base_code = cours.code
                     existing_combos = {(first_classe.id,)}
-
-                    # ⚠️ CORRECTION : suivi des codes utilisés dans cette transaction
                     codes_utilises = set()
-                    # On ajoute aussi le code du cours principal (déjà enregistré)
                     codes_utilises.add(cours.code)
 
                     for classe in classes:
                         if (classe.id,) in existing_combos:
                             continue
 
-                        # ============================================================
-                        # GÉNÉRATION DU CODE UNIQUE PAR CLASSE
-                        # ============================================================
-                        # On inclut le nom de la classe dans le code pour garantir
-                        # l'unicité même si plusieurs classes sont sélectionnées avec
-                        # le même code de base.
                         suffixe_classe = _slugifier_pour_code(classe.nom)
                         base_code_classe = f"{base_code}_{suffixe_classe}"
 
@@ -2160,6 +2313,18 @@ def cours_edit(request, pk):
                                 type=config.type, points_max=config.points_max,
                                 ordre=config.ordre
                             )
+
+                        log_audit(
+                            user=request.user,
+                            action=AuditLog.ActionType.CREATE,
+                            model_name=AuditLog.ModelName.COURS,
+                            object_id=nouveau_cours.id,
+                            object_repr=f"{nouveau_cours.nom} ({nouveau_cours.code})",
+                            ip_address=get_client_ip(request),
+                            user_agent=get_user_agent(request),
+                            success=True,
+                            message=f"Création du cours '{nouveau_cours.nom}' via édition (classe={classe.nom})",
+                        )
                         created_count += 1
 
             except Exception as e:
@@ -2170,6 +2335,19 @@ def cours_edit(request, pk):
                     'cours': cours, 'title': 'Modifier un cours', 'is_edit': True,
                     'is_reference_form': is_reference,
                 })
+
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.UPDATE,
+                model_name=AuditLog.ModelName.COURS,
+                object_id=cours.id,
+                object_repr=f"{cours.nom} ({cours.code})",
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Modification du cours '{cours.nom}' (code={cours.code})"
+                        + (f" + {created_count} nouveau(x) cours" if created_count else ""),
+            )
 
             if created_count > 0:
                 messages.success(request, f'Cours "{cours.nom}" modifié + {created_count} nouveau(x) cours créé(s).')
@@ -2228,6 +2406,22 @@ def cours_delete(request, pk):
 
     if request.method == 'POST':
         nom = cours.nom
+        cours_id = cours.id
+        code = cours.code
+        classe_nom = cours.classe.nom if cours.classe else '-'
+
+        log_audit(
+            user=request.user,
+            action=AuditLog.ActionType.DELETE,
+            model_name=AuditLog.ModelName.COURS,
+            object_id=cours_id,
+            object_repr=f"{nom} ({code})",
+            ip_address=get_client_ip(request),
+            user_agent=get_user_agent(request),
+            success=True,
+            message=f"Suppression du cours '{nom}' (ID={cours_id}, code={code}, classe={classe_nom})",
+        )
+
         cours.delete()
         messages.success(request, f'Cours {nom} supprimé avec succès.')
         return redirect('ecoles:cours_list')
@@ -2256,6 +2450,17 @@ def annee_create(request):
         form = AnneeScolaireForm(request.POST)
         if form.is_valid():
             annee = form.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.CREATE,
+                model_name=AuditLog.ModelName.ANNEE_SCOLAIRE,
+                object_id=annee.id,
+                object_repr=annee.annee,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Création de l'année scolaire '{annee.annee}'",
+            )
             messages.success(request, f'Année {annee.annee} créée avec succès.')
             return redirect('ecoles:annee_list')
     else:
@@ -2273,6 +2478,17 @@ def annee_edit(request, pk):
         form = AnneeScolaireForm(request.POST, instance=annee)
         if form.is_valid():
             form.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.UPDATE,
+                model_name=AuditLog.ModelName.ANNEE_SCOLAIRE,
+                object_id=annee.id,
+                object_repr=annee.annee,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Modification de l'année scolaire '{annee.annee}'",
+            )
             messages.success(request, 'Année modifiée avec succès.')
             return redirect('ecoles:annee_list')
     else:
@@ -2288,6 +2504,18 @@ def annee_delete(request, pk):
     annee = get_object_or_404(AnneeScolaire, pk=pk)
     if request.method == 'POST':
         nom = annee.annee
+        annee_id = annee.id
+        log_audit(
+            user=request.user,
+            action=AuditLog.ActionType.DELETE,
+            model_name=AuditLog.ModelName.ANNEE_SCOLAIRE,
+            object_id=annee_id,
+            object_repr=nom,
+            ip_address=get_client_ip(request),
+            user_agent=get_user_agent(request),
+            success=True,
+            message=f"Suppression de l'année scolaire '{nom}' (ID={annee_id})",
+        )
         annee.delete()
         messages.success(request, f'Année {nom} supprimée avec succès.')
         return redirect('ecoles:annee_list')
@@ -2328,6 +2556,17 @@ def section_create(request):
             if not section.nom or not section.nom.strip():
                 section.nom = NOM_SECTION_PAR_DEFAUT
             section.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.CREATE,
+                model_name=AuditLog.ModelName.SECTION,
+                object_id=section.id,
+                object_repr=section.nom,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Création de la section '{section.nom}'",
+            )
             messages.success(request, f'Section "{section.nom}" créée avec succès.')
             return redirect('ecoles:section_list')
     else:
@@ -2348,6 +2587,17 @@ def section_edit(request, pk):
             if not section.nom or not section.nom.strip():
                 section.nom = NOM_SECTION_PAR_DEFAUT
             section.save()
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.UPDATE,
+                model_name=AuditLog.ModelName.SECTION,
+                object_id=section.id,
+                object_repr=section.nom,
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Modification de la section '{section.nom}'",
+            )
             messages.success(request, f'Section "{section.nom}" modifiée avec succès.')
             return redirect('ecoles:section_list')
     else:
@@ -2363,6 +2613,18 @@ def section_delete(request, pk):
     section = get_object_or_404(Section, pk=pk)
     if request.method == 'POST':
         nom = section.nom or NOM_SECTION_PAR_DEFAUT
+        section_id = section.id
+        log_audit(
+            user=request.user,
+            action=AuditLog.ActionType.DELETE,
+            model_name=AuditLog.ModelName.SECTION,
+            object_id=section_id,
+            object_repr=nom,
+            ip_address=get_client_ip(request),
+            user_agent=get_user_agent(request),
+            success=True,
+            message=f"Suppression de la section '{nom}' (ID={section_id})",
+        )
         section.delete()
         messages.success(request, f'Section "{nom}" supprimée avec succès.')
         return redirect('ecoles:section_list')
@@ -2565,6 +2827,17 @@ def resultat_create(request):
         if form.is_valid():
             form.save()
             recalculer_resultats_eleve(eleve, annee)
+            log_audit(
+                user=request.user,
+                action=AuditLog.ActionType.CREATE,
+                model_name=AuditLog.ModelName.EVALUATION,
+                object_id=eleve.id,
+                object_repr=f"{eleve.get_nom_complet()} - {cours.nom}",
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=True,
+                message=f"Saisie des résultats pour l'élève '{eleve.get_nom_complet()}' au cours '{cours.nom}'",
+            )
             messages.success(request, 'Résultats enregistrés avec succès.')
             return redirect('ecoles:resultat_list')
     else:
@@ -2633,6 +2906,20 @@ def resultat_delete(request, pk):
         messages.error(request, 'Accès non autorisé.')
         return redirect('ecoles:dashboard')
     if request.method == 'POST':
+        eleve_nom = resultat.eleve.get_nom_complet()
+        cours_nom = resultat.cours.nom
+        resultat_id = resultat.id
+        log_audit(
+            user=request.user,
+            action=AuditLog.ActionType.DELETE,
+            model_name=AuditLog.ModelName.EVALUATION,
+            object_id=resultat_id,
+            object_repr=f"{eleve_nom} - {cours_nom}",
+            ip_address=get_client_ip(request),
+            user_agent=get_user_agent(request),
+            success=True,
+            message=f"Suppression du résultat d'évaluation (élève={eleve_nom}, cours={cours_nom})",
+        )
         resultat.delete()
         messages.success(request, 'Résultat supprimé avec succès.')
         return redirect('ecoles:resultat_list')
@@ -2861,6 +3148,20 @@ def restore_item(request, model_name, pk):
         return redirect('ecoles:trash_list')
     obj = get_object_or_404(model.all_objects, pk=pk, deleted_at__isnull=False)
     obj.restore()
+
+    # Journaliser la restauration
+    model_enum = getattr(AuditLog.ModelName, model_name.upper(), None)
+    log_audit(
+        user=request.user,
+        action=AuditLog.ActionType.UPDATE,
+        model_name=model_enum,
+        object_id=obj.id,
+        object_repr=str(obj),
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        success=True,
+        message=f"Restauration de l'objet '{obj}' ({model_name})",
+    )
     messages.success(request, f"L'objet '{obj}' a été restauré avec succès.")
     return redirect('ecoles:trash_list')
 
@@ -2878,8 +3179,25 @@ def permanent_delete(request, model_name, pk):
         messages.error(request, 'Modèle inconnu.')
         return redirect('ecoles:trash_list')
     obj = get_object_or_404(model.all_objects, pk=pk, deleted_at__isnull=False)
+    obj_id = obj.id
+    obj_repr = str(obj)
+
+    # Journaliser AVANT suppression définitive
+    model_enum = getattr(AuditLog.ModelName, model_name.upper(), None)
+    log_audit(
+        user=request.user,
+        action=AuditLog.ActionType.DELETE,
+        model_name=model_enum,
+        object_id=obj_id,
+        object_repr=obj_repr,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        success=True,
+        message=f"Suppression DÉFINITIVE de l'objet '{obj_repr}' ({model_name})",
+    )
+
     model.all_objects.filter(pk=pk).delete()
-    messages.success(request, f"L'objet '{obj}' a été supprimé définitivement.")
+    messages.success(request, f"L'objet '{obj_repr}' a été supprimé définitivement.")
     return redirect('ecoles:trash_list')
 
 
@@ -2895,6 +3213,16 @@ def empty_trash(request):
             count = model.all_objects.filter(deleted_at__isnull=False).count()
             model.all_objects.filter(deleted_at__isnull=False).delete()
             deleted_count += count
+
+    log_audit(
+        user=request.user,
+        action=AuditLog.ActionType.DELETE,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        success=True,
+        message=f"Vidage de la corbeille ({deleted_count} élément(s) supprimé(s) définitivement)",
+    )
+
     messages.success(request, f'La corbeille a été vidée ({deleted_count} élément(s)).')
     return redirect('ecoles:trash_list')
 
