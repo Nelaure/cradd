@@ -92,10 +92,23 @@ class UtilisateurCreationForm(UserCreationForm):
                         ecole=ecole, est_reference=False
                     ).exclude(id__in=classes_prises)
                 else:
-                    self.fields['ecole_affectation'].queryset = Ecole.objects.none()
-                    self.fields['province_affectation'].queryset = Province.objects.none()
-                    self.fields['niveau_affectation'].queryset = Niveau.objects.none()
-                    self.fields['classe_affectation'].queryset = Classe.objects.none()
+                    # ✅ CORRECTION : si l'agent n'a pas d'école, il peut quand même
+                    # affecter un nouvel utilisateur à n'importe quelle école
+                    # (car il gère les références au niveau global).
+                    if self.request_user.est_agent():
+                        self.fields['ecole_affectation'].queryset = Ecole.objects.all()
+                        self.fields['province_affectation'].queryset = Province.objects.all()
+                        self.fields['niveau_affectation'].queryset = Niveau.objects.filter(
+                            est_reference=False
+                        ).exclude(id__in=niveaux_pris)
+                        self.fields['classe_affectation'].queryset = Classe.objects.filter(
+                            est_reference=False
+                        ).exclude(id__in=classes_prises)
+                    else:
+                        self.fields['ecole_affectation'].queryset = Ecole.objects.none()
+                        self.fields['province_affectation'].queryset = Province.objects.none()
+                        self.fields['niveau_affectation'].queryset = Niveau.objects.none()
+                        self.fields['classe_affectation'].queryset = Classe.objects.none()
 
             else:
                 # Admin
@@ -196,9 +209,12 @@ class UtilisateurCreationForm(UserCreationForm):
             if not province:
                 self.add_error('province_affectation', "Un Directeur Provincial doit être affecté à une province.")
 
-        if role in (Utilisateur.Role.AGENT, Utilisateur.Role.INSPECTEUR):
+        # ✅ CORRECTION : Seul l'INSPECTEUR doit être rattaché à une école.
+        # L'AGENT est un rôle global (gestion des références : classes, cours,
+        # niveaux, sections, etc.). L'école est donc FACULTATIVE pour lui.
+        if role == Utilisateur.Role.INSPECTEUR:
             if not ecole:
-                self.add_error('ecole_affectation', "Un agent/inspecteur doit être affecté à une école.")
+                self.add_error('ecole_affectation', "Un inspecteur doit être affecté à une école.")
 
         return cleaned_data
 
@@ -307,10 +323,22 @@ class UtilisateurChangeForm(UserChangeForm):
                         ecole=ecole, est_reference=False
                     ).exclude(id__in=classes_prises)
                 else:
-                    self.fields['ecole_affectation'].queryset = Ecole.objects.none()
-                    self.fields['province_affectation'].queryset = Province.objects.none()
-                    self.fields['niveau_affectation'].queryset = Niveau.objects.none()
-                    self.fields['classe_affectation'].queryset = Classe.objects.none()
+                    # ✅ CORRECTION : si l'agent n'a pas d'école, il peut quand même
+                    # modifier un utilisateur sur n'importe quelle école.
+                    if self.request_user.est_agent():
+                        self.fields['ecole_affectation'].queryset = Ecole.objects.all()
+                        self.fields['province_affectation'].queryset = Province.objects.all()
+                        self.fields['niveau_affectation'].queryset = Niveau.objects.filter(
+                            est_reference=False
+                        ).exclude(id__in=niveaux_pris)
+                        self.fields['classe_affectation'].queryset = Classe.objects.filter(
+                            est_reference=False
+                        ).exclude(id__in=classes_prises)
+                    else:
+                        self.fields['ecole_affectation'].queryset = Ecole.objects.none()
+                        self.fields['province_affectation'].queryset = Province.objects.none()
+                        self.fields['niveau_affectation'].queryset = Niveau.objects.none()
+                        self.fields['classe_affectation'].queryset = Classe.objects.none()
 
             else:
                 # Admin
@@ -447,9 +475,11 @@ class UtilisateurChangeForm(UserChangeForm):
             if not province:
                 self.add_error('province_affectation', "Un Directeur Provincial doit être affecté à une province.")
 
-        if role in (Utilisateur.Role.AGENT, Utilisateur.Role.INSPECTEUR):
+        # ✅ CORRECTION : Seul l'INSPECTEUR doit être rattaché à une école.
+        # L'AGENT est un rôle global : école FACULTATIVE.
+        if role == Utilisateur.Role.INSPECTEUR:
             if not ecole:
-                self.add_error('ecole_affectation', "Un agent/inspecteur doit être affecté à une école.")
+                self.add_error('ecole_affectation', "Un inspecteur doit être affecté à une école.")
 
         return cleaned_data
 
